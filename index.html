@@ -450,16 +450,9 @@
     // =========================
     function foldTR(s){
       s = (s || "").toString();
-
-      // Türkçe küçük harf
       s = s.toLocaleLowerCase("tr");
-
-      // Diakritik kaldır (ü->u, ö->o, ğ->g, ş->s, ç->c, â->a vb.)
-      // Not: "ı" -> "i" yapmak da eşleştirmeyi güçlendirir
       s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       s = s.replace(/ı/g, "i");
-
-      // Tek boşluk
       s = s.replace(/\s+/g, " ").trim();
       return s;
     }
@@ -502,8 +495,6 @@
 
     // archive download URL üret (dosya adını doğru encode et)
     function buildDownloadUrl(identifier, name){
-      // IA tarafında dosya adında boşluk/özel karakter olabilir
-      // path segment bazında encode etmek lazım
       const parts = (name || "").split("/").map(p => encodeURIComponent(p));
       return normalizeArchiveUrl(`https://archive.org/download/${identifier}/${parts.join("/")}`);
     }
@@ -669,8 +660,6 @@
     // DOWNLOAD (22-23 mantığı)
     // =========================
     function makeProxyUrl(fileUrl, filename){
-      // Worker query paramları: u= (zorunlu) + f= (opsiyonel)
-      // (Worker senin tarafta nasıl yazıldıysa, f paramı olmasa da çalışır.)
       const u = DL_PROXY + "?u=" + encodeURIComponent(fileUrl);
       return filename ? (u + "&f=" + encodeURIComponent(filename)) : u;
     }
@@ -680,8 +669,6 @@
       a.href = href;
       a.rel = "noopener";
       a.target = "_self"; // yeni tab açmasın
-
-      // cross-origin’de bazen ignore edilir ama worker "attachment" verirse zaten iner
       if (filename) a.download = filename;
 
       document.body.appendChild(a);
@@ -698,7 +685,7 @@
         return;
       }catch{}
 
-      // 2) Fallback: blob indir (çok büyük dosyalarda ağır olabilir)
+      // 2) Fallback: blob indir
       try{
         const res = await fetch(proxied, { mode: "cors", cache: "no-store" });
         if (!res.ok) throw new Error("fetch failed");
@@ -980,6 +967,12 @@
     prevBtn.addEventListener("click", playPrev);
     nextBtn.addEventListener("click", playNext);
 
+    // ✅ Kayıt bitince otomatik sonraki (playlist gibi)
+    playerEl.addEventListener("ended", () => {
+      playNext();
+    });
+
+    // ✅ Klavye kısayolları
     document.addEventListener("keydown", (e) => {
       const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
       const inTyping = (tag === "input" || tag === "textarea");
@@ -994,12 +987,12 @@
       } else if (e.code === "ArrowRight"){
         e.preventDefault();
         playNext();
-        // ✅ Kayıt bitince otomatik sonraki (playlist gibi)
-playerEl.addEventListener("ended", () => {
-  playNext(); // sıradaki görünür kaydı çal
-});
+      }
+    });
 
+    // =========================
     // Filters
+    // =========================
     filterFavBtn.addEventListener("click", () => { filterFav = !filterFav; render(); });
     filterSelBtn.addEventListener("click", () => { filterSel = !filterSel; render(); });
 
@@ -1029,6 +1022,7 @@ playerEl.addEventListener("ended", () => {
           fp.style.left = s.x + "px";
           fp.style.top = s.y + "px";
           fp.style.bottom = "auto";
+          fp.style.right = "auto";
         }
       }catch{}
     }
@@ -1056,6 +1050,7 @@ playerEl.addEventListener("ended", () => {
       fp.style.left = startLeft + "px";
       fp.style.top = startTop + "px";
       fp.style.bottom = "auto";
+      fp.style.right = "auto";
     });
 
     fpHeader.addEventListener("pointermove", (e) => {
