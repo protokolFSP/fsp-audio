@@ -967,10 +967,11 @@
     prevBtn.addEventListener("click", playPrev);
     nextBtn.addEventListener("click", playNext);
 
-    // ✅ Kayıt bitince otomatik sonraki (playlist gibi)
-    playerEl.addEventListener("ended", () => {
-      playNext();
-    });
+   // ✅ Kayıt bitince otomatik sonraki (Plyr event’i ile kesin)
+plyr.on("ended", () => {
+  // küçük gecikme bazı cihazlarda daha stabil
+  setTimeout(() => playNext(), 0);
+});
 
     // ✅ Klavye kısayolları
     document.addEventListener("keydown", (e) => {
