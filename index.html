@@ -271,6 +271,51 @@
     .miniBtn:hover{ background: var(--hover); }
     .miniBtn svg{ width:16px; height:16px; }
 
+    /* Speed controls (🐢 / speed / 🐇) */
+    .speedWrap{
+      display:flex;
+      align-items:center;
+      gap: 6px;
+      padding: 4px;
+      border: 1px solid #d8d8d8;
+      border-radius: 14px;
+      background: white;
+      user-select:none;
+    }
+    .speedCtlBtn{
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      border: 1px solid #d8d8d8;
+      background: white;
+      cursor: pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size: 18px;
+      line-height: 1;
+    }
+    .speedCtlBtn:hover{ background: var(--hover); }
+
+    .speedValue{
+      min-width: 56px;
+      height: 36px;
+      border-radius: 12px;
+      border: 1px solid #d8d8d8;
+      background: white;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-variant-numeric: tabular-nums;
+      font-weight: 650;
+      padding: 0 10px;
+      cursor: default;
+    }
+    .speedValue.on{
+      border-color:#2b7cff;
+      box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
+    }
+
     #fpBody{
       padding: 10px 12px 12px 12px;
     }
@@ -343,6 +388,13 @@
     <div id="fpHeader" title="Sürükle">
       <div id="fpTitle">Bir kayıt seç...</div>
       <div id="fpHeaderRight">
+        <!-- ✅ Speed: 🐢 / value / 🐇 -->
+        <div id="speedWrap" class="speedWrap" aria-label="Hız">
+          <button id="slowBtn" class="speedCtlBtn" type="button" title="Yavaşlat (🐢)">🐢</button>
+          <div id="speedValue" class="speedValue on" title="Oynatma hızı">1×</div>
+          <button id="fastBtn" class="speedCtlBtn" type="button" title="Hızlandır (🐇)">🐇</button>
+        </div>
+
         <button id="prevBtn" class="miniBtn" type="button" title="Önceki">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 20L9 12l10-8v16z"/><path d="M5 19V5"/>
@@ -368,9 +420,7 @@
     // =========================
     const IA_IDENTIFIER = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
 
-    // 22-23'te indirmeyi "zorla" yapan mantık buydu:
     // Worker, Content-Disposition: attachment döndürür => tarayıcı indirmeye mecbur kalır.
-    // Worker yoksa / çalışmıyorsa fallback blob ile dener.
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/"; // varsa bırak
 
     // =========================
@@ -389,6 +439,11 @@
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
 
+    // Speed controls
+    const slowBtn = document.getElementById("slowBtn");
+    const fastBtn = document.getElementById("fastBtn");
+    const speedValueEl = document.getElementById("speedValue");
+
     const filterFavBtn  = document.getElementById("filterFav");
     const filterSelBtn  = document.getElementById("filterSel");
     const resetBtn      = document.getElementById("resetBtn");
@@ -398,6 +453,7 @@
     const sortDateBtn  = document.getElementById("sortDateBtn");
     const sortDateIcon = document.getElementById("sortDateIcon");
 
+    // ✅ Popup "settings/speed" YOK — hız bizim butonlarda
     const plyr = new Plyr(playerEl, {
       seekTime: 5,
       controls: [
@@ -408,11 +464,8 @@
         "current-time",
         "duration",
         "mute",
-        "volume",
-        "settings"
-      ],
-      settings: ["speed"],
-      speed: { selected: 1, options: [ 0.75, 1, 1.25 ] }
+        "volume"
+      ]
     });
 
     // =========================
@@ -425,7 +478,8 @@
       durs:  "fsp.durs.v1",
       sortMode: "fsp.sort.mode.v2",
       sortDirDur: "fsp.sort.dur.dir.v2",
-      sortDirDate: "fsp.sort.date.dir.v2"
+      sortDirDate: "fsp.sort.date.dir.v2",
+      speed: "fsp.speed.v1"
     };
 
     const loadMap = (k) => { try { return JSON.parse(localStorage.getItem(k) || "{}"); } catch { return {}; } };
@@ -444,6 +498,56 @@
     let sortMode = localStorage.getItem(LS.sortMode) || "title";
     let durSortDir  = (localStorage.getItem(LS.sortDirDur) === "desc") ? "desc" : "asc";
     let dateSortDir = (localStorage.getItem(LS.sortDirDate) === "desc") ? "desc" : "asc";
+
+    // =========================
+    // SPEED (🐢 / 🐇) — 0.5 0.75 0.9 1 1.25 1.5 1.75
+    // =========================
+    const SPEEDS = [0.5, 0.75, 0.9, 1, 1.25, 1.5, 1.75];
+    let speedIndex = SPEEDS.indexOf(1);
+
+    function fmtSpeed(v){
+      // 0.9 gibi değerleri kısa göster
+      const s = (Math.round(v * 100) / 100).toString();
+      return s.replace(/\.0+$/,"") + "×";
+    }
+
+    function setSpeedUI(v){
+      speedValueEl.textContent = fmtSpeed(v);
+      // küçük vurgu her zaman kalsın
+      speedValueEl.classList.add("on");
+      slowBtn.disabled = (speedIndex <= 0);
+      fastBtn.disabled = (speedIndex >= SPEEDS.length - 1);
+      slowBtn.style.opacity = slowBtn.disabled ? 0.45 : 1;
+      fastBtn.style.opacity = fastBtn.disabled ? 0.45 : 1;
+    }
+
+    function applySpeedByIndex(idx){
+      speedIndex = Math.max(0, Math.min(SPEEDS.length - 1, idx));
+      const v = SPEEDS[speedIndex];
+      plyr.speed = v;
+      localStorage.setItem(LS.speed, String(v));
+      setSpeedUI(v);
+    }
+
+    function restoreSpeed(){
+      const saved = Number(localStorage.getItem(LS.speed) || "1");
+      if (Number.isFinite(saved)){
+        const i = SPEEDS.findIndex(x => Math.abs(x - saved) < 0.001);
+        applySpeedByIndex(i === -1 ? SPEEDS.indexOf(1) : i);
+      } else {
+        applySpeedByIndex(SPEEDS.indexOf(1));
+      }
+    }
+
+    slowBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      applySpeedByIndex(speedIndex - 1);
+    });
+
+    fastBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      applySpeedByIndex(speedIndex + 1);
+    });
 
     // =========================
     // ARAMA: rüveyda ~= ruveyda
@@ -493,7 +597,6 @@
       }
     }
 
-    // archive download URL üret (dosya adını doğru encode et)
     function buildDownloadUrl(identifier, name){
       const parts = (name || "").split("/").map(p => encodeURIComponent(p));
       return normalizeArchiveUrl(`https://archive.org/download/${identifier}/${parts.join("/")}`);
@@ -511,7 +614,6 @@
       return `${m}:${ss}`;
     }
 
-    // Dosya sonunda dd.mm.yy / dd.mm.yyyy varsa sırala
     function parseEndDate(item){
       const raw0 = (item.name || item.title || "").toString();
       let s;
@@ -668,7 +770,7 @@
       const a = document.createElement("a");
       a.href = href;
       a.rel = "noopener";
-      a.target = "_self"; // yeni tab açmasın
+      a.target = "_self";
       if (filename) a.download = filename;
 
       document.body.appendChild(a);
@@ -679,13 +781,11 @@
     async function forceDownload(fileUrl, filename){
       const proxied = makeProxyUrl(fileUrl, filename);
 
-      // 1) Önce worker üzerinden "attachment" ile indir
       try{
         clickDownload(proxied, filename);
         return;
       }catch{}
 
-      // 2) Fallback: blob indir
       try{
         const res = await fetch(proxied, { mode: "cors", cache: "no-store" });
         if (!res.ok) throw new Error("fetch failed");
@@ -694,7 +794,6 @@
         clickDownload(url, filename);
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
       }catch(err){
-        // 3) En son çare: direkt aç
         window.location.href = fileUrl;
       }
     }
@@ -712,16 +811,11 @@
 
         const files = Array.isArray(j.files) ? j.files : [];
 
-        // orijinal mp3/m4a al
         const audio = files
           .filter(f => {
             const name = (f.name || "").toLowerCase();
             if (!(name.endsWith(".m4a") || name.endsWith(".mp3"))) return false;
-
-            // bazı item'larda source yok; o durumda yine de dahil et
             if (!("source" in f)) return true;
-
-            // "original" öncelik
             return (String(f.source).toLowerCase() === "original");
           })
           .map((f, idx) => {
@@ -732,7 +826,6 @@
             return { id, name, title, url };
           });
 
-        // alfabetik
         audio.sort((a,b) => a.title.localeCompare(b.title, "tr"));
 
         items = audio;
@@ -804,7 +897,6 @@
 
       listEl.innerHTML = "";
 
-      // süreleri sıraya al
       const toMeasure = (sortMode === "dur") ? items : visible;
       for (const it of toMeasure){
         if (!(durs[it.id] > 0)) requestDuration(it);
@@ -843,14 +935,12 @@
           render();
         });
 
-        // ✅ Download: Worker (attachment) ile indir
         dlBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           const filename = (it.name || "").split("/").pop() || "";
           forceDownload(it.url, filename);
         });
 
-        // drag/click çakışmasın
         for (const b of [favBtn, selBtn, dlBtn]){
           b.addEventListener("pointerup", (e) => e.stopPropagation());
           b.addEventListener("pointerdown", (e) => e.stopPropagation());
@@ -925,7 +1015,13 @@
         sources: [{ src: url, type: mime }]
       };
 
+      // kaynak değişince plyr bazı yerlerde speed'i resetleyebilir → tekrar uygula
+      const currentSpeed = SPEEDS[speedIndex] || 1;
+
       const tryPlay = () => {
+        // speed'i her ihtimale karşı tekrar set et
+        plyr.speed = currentSpeed;
+
         const p = plyr.play();
         if (p && typeof p.catch === "function"){
           p.catch(() => {
@@ -967,11 +1063,10 @@
     prevBtn.addEventListener("click", playPrev);
     nextBtn.addEventListener("click", playNext);
 
-   // ✅ Kayıt bitince otomatik sonraki (Plyr event’i ile kesin)
-plyr.on("ended", () => {
-  // küçük gecikme bazı cihazlarda daha stabil
-  setTimeout(() => playNext(), 0);
-});
+    // ✅ Kayıt bitince otomatik sonraki (Plyr event’i daha stabil)
+    plyr.on("ended", () => {
+      setTimeout(() => playNext(), 0);
+    });
 
     // ✅ Klavye kısayolları
     document.addEventListener("keydown", (e) => {
@@ -997,7 +1092,6 @@ plyr.on("ended", () => {
     filterFavBtn.addEventListener("click", () => { filterFav = !filterFav; render(); });
     filterSelBtn.addEventListener("click", () => { filterSel = !filterSel; render(); });
 
-    // Hepsi: tüm filtre + arama + sıralama modu sıfırla
     resetBtn.addEventListener("click", () => {
       filterFav = false;
       filterSel = false;
@@ -1036,6 +1130,7 @@ plyr.on("ended", () => {
     let startX = 0, startY = 0, startLeft = 0, startTop = 0;
 
     fpHeader.addEventListener("pointerdown", (e) => {
+      // sağ taraftaki butonlara basınca sürükleme başlamasın (speed + prev/next)
       if (e.target && e.target.closest && e.target.closest("#fpHeaderRight")) return;
 
       dragging = true;
@@ -1083,8 +1178,12 @@ plyr.on("ended", () => {
       try { fpHeader.releasePointerCapture(e.pointerId); } catch {}
     });
 
+    // =========================
+    // INIT
+    // =========================
     setSortIcons();
     restorePlayerPos();
+    restoreSpeed();
     loadItems();
   </script>
 </body>
