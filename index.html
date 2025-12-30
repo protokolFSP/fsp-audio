@@ -994,8 +994,10 @@
       } else if (e.code === "ArrowRight"){
         e.preventDefault();
         playNext();
-      }
-    });
+        // ✅ Kayıt bitince otomatik sonraki (playlist gibi)
+playerEl.addEventListener("ended", () => {
+  playNext(); // sıradaki görünür kaydı çal
+});
 
     // Filters
     filterFavBtn.addEventListener("click", () => { filterFav = !filterFav; render(); });
