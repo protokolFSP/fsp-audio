@@ -23,7 +23,7 @@
       max-width: 980px;
       color:#111;
       background: var(--bg);
-      line-height: 1.10;
+      line-height: 1.2; /* ✅ global normal (kırpma olmasın) */
     }
 
     h1{
@@ -31,6 +31,7 @@
       margin: 0 0 12px 0;
       font-weight: 650;
       letter-spacing: .2px;
+      line-height: 1.05;
     }
 
     .topbar{
@@ -49,6 +50,7 @@
       border-radius: 14px;
       font-size: 1rem;
       outline: none;
+      line-height: 1.1;
     }
 
     #resetBtn{
@@ -59,19 +61,20 @@
       cursor: pointer;
       font-size: 1rem;
       flex: 0 0 auto;
+      line-height: 1.1;
     }
     #resetBtn:hover{ background: var(--hover); }
 
     #meta{
       color: var(--muted);
-      font-size: .95rem;
+      font-size: .68rem;
       margin: 6px 0 12px 2px;
-      line-height: 1.05;
+      line-height: 1.1;
     }
 
     .headerRow, .itemRow{
       display: grid;
-      grid-template-columns: 1fr 120px 260px; /* Kayıt | Süre | İşlemler */
+      grid-template-columns: 1fr 1fr 110px 260px;
       align-items: center;
       column-gap: 10px;
     }
@@ -81,8 +84,8 @@
       border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
       color: var(--muted);
-      font-size: .92rem;
-      line-height: 1.05;
+      font-size: .66rem;
+      line-height: 1.15;
     }
 
     .colActions{
@@ -131,34 +134,39 @@
       border-bottom: 1px solid #f2f2f2;
       cursor: pointer;
       background: transparent;
+      outline: none;
     }
     .itemRow:hover{ background: var(--hover); }
     .itemRow.active{ background: var(--active); }
+    .itemRow:focus-visible{
+      box-shadow: 0 0 0 3px rgba(43,124,255,.22) inset;
+      border-radius: 10px;
+    }
 
     .title{
-      font-size: 1.02rem;
+      font-size: 0.72rem;
       font-weight: 500;
-      line-height: 1.02;
+      line-height: 1.1;  /* ✅ sıkı ama kırpmaz */
       min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .dur{
       text-align:right;
       color: var(--muted);
       font-variant-numeric: tabular-nums;
-      font-size: .95rem;
+      font-size: 0.68rem;
       user-select:none;
       white-space: nowrap;
-      line-height: 1.00;
+      line-height: 1.1;
     }
 
     @media (max-width: 680px){
       body{ margin: 14px; }
-      .headerRow, .itemRow{ grid-template-columns: 1fr 92px 210px; }
-      .title{
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+      .headerRow, .itemRow{
+        grid-template-columns: 1fr 0.7fr 82px 190px;
       }
       #search{ flex: 1 1 100%; }
     }
@@ -235,8 +243,8 @@
       cursor: grab;
       user-select:none;
       gap: 10px;
-      touch-action: none;
-      line-height: 1.05;
+      touch-action: none; /* drag için */
+      line-height: 1.1;
     }
 
     #fpTitle{
@@ -247,7 +255,7 @@
       text-overflow: ellipsis;
       flex: 1 1 auto;
       min-width: 0;
-      line-height: 1.05;
+      line-height: 1.1;
     }
 
     #fpHeaderRight{
@@ -271,7 +279,6 @@
     .miniBtn:hover{ background: var(--hover); }
     .miniBtn svg{ width:16px; height:16px; }
 
-    /* Speed controls (🐢 / speed / 🐇) */
     .speedWrap{
       display:flex;
       align-items:center;
@@ -310,6 +317,7 @@
       font-weight: 650;
       padding: 0 10px;
       cursor: default;
+      line-height: 1;
     }
     .speedValue.on{
       border-color:#2b7cff;
@@ -324,7 +332,7 @@
       margin: 8px 2px 0 2px;
       color: var(--muted);
       font-size: .92rem;
-      line-height: 1.05;
+      line-height: 1.2;
     }
 
     .plyr--audio .plyr__controls{
@@ -341,7 +349,7 @@
     <button id="resetBtn" type="button">Hepsi</button>
   </div>
 
-  <div id="meta">Görünən: 0 / Toplam: 0</div>
+  <div id="meta">Görünen: 0 / Toplam: 0</div>
 
   <div class="headerRow">
     <div class="colTitle">
@@ -355,6 +363,8 @@
       </div>
     </div>
 
+    <div class="colSpacer"></div>
+
     <div class="colDur" style="text-align:right;">
       <div class="durHead">
         <span>Süre</span>
@@ -367,13 +377,13 @@
     </div>
 
     <div class="colActions">
-      <button id="filterFav" class="filterBtn" title="Favoriler filtrele" type="button" aria-pressed="false">
+      <button id="filterFav" class="filterBtn" title="Favoriler filtrele" type="button" aria-pressed="false" aria-label="Favoriler filtrele">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
         </svg>
       </button>
 
-      <button id="filterSel" class="filterBtn" title="Seçilenler filtrele" type="button" aria-pressed="false">
+      <button id="filterSel" class="filterBtn" title="Seçilenler filtrele" type="button" aria-pressed="false" aria-label="Seçilenler filtrele">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M20 6L9 17l-5-5"/>
         </svg>
@@ -388,19 +398,18 @@
     <div id="fpHeader" title="Sürükle">
       <div id="fpTitle">Bir kayıt seç...</div>
       <div id="fpHeaderRight">
-        <!-- ✅ Speed: 🐢 / value / 🐇 -->
         <div id="speedWrap" class="speedWrap" aria-label="Hız">
-          <button id="slowBtn" class="speedCtlBtn" type="button" title="Yavaşlat (🐢)">🐢</button>
+          <button id="slowBtn" class="speedCtlBtn" type="button" title="Yavaşlat (🐢)" aria-label="Yavaşlat">🐢</button>
           <div id="speedValue" class="speedValue on" title="Oynatma hızı">1×</div>
-          <button id="fastBtn" class="speedCtlBtn" type="button" title="Hızlandır (🐇)">🐇</button>
+          <button id="fastBtn" class="speedCtlBtn" type="button" title="Hızlandır (🐇)" aria-label="Hızlandır">🐇</button>
         </div>
 
-        <button id="prevBtn" class="miniBtn" type="button" title="Önceki">
+        <button id="prevBtn" class="miniBtn" type="button" title="Önceki" aria-label="Önceki">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 20L9 12l10-8v16z"/><path d="M5 19V5"/>
           </svg>
         </button>
-        <button id="nextBtn" class="miniBtn" type="button" title="Sonraki">
+        <button id="nextBtn" class="miniBtn" type="button" title="Sonraki" aria-label="Sonraki">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M5 4l10 8-10 8V4z"/><path d="M19 5v14"/>
           </svg>
@@ -419,9 +428,7 @@
     // AYARLAR
     // =========================
     const IA_IDENTIFIER = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
-
-    // Worker, Content-Disposition: attachment döndürür => tarayıcı indirmeye mecbur kalır.
-    const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/"; // varsa bırak
+    const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
 
     // =========================
     // DOM
@@ -439,7 +446,6 @@
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
 
-    // Speed controls
     const slowBtn = document.getElementById("slowBtn");
     const fastBtn = document.getElementById("fastBtn");
     const speedValueEl = document.getElementById("speedValue");
@@ -453,7 +459,6 @@
     const sortDateBtn  = document.getElementById("sortDateBtn");
     const sortDateIcon = document.getElementById("sortDateIcon");
 
-    // ✅ Popup "settings/speed" YOK — hız bizim butonlarda
     const plyr = new Plyr(playerEl, {
       seekTime: 5,
       controls: [
@@ -500,20 +505,18 @@
     let dateSortDir = (localStorage.getItem(LS.sortDirDate) === "desc") ? "desc" : "asc";
 
     // =========================
-    // SPEED (🐢 / 🐇) — 0.5 0.75 0.9 1 1.25 1.5 1.75
+    // SPEED (🐢 / 🐇)
     // =========================
     const SPEEDS = [0.5, 0.75, 0.9, 1, 1.25, 1.5, 1.75];
     let speedIndex = SPEEDS.indexOf(1);
 
     function fmtSpeed(v){
-      // 0.9 gibi değerleri kısa göster
       const s = (Math.round(v * 100) / 100).toString();
       return s.replace(/\.0+$/,"") + "×";
     }
 
     function setSpeedUI(v){
       speedValueEl.textContent = fmtSpeed(v);
-      // küçük vurgu her zaman kalsın
       speedValueEl.classList.add("on");
       slowBtn.disabled = (speedIndex <= 0);
       fastBtn.disabled = (speedIndex >= SPEEDS.length - 1);
@@ -539,18 +542,11 @@
       }
     }
 
-    slowBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      applySpeedByIndex(speedIndex - 1);
-    });
-
-    fastBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      applySpeedByIndex(speedIndex + 1);
-    });
+    slowBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex - 1); });
+    fastBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex + 1); });
 
     // =========================
-    // ARAMA: rüveyda ~= ruveyda
+    // ARAMA (TR fold)
     // =========================
     function foldTR(s){
       s = (s || "").toString();
@@ -570,7 +566,6 @@
       return "audio/*";
     }
 
-    // + -> %20 düzelt, details->download çevir vs.
     function normalizeArchiveUrl(u){
       if (!u) return u;
       try{
@@ -678,7 +673,9 @@
     });
 
     // =========================
-    // SÜRE OKUMA (metadata)
+    // SÜRE OKUMA (metadata) - performans iyileştirmeleri
+    //   - sadece görünür satırlar öncelik
+    //   - dur sort açıkken arka planda yavaş yavaş tamamlar
     // =========================
     const durQueue = [];
     const durLoading = new Set();
@@ -758,8 +755,50 @@
       });
     }
 
+    // IntersectionObserver: görünür satırlar için süre iste
+    let rowObserver = null;
+    function ensureObserver(){
+      if (rowObserver) return;
+      rowObserver = new IntersectionObserver((entries) => {
+        for (const ent of entries){
+          if (!ent.isIntersecting) continue;
+          const id = ent.target.getAttribute("data-id");
+          const it = items.find(x => x.id === id);
+          if (it) requestDuration(it);
+          rowObserver.unobserve(ent.target); // bir kez yeter
+        }
+      }, { root: null, threshold: 0.05 });
+    }
+
+    // dur sort açıkken arkaplanda yavaş doldur (UI donmasın)
+    let warmAllTimer = null;
+    function warmAllDurations(){
+      if (sortMode !== "dur") return;
+      if (warmAllTimer) return;
+
+      const unknown = items.filter(it => !(durs[it.id] > 0) && !durLoading.has(it.id));
+      if (!unknown.length) return;
+
+      const chunk = 8;
+      const step = () => {
+        if (sortMode !== "dur"){ warmAllTimer = null; return; }
+        let n = 0;
+        while (n < chunk && unknown.length){
+          const it = unknown.shift();
+          requestDuration(it);
+          n++;
+        }
+        if (unknown.length){
+          warmAllTimer = setTimeout(step, 200);
+        } else {
+          warmAllTimer = null;
+        }
+      };
+      warmAllTimer = setTimeout(step, 250);
+    }
+
     // =========================
-    // DOWNLOAD (22-23 mantığı)
+    // DOWNLOAD
     // =========================
     function makeProxyUrl(fileUrl, filename){
       const u = DL_PROXY + "?u=" + encodeURIComponent(fileUrl);
@@ -794,6 +833,7 @@
         clickDownload(url, filename);
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
       }catch(err){
+        statusEl.textContent = "İndirme proxy başarısız; doğrudan bağlantı açılıyor.";
         window.location.href = fileUrl;
       }
     }
@@ -827,8 +867,8 @@
           });
 
         audio.sort((a,b) => a.title.localeCompare(b.title, "tr"));
-
         items = audio;
+
         statusEl.textContent = "";
         render();
       }catch(err){
@@ -859,7 +899,7 @@
         arr.sort((a,b) => {
           const ha = (durs[a.id] > 0);
           const hb = (durs[b.id] > 0);
-          if (ha !== hb) return ha ? -1 : 1;
+          if (ha !== hb) return ha ? -1 : 1;   // süre bilinenler üstte
           if (ha && hb){
             const da = durs[a.id];
             const db = durs[b.id];
@@ -868,13 +908,15 @@
           return a.title.localeCompare(b.title, "tr");
         });
       } else if (sortMode === "date"){
-        const dir = (dateSortDir === "asc") ? 1 : -1;
+        // ✅ Kullanıcı beklentisi: "asc" = en yeni üstte (newest first)
+        const dir = (dateSortDir === "asc") ? -1 : 1;
+
         arr.sort((a,b) => {
           const ta = parseEndDate(a);
           const tb = parseEndDate(b);
           const ha = (ta !== null);
           const hb = (tb !== null);
-          if (ha !== hb) return ha ? -1 : 1;
+          if (ha !== hb) return ha ? -1 : 1;   // tarihi olanlar üstte
           if (ha && hb && ta !== tb) return (ta - tb) * dir;
           return a.title.localeCompare(b.title, "tr");
         });
@@ -887,7 +929,7 @@
 
     function render(){
       const visible = getVisibleItems();
-      metaEl.textContent = `Görünən: ${visible.length} / Toplam: ${items.length}`;
+      metaEl.textContent = `Görünen: ${visible.length} / Toplam: ${items.length}`;
 
       filterFavBtn.classList.toggle("on", filterFav);
       filterSelBtn.classList.toggle("on", filterSel);
@@ -895,20 +937,31 @@
       filterFavBtn.setAttribute("aria-pressed",  String(filterFav));
       filterSelBtn.setAttribute("aria-pressed",  String(filterSel));
 
-      listEl.innerHTML = "";
-
-      const toMeasure = (sortMode === "dur") ? items : visible;
-      for (const it of toMeasure){
-        if (!(durs[it.id] > 0)) requestDuration(it);
+      // observer reset (listeyi yeniden çiziyoruz)
+      if (rowObserver){
+        rowObserver.disconnect();
+        rowObserver = null;
       }
+      ensureObserver();
+
+      listEl.innerHTML = "";
 
       for (const it of visible){
         const row = document.createElement("div");
         row.className = "itemRow" + (it.id === activeId ? " active" : "");
+        row.setAttribute("data-id", it.id);
+
+        // ✅ erişilebilirlik
+        row.setAttribute("role", "button");
+        row.setAttribute("tabindex", "0");
+        row.setAttribute("aria-label", `Çal: ${it.title}`);
 
         const title = document.createElement("div");
         title.className = "title";
         title.textContent = it.title;
+
+        const spacer = document.createElement("div");
+        spacer.className = "colSpacer";
 
         const dur = document.createElement("div");
         dur.className = "dur";
@@ -917,9 +970,9 @@
         const actions = document.createElement("div");
         actions.className = "actions";
 
-        const favBtn = iconButton("star", !!favs[it.id], "Favori");
-        const selBtn = iconButton("check", !!sels[it.id], "Seç");
-        const dlBtn  = iconButton("download", false, "İndir");
+        const favBtn = iconButton("star", !!favs[it.id], "Favori", `Favori: ${it.title}`);
+        const selBtn = iconButton("check", !!sels[it.id], "Seç", `Seç: ${it.title}`);
+        const dlBtn  = iconButton("download", false, "İndir", `İndir: ${it.title}`);
 
         favBtn.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -951,19 +1004,36 @@
         actions.appendChild(dlBtn);
 
         row.appendChild(title);
+        row.appendChild(spacer);
         row.appendChild(dur);
         row.appendChild(actions);
 
         row.addEventListener("click", () => playById(it.id));
+
+        // ✅ klavye: Enter / Space ile çal
+        row.addEventListener("keydown", (e) => {
+          if (e.code === "Enter" || e.code === "Space"){
+            e.preventDefault();
+            playById(it.id);
+          }
+        });
+
         listEl.appendChild(row);
+
+        // ✅ görünür olunca süre iste
+        rowObserver.observe(row);
       }
+
+      // dur sort açıkken arka planda tamamla
+      warmAllDurations();
     }
 
-    function iconButton(kind, on, title){
+    function iconButton(kind, on, title, ariaLabel){
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "iconBtn" + (on ? " on" : "");
       btn.title = title;
+      btn.setAttribute("aria-label", ariaLabel || title);
 
       if (kind === "star"){
         btn.innerHTML = `
@@ -1015,13 +1085,10 @@
         sources: [{ src: url, type: mime }]
       };
 
-      // kaynak değişince plyr bazı yerlerde speed'i resetleyebilir → tekrar uygula
       const currentSpeed = SPEEDS[speedIndex] || 1;
 
       const tryPlay = () => {
-        // speed'i her ihtimale karşı tekrar set et
         plyr.speed = currentSpeed;
-
         const p = plyr.play();
         if (p && typeof p.catch === "function"){
           p.catch(() => {
@@ -1063,12 +1130,8 @@
     prevBtn.addEventListener("click", playPrev);
     nextBtn.addEventListener("click", playNext);
 
-    // ✅ Kayıt bitince otomatik sonraki (Plyr event’i daha stabil)
-    plyr.on("ended", () => {
-      setTimeout(() => playNext(), 0);
-    });
+    plyr.on("ended", () => { setTimeout(() => playNext(), 0); });
 
-    // ✅ Klavye kısayolları
     document.addEventListener("keydown", (e) => {
       const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
       const inTyping = (tag === "input" || tag === "textarea");
@@ -1130,7 +1193,6 @@
     let startX = 0, startY = 0, startLeft = 0, startTop = 0;
 
     fpHeader.addEventListener("pointerdown", (e) => {
-      // sağ taraftaki butonlara basınca sürükleme başlamasın (speed + prev/next)
       if (e.target && e.target.closest && e.target.closest("#fpHeaderRight")) return;
 
       dragging = true;
@@ -1168,7 +1230,6 @@
 
       fp.style.left = nx + "px";
       fp.style.top = ny + "px";
-
       savePlayerPos(nx, ny);
     });
 
