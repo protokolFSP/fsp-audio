@@ -17,19 +17,13 @@
       --shadow: 0 12px 30px rgba(0,0,0,.12);
     }
 
-    /* ✅ iOS Safari font şişirmesini KAPAT + %30 küçültmeyi ZORLA */
-    html{
-      -webkit-text-size-adjust: 70%;
-      text-size-adjust: 70%;
-    }
     body{
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 18px;
       max-width: 980px;
       color:#111;
       background: var(--bg);
-      line-height: 1.18;
-      font-size: 70% !important; /* ✅ kesin %30 küçülme (iOS dahil) */
+      line-height: 1.10;
     }
 
     h1{
@@ -37,7 +31,6 @@
       margin: 0 0 12px 0;
       font-weight: 650;
       letter-spacing: .2px;
-      line-height: 1.05;
     }
 
     .topbar{
@@ -56,7 +49,6 @@
       border-radius: 14px;
       font-size: 1rem;
       outline: none;
-      line-height: 1.12;
     }
 
     #resetBtn{
@@ -67,23 +59,22 @@
       cursor: pointer;
       font-size: 1rem;
       flex: 0 0 auto;
-      line-height: 1.12;
     }
     #resetBtn:hover{ background: var(--hover); }
 
     #meta{
       color: var(--muted);
-      font-size: .68rem;
+      font-size: .95rem;
       margin: 6px 0 12px 2px;
-      line-height: 1.12;
+      line-height: 1.05;
     }
 
-    /* ✅ Süreyi sağa yaklaştır (spacer büyütüldü) */
+    /* ✅ Grid: Süre kolonu + aksiyonlar "max-content" => ⭐ kolonu süreye sıfıra sıfır yanaşır */
     .headerRow, .itemRow{
       display: grid;
-      grid-template-columns: 1fr 2fr 110px 260px; /* Kayıt | spacer | Süre | İşlemler */
+      grid-template-columns: minmax(0, 1fr) max-content max-content; /* Kayıt | Süre | İşlemler */
       align-items: center;
-      column-gap: 10px;
+      column-gap: 8px;
     }
 
     .headerRow{
@@ -91,8 +82,8 @@
       border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
       color: var(--muted);
-      font-size: .66rem;
-      line-height: 1.12;
+      font-size: .92rem;
+      line-height: 1.05;
     }
 
     .colActions{
@@ -137,50 +128,45 @@
     }
 
     .itemRow{
-      padding: 6px 8px;
+      padding: 4px 8px;
       border-bottom: 1px solid #f2f2f2;
       cursor: pointer;
       background: transparent;
-      outline: none;
     }
     .itemRow:hover{ background: var(--hover); }
     .itemRow.active{ background: var(--active); }
-    .itemRow:focus-visible{
-      box-shadow: 0 0 0 3px rgba(43,124,255,.22) inset;
-      border-radius: 10px;
-    }
 
-    /* ✅ iOS için px ile de sabitle: mutlaka küçülür */
     .title{
-      font-size: 11px !important;
-      font-weight: 600;
-      line-height: 1.18;
+      font-size: 1.02rem;
+      font-weight: 500;
+      line-height: 1.02;
       min-width: 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
 
     .dur{
       text-align:right;
       color: var(--muted);
       font-variant-numeric: tabular-nums;
-      font-size: 11px !important;
+      font-size: .95rem;
       user-select:none;
       white-space: nowrap;
-      line-height: 1.18;
+      line-height: 1.00;
     }
 
     @media (max-width: 680px){
       body{ margin: 14px; }
+
+      /* ✅ Mobilde de aynı mantık: title alanı büyüsün, süre+aksiyonlar içeriğe göre kalsın */
       .headerRow, .itemRow{
-        grid-template-columns: 1fr 1.6fr 82px 190px;
+        grid-template-columns: minmax(0, 1fr) max-content max-content;
+      }
+
+      .title{
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       #search{ flex: 1 1 100%; }
-
-      /* mobilde biraz daha küçük */
-      .title{ font-size: 10px !important; }
-      .dur{ font-size: 10px !important; }
     }
 
     .actions{
@@ -188,6 +174,7 @@
       align-items:center;
       justify-content:flex-end;
       gap: 6px;
+      white-space: nowrap; /* ✅ aksiyonlar tek satır kalsın */
     }
 
     .iconBtn{
@@ -256,18 +243,18 @@
       user-select:none;
       gap: 10px;
       touch-action: none;
-      line-height: 1.12;
+      line-height: 1.05;
     }
 
     #fpTitle{
-      font-weight: 650;
+      font-weight: 600;
       font-size: 1rem;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       flex: 1 1 auto;
       min-width: 0;
-      line-height: 1.12;
+      line-height: 1.05;
     }
 
     #fpHeaderRight{
@@ -291,6 +278,7 @@
     .miniBtn:hover{ background: var(--hover); }
     .miniBtn svg{ width:16px; height:16px; }
 
+    /* Speed controls (🐢 / speed / 🐇) */
     .speedWrap{
       display:flex;
       align-items:center;
@@ -329,7 +317,6 @@
       font-weight: 650;
       padding: 0 10px;
       cursor: default;
-      line-height: 1;
     }
     .speedValue.on{
       border-color:#2b7cff;
@@ -344,7 +331,7 @@
       margin: 8px 2px 0 2px;
       color: var(--muted);
       font-size: .92rem;
-      line-height: 1.2;
+      line-height: 1.05;
     }
 
     .plyr--audio .plyr__controls{
@@ -361,7 +348,7 @@
     <button id="resetBtn" type="button">Hepsi</button>
   </div>
 
-  <div id="meta">Görünen: 0 / Toplam: 0</div>
+  <div id="meta">Görünən: 0 / Toplam: 0</div>
 
   <div class="headerRow">
     <div class="colTitle">
@@ -375,8 +362,6 @@
       </div>
     </div>
 
-    <div class="colSpacer"></div>
-
     <div class="colDur" style="text-align:right;">
       <div class="durHead">
         <span>Süre</span>
@@ -389,13 +374,13 @@
     </div>
 
     <div class="colActions">
-      <button id="filterFav" class="filterBtn" title="Favoriler filtrele" type="button" aria-pressed="false" aria-label="Favoriler filtrele">
+      <button id="filterFav" class="filterBtn" title="Favoriler filtrele" type="button" aria-pressed="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
         </svg>
       </button>
 
-      <button id="filterSel" class="filterBtn" title="Seçilenler filtrele" type="button" aria-pressed="false" aria-label="Seçilenler filtrele">
+      <button id="filterSel" class="filterBtn" title="Seçilenler filtrele" type="button" aria-pressed="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M20 6L9 17l-5-5"/>
         </svg>
@@ -410,18 +395,19 @@
     <div id="fpHeader" title="Sürükle">
       <div id="fpTitle">Bir kayıt seç...</div>
       <div id="fpHeaderRight">
+        <!-- ✅ Speed: 🐢 / value / 🐇 -->
         <div id="speedWrap" class="speedWrap" aria-label="Hız">
-          <button id="slowBtn" class="speedCtlBtn" type="button" title="Yavaşlat (🐢)" aria-label="Yavaşlat">🐢</button>
+          <button id="slowBtn" class="speedCtlBtn" type="button" title="Yavaşlat (🐢)">🐢</button>
           <div id="speedValue" class="speedValue on" title="Oynatma hızı">1×</div>
-          <button id="fastBtn" class="speedCtlBtn" type="button" title="Hızlandır (🐇)" aria-label="Hızlandır">🐇</button>
+          <button id="fastBtn" class="speedCtlBtn" type="button" title="Hızlandır (🐇)">🐇</button>
         </div>
 
-        <button id="prevBtn" class="miniBtn" type="button" title="Önceki" aria-label="Önceki">
+        <button id="prevBtn" class="miniBtn" type="button" title="Önceki">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 20L9 12l10-8v16z"/><path d="M5 19V5"/>
           </svg>
         </button>
-        <button id="nextBtn" class="miniBtn" type="button" title="Sonraki" aria-label="Sonraki">
+        <button id="nextBtn" class="miniBtn" type="button" title="Sonraki">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M5 4l10 8-10 8V4z"/><path d="M19 5v14"/>
           </svg>
@@ -436,10 +422,17 @@
   <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
   <script>
-    // (JS SENİN SON HALİNLE AYNI — DEĞİŞMEDİ)
+    // =========================
+    // AYARLAR
+    // =========================
     const IA_IDENTIFIER = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
-    const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
 
+    // Worker, Content-Disposition: attachment döndürür => tarayıcı indirmeye mecbur kalır.
+    const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/"; // varsa bırak
+
+    // =========================
+    // DOM
+    // =========================
     const listEl   = document.getElementById("list");
     const searchEl = document.getElementById("search");
     const metaEl   = document.getElementById("meta");
@@ -453,6 +446,7 @@
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
 
+    // Speed controls
     const slowBtn = document.getElementById("slowBtn");
     const fastBtn = document.getElementById("fastBtn");
     const speedValueEl = document.getElementById("speedValue");
@@ -466,11 +460,24 @@
     const sortDateBtn  = document.getElementById("sortDateBtn");
     const sortDateIcon = document.getElementById("sortDateIcon");
 
+    // ✅ Popup "settings/speed" YOK — hız bizim butonlarda
     const plyr = new Plyr(playerEl, {
       seekTime: 5,
-      controls: ["rewind","play","fast-forward","progress","current-time","duration","mute","volume"]
+      controls: [
+        "rewind",
+        "play",
+        "fast-forward",
+        "progress",
+        "current-time",
+        "duration",
+        "mute",
+        "volume"
+      ]
     });
 
+    // =========================
+    // LOCAL STORAGE
+    // =========================
     const LS = {
       favs:  "fsp.favs.v1",
       sels:  "fsp.sels.v1",
@@ -499,21 +506,28 @@
     let durSortDir  = (localStorage.getItem(LS.sortDirDur) === "desc") ? "desc" : "asc";
     let dateSortDir = (localStorage.getItem(LS.sortDirDate) === "desc") ? "desc" : "asc";
 
+    // =========================
+    // SPEED (🐢 / 🐇) — 0.5 0.75 0.9 1 1.25 1.5 1.75
+    // =========================
     const SPEEDS = [0.5, 0.75, 0.9, 1, 1.25, 1.5, 1.75];
     let speedIndex = SPEEDS.indexOf(1);
 
     function fmtSpeed(v){
+      // 0.9 gibi değerleri kısa göster
       const s = (Math.round(v * 100) / 100).toString();
       return s.replace(/\.0+$/,"") + "×";
     }
+
     function setSpeedUI(v){
       speedValueEl.textContent = fmtSpeed(v);
+      // küçük vurgu her zaman kalsın
       speedValueEl.classList.add("on");
       slowBtn.disabled = (speedIndex <= 0);
       fastBtn.disabled = (speedIndex >= SPEEDS.length - 1);
       slowBtn.style.opacity = slowBtn.disabled ? 0.45 : 1;
       fastBtn.style.opacity = fastBtn.disabled ? 0.45 : 1;
     }
+
     function applySpeedByIndex(idx){
       speedIndex = Math.max(0, Math.min(SPEEDS.length - 1, idx));
       const v = SPEEDS[speedIndex];
@@ -521,6 +535,7 @@
       localStorage.setItem(LS.speed, String(v));
       setSpeedUI(v);
     }
+
     function restoreSpeed(){
       const saved = Number(localStorage.getItem(LS.speed) || "1");
       if (Number.isFinite(saved)){
@@ -530,9 +545,20 @@
         applySpeedByIndex(SPEEDS.indexOf(1));
       }
     }
-    slowBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex - 1); });
-    fastBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex + 1); });
 
+    slowBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      applySpeedByIndex(speedIndex - 1);
+    });
+
+    fastBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      applySpeedByIndex(speedIndex + 1);
+    });
+
+    // =========================
+    // ARAMA: rüveyda ~= ruveyda
+    // =========================
     function foldTR(s){
       s = (s || "").toString();
       s = s.toLocaleLowerCase("tr");
@@ -551,10 +577,12 @@
       return "audio/*";
     }
 
+    // + -> %20 düzelt, details->download çevir vs.
     function normalizeArchiveUrl(u){
       if (!u) return u;
       try{
         const url = new URL(u);
+
         if (url.hostname.includes("archive.org") && url.pathname.startsWith("/details/")){
           const parts = url.pathname.split("/").filter(Boolean);
           const id = parts[1] || "";
@@ -564,10 +592,12 @@
             return `https://archive.org/download/${id}/${fixedName}`;
           }
         }
+
         if (url.hostname.includes("archive.org") && url.pathname.includes("+")){
           url.pathname = url.pathname.replace(/\+/g, "%20");
           return url.toString();
         }
+
         return url.toString();
       }catch{
         return u;
@@ -626,8 +656,10 @@
     function setSortIcons(){
       sortDurBtn.classList.remove("on");
       sortDateBtn.classList.remove("on");
+
       sortDurIcon.innerHTML = arrowSvg(durSortDir === "asc");
       sortDateIcon.innerHTML = arrowSvg(dateSortDir === "asc");
+
       if (sortMode === "dur") sortDurBtn.classList.add("on");
       if (sortMode === "date") sortDateBtn.classList.add("on");
     }
@@ -652,6 +684,9 @@
       render();
     });
 
+    // =========================
+    // SÜRE OKUMA (metadata)
+    // =========================
     const durQueue = [];
     const durLoading = new Set();
     let durActive = 0;
@@ -679,10 +714,12 @@
       while (durActive < DUR_CONCURRENCY && durQueue.length){
         const it = durQueue.shift();
         durActive++;
-        loadDurationFor(it).catch(() => {}).finally(() => {
-          durActive--;
-          pumpDurationQueue();
-        });
+        loadDurationFor(it)
+          .catch(() => {})
+          .finally(() => {
+            durActive--;
+            pumpDurationQueue();
+          });
       }
     }
 
@@ -728,42 +765,9 @@
       });
     }
 
-    let rowObserver = null;
-    function ensureObserver(){
-      if (rowObserver) return;
-      rowObserver = new IntersectionObserver((entries) => {
-        for (const ent of entries){
-          if (!ent.isIntersecting) continue;
-          const id = ent.target.getAttribute("data-id");
-          const it = items.find(x => x.id === id);
-          if (it) requestDuration(it);
-          rowObserver.unobserve(ent.target);
-        }
-      }, { root: null, threshold: 0.05 });
-    }
-
-    let warmAllTimer = null;
-    function warmAllDurations(){
-      if (sortMode !== "dur") return;
-      if (warmAllTimer) return;
-
-      const unknown = items.filter(it => !(durs[it.id] > 0) && !durLoading.has(it.id));
-      if (!unknown.length) return;
-
-      const chunk = 8;
-      const step = () => {
-        if (sortMode !== "dur"){ warmAllTimer = null; return; }
-        let n = 0;
-        while (n < chunk && unknown.length){
-          const it = unknown.shift();
-          requestDuration(it);
-          n++;
-        }
-        warmAllTimer = unknown.length ? setTimeout(step, 200) : null;
-      };
-      warmAllTimer = setTimeout(step, 250);
-    }
-
+    // =========================
+    // DOWNLOAD (22-23 mantığı)
+    // =========================
     function makeProxyUrl(fileUrl, filename){
       const u = DL_PROXY + "?u=" + encodeURIComponent(fileUrl);
       return filename ? (u + "&f=" + encodeURIComponent(filename)) : u;
@@ -775,6 +779,7 @@
       a.rel = "noopener";
       a.target = "_self";
       if (filename) a.download = filename;
+
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -782,7 +787,12 @@
 
     async function forceDownload(fileUrl, filename){
       const proxied = makeProxyUrl(fileUrl, filename);
-      try{ clickDownload(proxied, filename); return; }catch{}
+
+      try{
+        clickDownload(proxied, filename);
+        return;
+      }catch{}
+
       try{
         const res = await fetch(proxied, { mode: "cors", cache: "no-store" });
         if (!res.ok) throw new Error("fetch failed");
@@ -791,11 +801,13 @@
         clickDownload(url, filename);
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
       }catch(err){
-        statusEl.textContent = "İndirme proxy başarısız; doğrudan bağlantı açılıyor.";
         window.location.href = fileUrl;
       }
     }
 
+    // =========================
+    // IA METADATA -> LISTE
+    // =========================
     async function loadItems(){
       statusEl.textContent = "Yükleniyor...";
       try{
@@ -805,6 +817,7 @@
         const j = await res.json();
 
         const files = Array.isArray(j.files) ? j.files : [];
+
         const audio = files
           .filter(f => {
             const name = (f.name || "").toLowerCase();
@@ -814,15 +827,15 @@
           })
           .map((f, idx) => {
             const name = f.name || "";
-            const title = (f.title || "").trim() || (name.split("/").pop() || name);
+            const title = (f.title || "").trim() || decodeURIComponentSafe(name.split("/").pop() || name);
             const url = buildDownloadUrl(IA_IDENTIFIER, name);
             const id = name || url || (title + "#" + idx);
             return { id, name, title, url };
           });
 
         audio.sort((a,b) => a.title.localeCompare(b.title, "tr"));
-        items = audio;
 
+        items = audio;
         statusEl.textContent = "";
         render();
       }catch(err){
@@ -831,6 +844,13 @@
       }
     }
 
+    function decodeURIComponentSafe(s){
+      try { return decodeURIComponent(s); } catch { return s; }
+    }
+
+    // =========================
+    // FILTER + SORT + RENDER
+    // =========================
     function getVisibleItems(){
       const q = foldTR((searchEl.value || "").trim());
 
@@ -855,7 +875,7 @@
           return a.title.localeCompare(b.title, "tr");
         });
       } else if (sortMode === "date"){
-        const dir = (dateSortDir === "asc") ? -1 : 1;
+        const dir = (dateSortDir === "asc") ? 1 : -1;
         arr.sort((a,b) => {
           const ta = parseEndDate(a);
           const tb = parseEndDate(b);
@@ -874,7 +894,7 @@
 
     function render(){
       const visible = getVisibleItems();
-      metaEl.textContent = `Görünen: ${visible.length} / Toplam: ${items.length}`;
+      metaEl.textContent = `Görünən: ${visible.length} / Toplam: ${items.length}`;
 
       filterFavBtn.classList.toggle("on", filterFav);
       filterSelBtn.classList.toggle("on", filterSel);
@@ -882,27 +902,20 @@
       filterFavBtn.setAttribute("aria-pressed",  String(filterFav));
       filterSelBtn.setAttribute("aria-pressed",  String(filterSel));
 
-      if (rowObserver){
-        rowObserver.disconnect();
-        rowObserver = null;
-      }
-      ensureObserver();
-
       listEl.innerHTML = "";
+
+      const toMeasure = (sortMode === "dur") ? items : visible;
+      for (const it of toMeasure){
+        if (!(durs[it.id] > 0)) requestDuration(it);
+      }
 
       for (const it of visible){
         const row = document.createElement("div");
         row.className = "itemRow" + (it.id === activeId ? " active" : "");
-        row.setAttribute("data-id", it.id);
-        row.setAttribute("role", "button");
-        row.setAttribute("tabindex", "0");
 
         const title = document.createElement("div");
         title.className = "title";
         title.textContent = it.title;
-
-        const spacer = document.createElement("div");
-        spacer.className = "colSpacer";
 
         const dur = document.createElement("div");
         dur.className = "dur";
@@ -935,28 +948,22 @@
           forceDownload(it.url, filename);
         });
 
+        for (const b of [favBtn, selBtn, dlBtn]){
+          b.addEventListener("pointerup", (e) => e.stopPropagation());
+          b.addEventListener("pointerdown", (e) => e.stopPropagation());
+        }
+
         actions.appendChild(favBtn);
         actions.appendChild(selBtn);
         actions.appendChild(dlBtn);
 
         row.appendChild(title);
-        row.appendChild(spacer);
         row.appendChild(dur);
         row.appendChild(actions);
 
         row.addEventListener("click", () => playById(it.id));
-        row.addEventListener("keydown", (e) => {
-          if (e.code === "Enter" || e.code === "Space"){
-            e.preventDefault();
-            playById(it.id);
-          }
-        });
-
         listEl.appendChild(row);
-        rowObserver.observe(row);
       }
-
-      warmAllDurations();
     }
 
     function iconButton(kind, on, title){
@@ -986,6 +993,9 @@
       return btn;
     }
 
+    // =========================
+    // PLAYBACK
+    // =========================
     function playById(id){
       const visible = getVisibleItems();
       const idx = visible.findIndex(x => x.id === id);
@@ -1006,14 +1016,24 @@
       const url = it.url;
       const mime = guessMime(url);
 
-      plyr.source = { type: "audio", title: it.title, sources: [{ src: url, type: mime }] };
+      plyr.source = {
+        type: "audio",
+        title: it.title,
+        sources: [{ src: url, type: mime }]
+      };
 
+      // kaynak değişince plyr bazı yerlerde speed'i resetleyebilir → tekrar uygula
       const currentSpeed = SPEEDS[speedIndex] || 1;
+
       const tryPlay = () => {
+        // speed'i her ihtimale karşı tekrar set et
         plyr.speed = currentSpeed;
+
         const p = plyr.play();
         if (p && typeof p.catch === "function"){
-          p.catch(() => { statusEl.textContent = "Oynatma başlatılamadı. Player’daki ▶︎ tuşuna bas."; });
+          p.catch(() => {
+            statusEl.textContent = "Oynatma başlatılamadı. Player’daki ▶︎ tuşuna bas.";
+          });
         }
       };
 
@@ -1021,9 +1041,12 @@
         playerEl.removeEventListener("canplay", onCanPlay);
         setTimeout(tryPlay, 50);
       };
+
       playerEl.addEventListener("canplay", onCanPlay);
 
-      setTimeout(() => { if (playerEl.paused) tryPlay(); }, 600);
+      setTimeout(() => {
+        if (playerEl.paused) tryPlay();
+      }, 600);
     }
 
     function playPrev(){
@@ -1046,8 +1069,13 @@
 
     prevBtn.addEventListener("click", playPrev);
     nextBtn.addEventListener("click", playNext);
-    plyr.on("ended", () => { setTimeout(() => playNext(), 0); });
 
+    // ✅ Kayıt bitince otomatik sonraki (Plyr event’i daha stabil)
+    plyr.on("ended", () => {
+      setTimeout(() => playNext(), 0);
+    });
+
+    // ✅ Klavye kısayolları
     document.addEventListener("keydown", (e) => {
       const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
       const inTyping = (tag === "input" || tag === "textarea");
@@ -1065,6 +1093,9 @@
       }
     });
 
+    // =========================
+    // Filters
+    // =========================
     filterFavBtn.addEventListener("click", () => { filterFav = !filterFav; render(); });
     filterSelBtn.addEventListener("click", () => { filterSel = !filterSel; render(); });
 
@@ -1072,14 +1103,19 @@
       filterFav = false;
       filterSel = false;
       searchEl.value = "";
+
       sortMode = "title";
       localStorage.setItem(LS.sortMode, sortMode);
+
       setSortIcons();
       render();
     });
 
     searchEl.addEventListener("input", () => render());
 
+    // =========================
+    // DRAGGABLE PLAYER (header)
+    // =========================
     function restorePlayerPos(){
       try{
         const s = JSON.parse(localStorage.getItem(LS.pos) || "null");
@@ -1101,7 +1137,9 @@
     let startX = 0, startY = 0, startLeft = 0, startTop = 0;
 
     fpHeader.addEventListener("pointerdown", (e) => {
+      // sağ taraftaki butonlara basınca sürükleme başlamasın (speed + prev/next)
       if (e.target && e.target.closest && e.target.closest("#fpHeaderRight")) return;
+
       dragging = true;
       fpHeader.setPointerCapture(e.pointerId);
       fpHeader.style.cursor = "grabbing";
@@ -1137,6 +1175,7 @@
 
       fp.style.left = nx + "px";
       fp.style.top = ny + "px";
+
       savePlayerPos(nx, ny);
     });
 
@@ -1146,6 +1185,9 @@
       try { fpHeader.releasePointerCapture(e.pointerId); } catch {}
     });
 
+    // =========================
+    // INIT
+    // =========================
     setSortIcons();
     restorePlayerPos();
     restoreSpeed();
