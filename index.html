@@ -39,6 +39,36 @@
       letter-spacing: .2px;
     }
 
+    /* ✅ NAV (Sadece eklendi) */
+    .navRow{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap: wrap;
+      margin: -6px 0 12px 0; /* h1 ile topbar arasına güzel otursun */
+    }
+    .navLink{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid #d8d8d8;
+      background: white;
+      color:#111;
+      text-decoration:none;
+      font-size: .95rem;
+      line-height: 1;
+      user-select:none;
+      transition: background .15s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+    .navLink:hover{ background: var(--hover); }
+    .navLink.on{
+      border-color: var(--blue);
+      background: rgba(43,124,255,.10);
+      box-shadow: 0 0 0 3px rgba(43,124,255,.16) inset;
+    }
+
     .topbar{
       display:flex;
       gap:12px;
@@ -376,6 +406,13 @@
 
 <body>
   <h1>FSP Audio (Güncel)</h1>
+
+  <!-- ✅ SADECE EKLENDİ: üst linkler -->
+  <nav class="navRow" aria-label="Sayfalar">
+    <a class="navLink" href="https://protokolfsp.github.io/fsp-audio/">Güncel</a>
+    <a class="navLink" href="https://protokolfsp.github.io/FSP2022-23/">2022–23</a>
+    <a class="navLink" href="https://protokolfsp.github.io/All-in-One/">All-in-One</a>
+  </nav>
 
   <div class="topbar">
     <input id="search" type="text" placeholder="Arama (ör. ACS, DM, PAVK)..." />
@@ -1238,6 +1275,18 @@
     if (window.visualViewport){
       window.visualViewport.addEventListener("resize", () => clampPlayerToViewport());
     }
+
+    // =========================
+    // ✅ NAV ACTIVE (Sadece eklendi)
+    // =========================
+    (function setActiveNav(){
+      const here = location.href.replace(/\/$/, "");
+      document.querySelectorAll(".navRow .navLink").forEach(a => {
+        const u = (a.getAttribute("href") || "").replace(/\/$/, "");
+        if (!u) return;
+        if (here === u || here.startsWith(u + "/")) a.classList.add("on");
+      });
+    })();
 
     // =========================
     // INIT
