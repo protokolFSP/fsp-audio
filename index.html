@@ -16,7 +16,7 @@
       --active:#e8f3ff;
       --shadow: 0 12px 30px rgba(0,0,0,.12);
 
-      /* daha belirgin seçim vurgusu */
+      /* belirgin seçim vurgusu */
       --blue:#2b7cff;
       --blueGlow: 0 0 0 4px rgba(43,124,255,.24), 0 10px 22px rgba(43,124,255,.10);
       --green:#16a34a;
@@ -75,10 +75,10 @@
       line-height: 1.05;
     }
 
-    /* ✅ Grid: 2. kolon sabit (ch) => header ikonları kendi kolonu ile tam hizalanır */
+    /* ✅ Grid: aksiyonlar 3 ayrı kolon (⭐ | ✓ | ⬇︎) */
     .headerRow, .itemRow{
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 8ch max-content; /* Kayıt | Süre | İşlemler */
+      grid-template-columns: minmax(0, 1fr) 8ch 36px 36px 36px; /* Kayıt | Süre | ⭐ | ✓ | ⬇︎ */
       align-items: center;
       column-gap: 8px;
     }
@@ -92,24 +92,22 @@
       line-height: 1.05;
     }
 
-    .colActions{
-      display:flex;
-      align-items:center;
-      justify-content:flex-end;
-      gap:6px;               /* ✅ satırdaki actions ile aynı */
-      user-select:none;
-      white-space: nowrap;
-    }
-
     .titleHead, .durHead{
       display:flex;
       align-items:center;
       gap:8px;
       user-select:none;
-      width: 100%;           /* ✅ kendi kolonu tam doldur */
+      width: 100%;
     }
     .titleHead{ justify-content:flex-start; }
-    .durHead{ justify-content:flex-end; } /* ✅ "Süre" + ikon sağa tam hizalı */
+    .durHead{ justify-content:flex-end; }
+
+    .headIconCell{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      user-select:none;
+    }
 
     .sortBtn{
       width: 28px;
@@ -165,7 +163,7 @@
       body{ margin: 14px; }
 
       .headerRow, .itemRow{
-        grid-template-columns: minmax(0, 1fr) 8ch max-content;
+        grid-template-columns: minmax(0, 1fr) 8ch 36px 36px 36px;
       }
 
       .title{
@@ -174,14 +172,6 @@
         text-overflow: ellipsis;
       }
       #search{ flex: 1 1 100%; }
-    }
-
-    .actions{
-      display:flex;
-      align-items:center;
-      justify-content:flex-end;
-      gap: 6px;
-      white-space: nowrap;
     }
 
     .iconBtn{
@@ -194,9 +184,9 @@
       align-items:center;
       justify-content:center;
       cursor: pointer;
-      flex: 0 0 auto;
       user-select:none;
-      transition: box-shadow .15s ease, border-color .15s ease, background .15s ease, transform .05s ease;
+      transition: box-shadow .15s ease, border-color .15s ease, background .15s ease;
+      justify-self: center; /* ✅ grid hücresinin ortasına */
     }
     .iconBtn:hover{ background: var(--hover); }
 
@@ -206,9 +196,8 @@
       background: rgba(43,124,255,.10);
       box-shadow: var(--blueGlow);
     }
-    .iconBtn.on svg{ opacity: 1; }
 
-    /* ✅ Seçim (✓) daha da net olsun: yeşil vurgu */
+    /* ✅ Seçim (✓) daha da net: yeşil vurgu */
     .iconBtn[data-kind="check"].on{
       border-color: var(--green);
       background: rgba(22,163,74,.14);
@@ -216,12 +205,7 @@
     }
     .iconBtn[data-kind="check"].on svg{
       stroke: var(--green);
-      stroke-width: 2.5;
-    }
-
-    /* Favori (⭐) seçilince dolu görünsün + biraz koyulaşsın */
-    .iconBtn[data-kind="star"].on svg{
-      opacity: 1;
+      stroke-width: 2.6;
     }
 
     .iconBtn svg{ width: 14px; height: 14px; opacity: .9; }
@@ -248,8 +232,11 @@
     /* Floating player */
     #floatingPlayer{
       position: fixed;
-      left: 18px;
-      bottom: 18px;
+
+      /* ✅ iOS safe-area + default konum */
+      left: max(18px, env(safe-area-inset-left));
+      bottom: max(18px, env(safe-area-inset-bottom));
+
       width: min(720px, calc(100vw - 36px));
       background: white;
       border: 1px solid #e0e0e0;
@@ -367,7 +354,7 @@
       border-radius: 12px;
     }
 
-    /* ✅ Mobilde player başlığı daha uzun görünsün (2 satıra kadar) */
+    /* ✅ Mobilde player başlığı daha uzun görünsün */
     @media (max-width: 680px){
       #fpHeader{
         flex-wrap: wrap;
@@ -397,6 +384,7 @@
 
   <div id="meta">Görünən: 0 / Toplam: 0</div>
 
+  <!-- ✅ Header: Kayıt | Süre | ⭐ | ✓ | (boş) -->
   <div class="headerRow">
     <div class="colTitle">
       <div class="titleHead">
@@ -420,19 +408,23 @@
       </div>
     </div>
 
-    <div class="colActions">
+    <div class="headIconCell">
       <button id="filterFav" class="filterBtn" title="Favoriler filtrele" type="button" aria-pressed="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
         </svg>
       </button>
+    </div>
 
+    <div class="headIconCell">
       <button id="filterSel" class="filterBtn" title="Seçilenler filtrele" type="button" aria-pressed="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M20 6L9 17l-5-5"/>
         </svg>
       </button>
     </div>
+
+    <div class="headIconCell" aria-hidden="true"></div>
   </div>
 
   <div id="list"></div>
@@ -472,9 +464,7 @@
     // AYARLAR
     // =========================
     const IA_IDENTIFIER = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
-
-    // Worker, Content-Disposition: attachment döndürür => tarayıcı indirmeye mecbur kalır.
-    const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/"; // varsa bırak
+    const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
 
     // =========================
     // DOM
@@ -492,7 +482,6 @@
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
 
-    // Speed controls
     const slowBtn = document.getElementById("slowBtn");
     const fastBtn = document.getElementById("fastBtn");
     const speedValueEl = document.getElementById("speedValue");
@@ -506,7 +495,6 @@
     const sortDateBtn  = document.getElementById("sortDateBtn");
     const sortDateIcon = document.getElementById("sortDateIcon");
 
-    // ✅ Popup "settings/speed" YOK — hız bizim butonlarda
     const plyr = new Plyr(playerEl, {
       seekTime: 5,
       controls: [
@@ -553,7 +541,7 @@
     let dateSortDir = (localStorage.getItem(LS.sortDirDate) === "desc") ? "desc" : "asc";
 
     // =========================
-    // SPEED (🐢 / 🐇) — 0.5 0.75 0.9 1 1.25 1.5 1.75
+    // SPEED
     // =========================
     const SPEEDS = [0.5, 0.75, 0.9, 1, 1.25, 1.5, 1.75];
     let speedIndex = SPEEDS.indexOf(1);
@@ -590,18 +578,11 @@
       }
     }
 
-    slowBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      applySpeedByIndex(speedIndex - 1);
-    });
-
-    fastBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      applySpeedByIndex(speedIndex + 1);
-    });
+    slowBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex - 1); });
+    fastBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex + 1); });
 
     // =========================
-    // ARAMA: rüveyda ~= ruveyda
+    // ARAMA
     // =========================
     function foldTR(s){
       s = (s || "").toString();
@@ -728,7 +709,7 @@
     });
 
     // =========================
-    // SÜRE OKUMA (metadata)
+    // SÜRE OKUMA
     // =========================
     const durQueue = [];
     const durLoading = new Set();
@@ -822,7 +803,6 @@
       a.rel = "noopener";
       a.target = "_self";
       if (filename) a.download = filename;
-
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -964,9 +944,6 @@
         dur.className = "dur";
         dur.textContent = (durs[it.id] > 0) ? fmtDur(durs[it.id]) : "…";
 
-        const actions = document.createElement("div");
-        actions.className = "actions";
-
         const favBtn = iconButton("star", !!favs[it.id], "Favori");
         const selBtn = iconButton("check", !!sels[it.id], "Seç");
         const dlBtn  = iconButton("download", false, "İndir");
@@ -996,13 +973,11 @@
           b.addEventListener("pointerdown", (e) => e.stopPropagation());
         }
 
-        actions.appendChild(favBtn);
-        actions.appendChild(selBtn);
-        actions.appendChild(dlBtn);
-
         row.appendChild(title);
         row.appendChild(dur);
-        row.appendChild(actions);
+        row.appendChild(favBtn);
+        row.appendChild(selBtn);
+        row.appendChild(dlBtn);
 
         row.addEventListener("click", () => playById(it.id));
         listEl.appendChild(row);
@@ -1014,7 +989,7 @@
       btn.type = "button";
       btn.className = "iconBtn" + (on ? " on" : "");
       btn.title = title;
-      btn.dataset.kind = kind; // ✅ CSS ile türe göre vurgu (özellikle ✓)
+      btn.dataset.kind = kind;
 
       if (kind === "star"){
         btn.innerHTML = `
@@ -1111,9 +1086,7 @@
     prevBtn.addEventListener("click", playPrev);
     nextBtn.addEventListener("click", playNext);
 
-    plyr.on("ended", () => {
-      setTimeout(() => playNext(), 0);
-    });
+    plyr.on("ended", () => { setTimeout(() => playNext(), 0); });
 
     document.addEventListener("keydown", (e) => {
       const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
@@ -1153,7 +1126,7 @@
     searchEl.addEventListener("input", () => render());
 
     // =========================
-    // DRAGGABLE PLAYER (header)
+    // DRAGGABLE PLAYER + "KAYBOLMA" FIX (clamp)
     // =========================
     function restorePlayerPos(){
       try{
@@ -1170,6 +1143,37 @@
 
     function savePlayerPos(x,y){
       localStorage.setItem(LS.pos, JSON.stringify({x,y}));
+    }
+
+    function clampPlayerToViewport(){
+      // iOS Safari’de adres çubuğu/toolbar için visualViewport daha güvenli
+      const vv = window.visualViewport;
+      const vw = (vv && vv.width)  ? vv.width  : window.innerWidth;
+      const vh = (vv && vv.height) ? vv.height : window.innerHeight;
+
+      const w = fp.offsetWidth;
+      const h = fp.offsetHeight;
+
+      const minX = 8;
+      const minY = 8;
+      const maxX = Math.max(minX, vw - w - 8);
+      const maxY = Math.max(minY, vh - h - 8);
+
+      const left = parseFloat(fp.style.left);
+      const top  = parseFloat(fp.style.top);
+
+      // left/top set değilse (default bottom/left) dokunma
+      if (!Number.isFinite(left) || !Number.isFinite(top)) return;
+
+      const nx = Math.min(maxX, Math.max(minX, left));
+      const ny = Math.min(maxY, Math.max(minY, top));
+
+      fp.style.left = nx + "px";
+      fp.style.top  = ny + "px";
+      fp.style.right = "auto";
+      fp.style.bottom = "auto";
+
+      savePlayerPos(nx, ny);
     }
 
     let dragging = false;
@@ -1221,13 +1225,28 @@
       dragging = false;
       fpHeader.style.cursor = "grab";
       try { fpHeader.releasePointerCapture(e.pointerId); } catch {}
+      // sürükleme bitince de clamp (adres çubuğu oynadıysa)
+      clampPlayerToViewport();
     });
+
+    // ✅ Orientation/resize sonrası player ekrandan çıkmasın
+    window.addEventListener("resize", () => clampPlayerToViewport());
+    window.addEventListener("orientationchange", () => {
+      // iOS’ta ölçüler 1-2 frame sonra oturuyor
+      setTimeout(clampPlayerToViewport, 150);
+    });
+    if (window.visualViewport){
+      window.visualViewport.addEventListener("resize", () => clampPlayerToViewport());
+    }
 
     // =========================
     // INIT
     // =========================
     setSortIcons();
     restorePlayerPos();
+    // restore sonrası viewport'a oturt
+    setTimeout(clampPlayerToViewport, 0);
+
     restoreSpeed();
     loadItems();
   </script>
