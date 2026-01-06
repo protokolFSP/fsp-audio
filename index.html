@@ -15,6 +15,12 @@
       --hover:#f7f7f7;
       --active:#e8f3ff;
       --shadow: 0 12px 30px rgba(0,0,0,.12);
+
+      /* daha belirgin seçim vurgusu */
+      --blue:#2b7cff;
+      --blueGlow: 0 0 0 4px rgba(43,124,255,.24), 0 10px 22px rgba(43,124,255,.10);
+      --green:#16a34a;
+      --greenGlow: 0 0 0 4px rgba(22,163,74,.22), 0 10px 22px rgba(22,163,74,.10);
     }
 
     body{
@@ -69,10 +75,10 @@
       line-height: 1.05;
     }
 
-    /* ✅ Grid: Süre kolonu + aksiyonlar "max-content" => ⭐ kolonu süreye sıfıra sıfır yanaşır */
+    /* ✅ Grid: 2. kolon sabit (ch) => header ikonları kendi kolonu ile tam hizalanır */
     .headerRow, .itemRow{
       display: grid;
-      grid-template-columns: minmax(0, 1fr) max-content max-content; /* Kayıt | Süre | İşlemler */
+      grid-template-columns: minmax(0, 1fr) 8ch max-content; /* Kayıt | Süre | İşlemler */
       align-items: center;
       column-gap: 8px;
     }
@@ -90,8 +96,9 @@
       display:flex;
       align-items:center;
       justify-content:flex-end;
-      gap:10px;
+      gap:6px;               /* ✅ satırdaki actions ile aynı */
       user-select:none;
+      white-space: nowrap;
     }
 
     .titleHead, .durHead{
@@ -99,9 +106,10 @@
       align-items:center;
       gap:8px;
       user-select:none;
+      width: 100%;           /* ✅ kendi kolonu tam doldur */
     }
     .titleHead{ justify-content:flex-start; }
-    .durHead{ justify-content:flex-end; }
+    .durHead{ justify-content:flex-end; } /* ✅ "Süre" + ikon sağa tam hizalı */
 
     .sortBtn{
       width: 28px;
@@ -119,7 +127,7 @@
     .sortBtn:hover{ background: var(--hover); }
     .sortBtn svg{ width:14px; height:14px; }
     .sortBtn.on{
-      border-color:#2b7cff;
+      border-color:var(--blue);
       box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
     }
 
@@ -156,9 +164,8 @@
     @media (max-width: 680px){
       body{ margin: 14px; }
 
-      /* ✅ Mobilde de aynı mantık: title alanı büyüsün, süre+aksiyonlar içeriğe göre kalsın */
       .headerRow, .itemRow{
-        grid-template-columns: minmax(0, 1fr) max-content max-content;
+        grid-template-columns: minmax(0, 1fr) 8ch max-content;
       }
 
       .title{
@@ -174,7 +181,7 @@
       align-items:center;
       justify-content:flex-end;
       gap: 6px;
-      white-space: nowrap; /* ✅ aksiyonlar tek satır kalsın */
+      white-space: nowrap;
     }
 
     .iconBtn{
@@ -189,12 +196,34 @@
       cursor: pointer;
       flex: 0 0 auto;
       user-select:none;
+      transition: box-shadow .15s ease, border-color .15s ease, background .15s ease, transform .05s ease;
     }
     .iconBtn:hover{ background: var(--hover); }
+
+    /* ✅ Daha belirgin ON hali (genel) */
     .iconBtn.on{
-      border-color: #2b7cff;
-      box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
+      border-color: var(--blue);
+      background: rgba(43,124,255,.10);
+      box-shadow: var(--blueGlow);
     }
+    .iconBtn.on svg{ opacity: 1; }
+
+    /* ✅ Seçim (✓) daha da net olsun: yeşil vurgu */
+    .iconBtn[data-kind="check"].on{
+      border-color: var(--green);
+      background: rgba(22,163,74,.14);
+      box-shadow: var(--greenGlow);
+    }
+    .iconBtn[data-kind="check"].on svg{
+      stroke: var(--green);
+      stroke-width: 2.5;
+    }
+
+    /* Favori (⭐) seçilince dolu görünsün + biraz koyulaşsın */
+    .iconBtn[data-kind="star"].on svg{
+      opacity: 1;
+    }
+
     .iconBtn svg{ width: 14px; height: 14px; opacity: .9; }
 
     .filterBtn{
@@ -211,7 +240,7 @@
     }
     .filterBtn:hover{ background: var(--hover); }
     .filterBtn.on{
-      border-color:#2b7cff;
+      border-color:var(--blue);
       box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
     }
     .filterBtn svg{ width:14px; height:14px; }
@@ -247,14 +276,14 @@
     }
 
     #fpTitle{
-      font-weight: 600;
+      font-weight: 650;
       font-size: 1rem;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       flex: 1 1 auto;
       min-width: 0;
-      line-height: 1.05;
+      line-height: 1.12;
     }
 
     #fpHeaderRight{
@@ -319,7 +348,7 @@
       cursor: default;
     }
     .speedValue.on{
-      border-color:#2b7cff;
+      border-color:var(--blue);
       box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
     }
 
@@ -336,6 +365,24 @@
 
     .plyr--audio .plyr__controls{
       border-radius: 12px;
+    }
+
+    /* ✅ Mobilde player başlığı daha uzun görünsün (2 satıra kadar) */
+    @media (max-width: 680px){
+      #fpHeader{
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      #fpTitle{
+        flex: 1 1 100%;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+      }
+      #fpHeaderRight{
+        width: 100%;
+        justify-content: flex-end;
+      }
     }
   </style>
 </head>
@@ -395,7 +442,6 @@
     <div id="fpHeader" title="Sürükle">
       <div id="fpTitle">Bir kayıt seç...</div>
       <div id="fpHeaderRight">
-        <!-- ✅ Speed: 🐢 / value / 🐇 -->
         <div id="speedWrap" class="speedWrap" aria-label="Hız">
           <button id="slowBtn" class="speedCtlBtn" type="button" title="Yavaşlat (🐢)">🐢</button>
           <div id="speedValue" class="speedValue on" title="Oynatma hızı">1×</div>
@@ -513,14 +559,12 @@
     let speedIndex = SPEEDS.indexOf(1);
 
     function fmtSpeed(v){
-      // 0.9 gibi değerleri kısa göster
       const s = (Math.round(v * 100) / 100).toString();
       return s.replace(/\.0+$/,"") + "×";
     }
 
     function setSpeedUI(v){
       speedValueEl.textContent = fmtSpeed(v);
-      // küçük vurgu her zaman kalsın
       speedValueEl.classList.add("on");
       slowBtn.disabled = (speedIndex <= 0);
       fastBtn.disabled = (speedIndex >= SPEEDS.length - 1);
@@ -577,7 +621,6 @@
       return "audio/*";
     }
 
-    // + -> %20 düzelt, details->download çevir vs.
     function normalizeArchiveUrl(u){
       if (!u) return u;
       try{
@@ -766,7 +809,7 @@
     }
 
     // =========================
-    // DOWNLOAD (22-23 mantığı)
+    // DOWNLOAD
     // =========================
     function makeProxyUrl(fileUrl, filename){
       const u = DL_PROXY + "?u=" + encodeURIComponent(fileUrl);
@@ -971,6 +1014,7 @@
       btn.type = "button";
       btn.className = "iconBtn" + (on ? " on" : "");
       btn.title = title;
+      btn.dataset.kind = kind; // ✅ CSS ile türe göre vurgu (özellikle ✓)
 
       if (kind === "star"){
         btn.innerHTML = `
@@ -1022,13 +1066,10 @@
         sources: [{ src: url, type: mime }]
       };
 
-      // kaynak değişince plyr bazı yerlerde speed'i resetleyebilir → tekrar uygula
       const currentSpeed = SPEEDS[speedIndex] || 1;
 
       const tryPlay = () => {
-        // speed'i her ihtimale karşı tekrar set et
         plyr.speed = currentSpeed;
-
         const p = plyr.play();
         if (p && typeof p.catch === "function"){
           p.catch(() => {
@@ -1070,12 +1111,10 @@
     prevBtn.addEventListener("click", playPrev);
     nextBtn.addEventListener("click", playNext);
 
-    // ✅ Kayıt bitince otomatik sonraki (Plyr event’i daha stabil)
     plyr.on("ended", () => {
       setTimeout(() => playNext(), 0);
     });
 
-    // ✅ Klavye kısayolları
     document.addEventListener("keydown", (e) => {
       const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
       const inTyping = (tag === "input" || tag === "textarea");
@@ -1137,7 +1176,6 @@
     let startX = 0, startY = 0, startLeft = 0, startTop = 0;
 
     fpHeader.addEventListener("pointerdown", (e) => {
-      // sağ taraftaki butonlara basınca sürükleme başlamasın (speed + prev/next)
       if (e.target && e.target.closest && e.target.closest("#fpHeaderRight")) return;
 
       dragging = true;
