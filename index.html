@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>FSP Audio (Güncel)</title>
+  <title>FSP Audio — Güncel</title>
 
   <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
 
@@ -16,7 +16,6 @@
       --active:#e8f3ff;
       --shadow: 0 12px 30px rgba(0,0,0,.12);
 
-      /* belirgin seçim vurgusu */
       --blue:#2b7cff;
       --blueGlow: 0 0 0 4px rgba(43,124,255,.24), 0 10px 22px rgba(43,124,255,.10);
       --green:#16a34a;
@@ -39,13 +38,23 @@
       letter-spacing: .2px;
     }
 
-    /* ✅ NAV (Sadece eklendi) */
+    .pageTitle{
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #0b5fff;
+      background: #f1f5ff;
+      padding: 12px 16px;
+      border-radius: 14px;
+      margin-bottom: 14px;
+    }
+
+    /* ✅ NAV */
     .navRow{
       display:flex;
       gap:10px;
       align-items:center;
       flex-wrap: wrap;
-      margin: -6px 0 12px 0; /* h1 ile topbar arasına güzel otursun */
+      margin: 0 0 12px 0;
     }
     .navLink{
       display:inline-flex;
@@ -64,7 +73,7 @@
     }
     .navLink:hover{ background: var(--hover); }
     .navLink.on{
-      border-color: var(--blue);
+      border-color:var(--blue);
       background: rgba(43,124,255,.10);
       box-shadow: 0 0 0 3px rgba(43,124,255,.16) inset;
     }
@@ -105,10 +114,10 @@
       line-height: 1.05;
     }
 
-    /* ✅ Grid: aksiyonlar 3 ayrı kolon (⭐ | ✓ | ⬇︎) */
+    /* ✅ Grid: Kayıt | Süre | ⭐ | ✓ | ⬇︎ */
     .headerRow, .itemRow{
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 8ch 36px 36px 36px; /* Kayıt | Süre | ⭐ | ✓ | ⬇︎ */
+      grid-template-columns: minmax(0, 1fr) 8ch 36px 36px 36px;
       align-items: center;
       column-gap: 8px;
     }
@@ -191,11 +200,7 @@
 
     @media (max-width: 680px){
       body{ margin: 14px; }
-
-      .headerRow, .itemRow{
-        grid-template-columns: minmax(0, 1fr) 8ch 36px 36px 36px;
-      }
-
+      .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 36px 36px 36px; }
       .title{
         white-space: nowrap;
         overflow: hidden;
@@ -216,18 +221,15 @@
       cursor: pointer;
       user-select:none;
       transition: box-shadow .15s ease, border-color .15s ease, background .15s ease;
-      justify-self: center; /* ✅ grid hücresinin ortasına */
+      justify-self: center;
     }
     .iconBtn:hover{ background: var(--hover); }
 
-    /* ✅ Daha belirgin ON hali (genel) */
     .iconBtn.on{
       border-color: var(--blue);
       background: rgba(43,124,255,.10);
       box-shadow: var(--blueGlow);
     }
-
-    /* ✅ Seçim (✓) daha da net: yeşil vurgu */
     .iconBtn[data-kind="check"].on{
       border-color: var(--green);
       background: rgba(22,163,74,.14);
@@ -262,11 +264,8 @@
     /* Floating player */
     #floatingPlayer{
       position: fixed;
-
-      /* ✅ iOS safe-area + default konum */
       left: max(18px, env(safe-area-inset-left));
       bottom: max(18px, env(safe-area-inset-bottom));
-
       width: min(720px, calc(100vw - 36px));
       background: white;
       border: 1px solid #e0e0e0;
@@ -324,7 +323,6 @@
     .miniBtn:hover{ background: var(--hover); }
     .miniBtn svg{ width:16px; height:16px; }
 
-    /* Speed controls (🐢 / speed / 🐇) */
     .speedWrap{
       display:flex;
       align-items:center;
@@ -386,10 +384,7 @@
 
     /* ✅ Mobilde player başlığı daha uzun görünsün */
     @media (max-width: 680px){
-      #fpHeader{
-        flex-wrap: wrap;
-        gap: 8px;
-      }
+      #fpHeader{ flex-wrap: wrap; gap: 8px; }
       #fpTitle{
         flex: 1 1 100%;
         white-space: normal;
@@ -405,11 +400,10 @@
 </head>
 
 <body>
-  <h1>FSP Audio (Güncel)</h1>
+  <h1 class="pageTitle">FSP Audio — Güncel</h1>
 
-  <!-- ✅ SADECE EKLENDİ: üst linkler -->
   <nav class="navRow" aria-label="Sayfalar">
-    <a class="navLink" href="https://protokolfsp.github.io/fsp-audio/">Güncel</a>
+    <a class="navLink on" href="https://protokolfsp.github.io/fsp-audio/">Güncel</a>
     <a class="navLink" href="https://protokolfsp.github.io/FSP2022-23/">2022–23</a>
     <a class="navLink" href="https://protokolfsp.github.io/All-in-One/">All-in-One</a>
   </nav>
@@ -421,7 +415,7 @@
 
   <div id="meta">Görünən: 0 / Toplam: 0</div>
 
-  <!-- ✅ Header: Kayıt | Süre | ⭐ | ✓ | (boş) -->
+  <!-- Header: Kayıt | Süre | ⭐ | ✓ | (boş) -->
   <div class="headerRow">
     <div class="colTitle">
       <div class="titleHead">
@@ -498,9 +492,11 @@
 
   <script>
     // =========================
-    // AYARLAR
+    // GÜNCEL KAYNAK (IA metadata)
     // =========================
-    const IA_IDENTIFIER = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
+    const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
+
+    // Download Worker
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
 
     // =========================
@@ -547,17 +543,17 @@
     });
 
     // =========================
-    // LOCAL STORAGE
+    // LOCAL STORAGE (Güncel için ayrı namespace)
     // =========================
     const LS = {
-      favs:  "fsp.favs.v1",
-      sels:  "fsp.sels.v1",
-      pos:   "fsp.fp.pos.v1",
-      durs:  "fsp.durs.v1",
-      sortMode: "fsp.sort.mode.v2",
-      sortDirDur: "fsp.sort.dur.dir.v2",
-      sortDirDate: "fsp.sort.date.dir.v2",
-      speed: "fsp.speed.v1"
+      favs:  "fsp1.favs.v1",
+      sels:  "fsp1.sels.v1",
+      pos:   "fsp1.fp.pos.v1",
+      durs:  "fsp1.durs.v1",
+      sortMode: "fsp1.sort.mode.v1",
+      sortDirDur: "fsp1.sort.dur.dir.v1",
+      sortDirDate: "fsp1.sort.date.dir.v1",
+      speed: "fsp1.speed.v1"
     };
 
     const loadMap = (k) => { try { return JSON.parse(localStorage.getItem(k) || "{}"); } catch { return {}; } };
@@ -619,7 +615,7 @@
     fastBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex + 1); });
 
     // =========================
-    // ARAMA
+    // HELPERS
     // =========================
     function foldTR(s){
       s = (s || "").toString();
@@ -639,37 +635,6 @@
       return "audio/*";
     }
 
-    function normalizeArchiveUrl(u){
-      if (!u) return u;
-      try{
-        const url = new URL(u);
-
-        if (url.hostname.includes("archive.org") && url.pathname.startsWith("/details/")){
-          const parts = url.pathname.split("/").filter(Boolean);
-          const id = parts[1] || "";
-          const filename = parts.slice(2).join("/") || "";
-          if (id){
-            const fixedName = filename.replace(/\+/g, "%20");
-            return `https://archive.org/download/${id}/${fixedName}`;
-          }
-        }
-
-        if (url.hostname.includes("archive.org") && url.pathname.includes("+")){
-          url.pathname = url.pathname.replace(/\+/g, "%20");
-          return url.toString();
-        }
-
-        return url.toString();
-      }catch{
-        return u;
-      }
-    }
-
-    function buildDownloadUrl(identifier, name){
-      const parts = (name || "").split("/").map(p => encodeURIComponent(p));
-      return normalizeArchiveUrl(`https://archive.org/download/${identifier}/${parts.join("/")}`);
-    }
-
     function fmtDur(sec){
       if (!Number.isFinite(sec) || sec <= 0) return "—";
       sec = Math.round(sec);
@@ -682,8 +647,13 @@
       return `${m}:${ss}`;
     }
 
+    function decodeURIComponentSafe(s){
+      try { return decodeURIComponent(s); } catch { return s; }
+    }
+
+    // dd.mm.yy / dd.mm.yyyy yakala (dosya adı sonu)
     function parseEndDate(item){
-      const raw0 = (item.name || item.title || "").toString();
+      const raw0 = (item.name || item.file || item.title || "").toString();
       let s;
       try { s = decodeURIComponent(raw0.split("/").pop() || raw0); } catch { s = raw0; }
 
@@ -746,7 +716,7 @@
     });
 
     // =========================
-    // SÜRE OKUMA
+    // DURATION LOADER
     // =========================
     const durQueue = [];
     const durLoading = new Set();
@@ -827,7 +797,7 @@
     }
 
     // =========================
-    // DOWNLOAD
+    // DOWNLOAD (worker)
     // =========================
     function makeProxyUrl(fileUrl, filename){
       const u = DL_PROXY + "?u=" + encodeURIComponent(fileUrl);
@@ -847,7 +817,6 @@
 
     async function forceDownload(fileUrl, filename){
       const proxied = makeProxyUrl(fileUrl, filename);
-
       try{
         clickDownload(proxied, filename);
         return;
@@ -866,19 +835,24 @@
     }
 
     // =========================
-    // IA METADATA -> LISTE
+    // LOAD (IA metadata)
     // =========================
+    function buildDownloadUrl(identifier, name){
+      const parts = (name || "").split("/").map(p => encodeURIComponent(p));
+      return `https://archive.org/download/${identifier}/${parts.join("/")}`;
+    }
+
     async function loadItems(){
       statusEl.textContent = "Yükleniyor...";
+
       try{
-        const metaUrl = `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER)}?v=${Date.now()}`;
+        const metaUrl = `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}?v=${Date.now()}`;
         const res = await fetch(metaUrl, { cache: "no-store" });
         if (!res.ok) throw new Error("IA metadata okunamadı");
         const j = await res.json();
 
         const files = Array.isArray(j.files) ? j.files : [];
-
-        const audio = files
+        const list = files
           .filter(f => {
             const name = (f.name || "").toLowerCase();
             if (!(name.endsWith(".m4a") || name.endsWith(".mp3"))) return false;
@@ -888,24 +862,21 @@
           .map((f, idx) => {
             const name = f.name || "";
             const title = (f.title || "").trim() || decodeURIComponentSafe(name.split("/").pop() || name);
-            const url = buildDownloadUrl(IA_IDENTIFIER, name);
-            const id = name || url || (title + "#" + idx);
-            return { id, name, title, url };
+            const url = buildDownloadUrl(IA_IDENTIFIER_1, name);
+            const localId = name || url || (title + "#" + idx);
+            const id = "S1|" + localId;
+            return { id, title, name, url, src: "S1" };
           });
 
-        audio.sort((a,b) => a.title.localeCompare(b.title, "tr"));
+        list.sort((x,y) => x.title.localeCompare(y.title, "tr"));
 
-        items = audio;
-        statusEl.textContent = "";
+        items = list;
+        statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
         render();
       }catch(err){
         console.error(err);
-        statusEl.textContent = "Liste yüklenemedi (IA metadata).";
+        statusEl.textContent = "Liste yüklenemedi.";
       }
-    }
-
-    function decodeURIComponentSafe(s){
-      try { return decodeURIComponent(s); } catch { return s; }
     }
 
     // =========================
@@ -1001,7 +972,9 @@
 
         dlBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-          const filename = (it.name || "").split("/").pop() || "";
+          const filename =
+            (it.name || it.file || "").split("/").pop() ||
+            (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".mp3";
           forceDownload(it.url, filename);
         });
 
@@ -1097,9 +1070,7 @@
 
       playerEl.addEventListener("canplay", onCanPlay);
 
-      setTimeout(() => {
-        if (playerEl.paused) tryPlay();
-      }, 600);
+      setTimeout(() => { if (playerEl.paused) tryPlay(); }, 600);
     }
 
     function playPrev(){
@@ -1163,7 +1134,7 @@
     searchEl.addEventListener("input", () => render());
 
     // =========================
-    // DRAGGABLE PLAYER + "KAYBOLMA" FIX (clamp)
+    // DRAGGABLE PLAYER + clamp fix
     // =========================
     function restorePlayerPos(){
       try{
@@ -1183,7 +1154,6 @@
     }
 
     function clampPlayerToViewport(){
-      // iOS Safari’de adres çubuğu/toolbar için visualViewport daha güvenli
       const vv = window.visualViewport;
       const vw = (vv && vv.width)  ? vv.width  : window.innerWidth;
       const vh = (vv && vv.height) ? vv.height : window.innerHeight;
@@ -1199,7 +1169,6 @@
       const left = parseFloat(fp.style.left);
       const top  = parseFloat(fp.style.top);
 
-      // left/top set değilse (default bottom/left) dokunma
       if (!Number.isFinite(left) || !Number.isFinite(top)) return;
 
       const nx = Math.min(maxX, Math.max(minX, left));
@@ -1262,14 +1231,11 @@
       dragging = false;
       fpHeader.style.cursor = "grab";
       try { fpHeader.releasePointerCapture(e.pointerId); } catch {}
-      // sürükleme bitince de clamp (adres çubuğu oynadıysa)
       clampPlayerToViewport();
     });
 
-    // ✅ Orientation/resize sonrası player ekrandan çıkmasın
     window.addEventListener("resize", () => clampPlayerToViewport());
     window.addEventListener("orientationchange", () => {
-      // iOS’ta ölçüler 1-2 frame sonra oturuyor
       setTimeout(clampPlayerToViewport, 150);
     });
     if (window.visualViewport){
@@ -1277,23 +1243,10 @@
     }
 
     // =========================
-    // ✅ NAV ACTIVE (Sadece eklendi)
-    // =========================
-    (function setActiveNav(){
-      const here = location.href.replace(/\/$/, "");
-      document.querySelectorAll(".navRow .navLink").forEach(a => {
-        const u = (a.getAttribute("href") || "").replace(/\/$/, "");
-        if (!u) return;
-        if (here === u || here.startsWith(u + "/")) a.classList.add("on");
-      });
-    })();
-
-    // =========================
     // INIT
     // =========================
     setSortIcons();
     restorePlayerPos();
-    // restore sonrası viewport'a oturt
     setTimeout(clampPlayerToViewport, 0);
 
     restoreSpeed();
