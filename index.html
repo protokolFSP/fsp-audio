@@ -396,6 +396,12 @@
         justify-content: flex-end;
       }
     }
+
+    /* Hastalık adı (Dr/dr öncesi) */
+    .diseaseName{
+      color: #c2410c; /* koyu turuncu */
+      font-weight: 650;
+    }
   </style>
 </head>
 
@@ -617,6 +623,29 @@
     // =========================
     // HELPERS
     // =========================
+    function escHtml(s){
+      return (s ?? "").toString()
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#39;");
+    }
+
+    // Hastalık ismi = ilk "Dr" veya "dr" gelene kadarki kısım
+    function highlightDisease(title){
+      const raw = (title ?? "").toString();
+
+      const m = raw.match(/\bdr\b/i);
+      if (!m || m.index == null) return escHtml(raw);
+
+      const i = m.index;
+      const left = raw.slice(0, i).trimEnd();
+      if (!left.trim()) return escHtml(raw);
+
+      return `<span class="diseaseName">${escHtml(left)}</span>${escHtml(raw.slice(left.length))}`;
+    }
+
     function foldTR(s){
       s = (s || "").toString();
       s = s.toLocaleLowerCase("tr");
@@ -946,7 +975,7 @@
 
         const title = document.createElement("div");
         title.className = "title";
-        title.textContent = it.title;
+        title.innerHTML = highlightDisease(it.title);
 
         const dur = document.createElement("div");
         dur.className = "dur";
