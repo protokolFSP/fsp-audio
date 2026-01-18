@@ -173,13 +173,23 @@
     }
 
     .itemRow{
-      padding: 4px 8px;
-      border-bottom: 1px solid #f2f2f2;
-      cursor: pointer;
-      background: transparent;
-    }
-    .itemRow:hover{ background: var(--hover); }
-    .itemRow.active{ background: var(--active); }
+  padding: 4px 8px;
+  border-bottom: 1px solid #ececec;
+  cursor: pointer;
+  background: #f7f7f7;
+}
+
+#list .itemRow:nth-child(even){
+  background: #eeeeee;
+}
+
+.itemRow:hover{
+  background: var(--hover);
+}
+
+.itemRow.active{
+  background: var(--active);
+}
 
     .title{
       font-size: 1.02rem;
