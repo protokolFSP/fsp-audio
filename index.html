@@ -35,6 +35,12 @@
       line-height: 1.10;
     }
 
+    /* ✅ Sayfa ölçek wrapper */
+    #appScale{
+      transform-origin: top center;
+      will-change: transform;
+    }
+
     .pageTitle{
       font-size: 1.6rem;
       font-weight: 700;
@@ -45,6 +51,7 @@
       margin-bottom: 14px;
     }
 
+    /* ✅ NAV */
     .navRow{
       display:flex;
       gap:10px;
@@ -103,6 +110,47 @@
     }
     #resetBtn:hover{ background: var(--hover); }
 
+    /* ✅ Zoom UI */
+    .zoomWrap{
+      display:flex;
+      align-items:center;
+      gap: 6px;
+      padding: 4px;
+      border: 1px solid #d8d8d8;
+      border-radius: 14px;
+      background: white;
+      user-select:none;
+    }
+    .zoomBtn{
+      height: 40px;
+      padding: 0 12px;
+      border-radius: 12px;
+      border: 1px solid #d8d8d8;
+      background: white;
+      cursor: pointer;
+      font-weight: 650;
+      line-height: 1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-width: 44px;
+    }
+    .zoomBtn:hover{ background: var(--hover); }
+    .zoomValue{
+      min-width: 72px;
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid #d8d8d8;
+      background: white;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-variant-numeric: tabular-nums;
+      font-weight: 650;
+      padding: 0 10px;
+      cursor: default;
+    }
+
     #meta{
       color: var(--muted);
       font-size: .95rem;
@@ -110,6 +158,7 @@
       line-height: 1.05;
     }
 
+    /* ✅ Grid: Kayıt | Süre | ⭐ | ✓ | ⬇︎ */
     .headerRow, .itemRow{
       display: grid;
       grid-template-columns: minmax(0, 1fr) 8ch 36px 36px 36px;
@@ -167,6 +216,7 @@
       border-bottom: 1px solid var(--border);
     }
 
+    /* ✅ Zebra */
     .itemRow{
       padding: 4px 8px;
       border-bottom: 1px solid #ececec;
@@ -180,6 +230,7 @@
       background: var(--hover);
     }
 
+    /* ✅ Aktif satır */
     .itemRow.active{
       background: var(--active) !important;
       box-shadow: var(--activeGlow);
@@ -279,6 +330,7 @@
     }
     .filterBtn svg{ width:14px; height:14px; }
 
+    /* Floating player */
     #floatingPlayer{
       position: fixed;
       left: max(18px, env(safe-area-inset-left));
@@ -419,6 +471,7 @@
       }
     }
 
+    /* Hastalık adı (Dr/dr öncesi) */
     .diseaseName{
       color: #c2410c;
       font-weight: 650;
@@ -427,65 +480,76 @@
 </head>
 
 <body>
-  <h1 class="pageTitle">FSP Audio — Güncel</h1>
+  <div id="appScale">
+    <h1 class="pageTitle">FSP Audio — Güncel</h1>
 
-  <nav class="navRow" aria-label="Sayfalar">
-    <a class="navLink" href="https://protokolfsp.github.io/fsp-audio/">Güncel</a>
-    <a class="navLink" href="https://protokolfsp.github.io/FSP2022-23/">2021–23</a>
-    <a class="navLink" href="https://protokolfsp.github.io/All-in-One/">All-in-One</a>
-  </nav>
+    <nav class="navRow" aria-label="Sayfalar">
+      <a class="navLink" href="https://protokolfsp.github.io/fsp-audio/">Güncel</a>
+      <a class="navLink" href="https://protokolfsp.github.io/FSP2022-23/">2021–23</a>
+      <a class="navLink" href="https://protokolfsp.github.io/All-in-One/">All-in-One</a>
+    </nav>
 
-  <div class="topbar">
-    <input id="search" type="text" placeholder="Arama (ör. ACS, DM, PAVK)..." />
-    <button id="resetBtn" type="button">Hepsi</button>
-  </div>
+    <div class="topbar">
+      <input id="search" type="text" placeholder="Arama (ör. ACS, DM, PAVK)..." />
+      <button id="resetBtn" type="button">Hepsi</button>
 
-  <div id="meta">Görünən: 0 / Toplam: 0</div>
-
-  <div class="headerRow">
-    <div class="colTitle">
-      <div class="titleHead">
-        <span>Kayıt</span>
-        <button id="sortDateBtn" class="sortBtn" type="button" title="Tarihe göre sırala (dosya sonu)">
-          <svg id="sortDateIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 5v14"></path><path d="M7 14l5 5 5-5"></path>
-          </svg>
-        </button>
+      <!-- ✅ % görünüm küçült/büyüt -->
+      <div class="zoomWrap" aria-label="Görünüm">
+        <button id="zoomOutBtn" class="zoomBtn" type="button" title="Küçült">−</button>
+        <div id="zoomValue" class="zoomValue" title="Görünüm yüzdesi">100%</div>
+        <button id="zoomInBtn" class="zoomBtn" type="button" title="Büyüt">+</button>
+        <button id="zoomResetBtn" class="zoomBtn" type="button" title="Sıfırla">100</button>
       </div>
     </div>
 
-    <div class="colDur" style="text-align:right;">
-      <div class="durHead">
-        <span>Süre</span>
-        <button id="sortDurBtn" class="sortBtn" type="button" title="Süreye göre sırala">
-          <svg id="sortDurIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 5v14"></path><path d="M7 14l5 5 5-5"></path>
+    <div id="meta">Görünən: 0 / Toplam: 0</div>
+
+    <!-- Header: Kayıt | Süre | ⭐ | ✓ | (boş) -->
+    <div class="headerRow">
+      <div class="colTitle">
+        <div class="titleHead">
+          <span>Kayıt</span>
+          <button id="sortDateBtn" class="sortBtn" type="button" title="Tarihe göre sırala (dosya sonu)">
+            <svg id="sortDateIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14"/><path d="M7 14l5 5 5-5"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="colDur" style="text-align:right;">
+        <div class="durHead">
+          <span>Süre</span>
+          <button id="sortDurBtn" class="sortBtn" type="button" title="Süreye göre sırala">
+            <svg id="sortDurIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14"/><path d="M7 14l5 5 5-5"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="headIconCell">
+        <button id="filterFav" class="filterBtn" title="Favoriler filtrele" type="button" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
           </svg>
         </button>
       </div>
+
+      <div class="headIconCell">
+        <button id="filterSel" class="filterBtn" title="Seçilenler filtrele" type="button" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="headIconCell" aria-hidden="true"></div>
     </div>
 
-    <div class="headIconCell">
-      <button id="filterFav" class="filterBtn" title="Favoriler filtrele" type="button" aria-pressed="false">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"></path>
-        </svg>
-      </button>
-    </div>
-
-    <div class="headIconCell">
-      <button id="filterSel" class="filterBtn" title="Seçilenler filtrele" type="button" aria-pressed="false">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 6L9 17l-5-5"></path>
-        </svg>
-      </button>
-    </div>
-
-    <div class="headIconCell" aria-hidden="true"></div>
+    <div id="list"></div>
+    <div id="status"></div>
   </div>
-
-  <div id="list" role="list"></div>
-  <div id="status"></div>
 
   <div id="floatingPlayer" role="region" aria-label="Oynatıcı">
     <div id="fpHeader" title="Sürükle">
@@ -499,12 +563,12 @@
 
         <button id="prevBtn" class="miniBtn" type="button" title="Önceki">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 20L9 12l10-8v16z"></path><path d="M5 19V5"></path>
+            <path d="M19 20L9 12l10-8v16z"/><path d="M5 19V5"/>
           </svg>
         </button>
         <button id="nextBtn" class="miniBtn" type="button" title="Sonraki">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M5 4l10 8-10 8V4z"></path><path d="M19 5v14"></path>
+            <path d="M5 4l10 8-10 8V4z"/><path d="M19 5v14"/>
           </svg>
         </button>
       </div>
@@ -517,9 +581,17 @@
   <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
   <script>
+    // =========================
+    // GÜNCEL KAYNAK (IA metadata)
+    // =========================
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
+
+    // Download Worker
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
 
+    // =========================
+    // DOM
+    // =========================
     const listEl   = document.getElementById("list");
     const searchEl = document.getElementById("search");
     const metaEl   = document.getElementById("meta");
@@ -546,11 +618,30 @@
     const sortDateBtn  = document.getElementById("sortDateBtn");
     const sortDateIcon = document.getElementById("sortDateIcon");
 
+    // ✅ Zoom DOM
+    const appScaleEl = document.getElementById("appScale");
+    const zoomOutBtn = document.getElementById("zoomOutBtn");
+    const zoomInBtn = document.getElementById("zoomInBtn");
+    const zoomResetBtn = document.getElementById("zoomResetBtn");
+    const zoomValueEl = document.getElementById("zoomValue");
+
     const plyr = new Plyr(playerEl, {
       seekTime: 5,
-      controls: ["rewind","play","fast-forward","progress","current-time","duration","mute","volume"]
+      controls: [
+        "rewind",
+        "play",
+        "fast-forward",
+        "progress",
+        "current-time",
+        "duration",
+        "mute",
+        "volume"
+      ]
     });
 
+    // =========================
+    // LOCAL STORAGE (Güncel için ayrı namespace)
+    // =========================
     const LS = {
       favs:  "fsp1.favs.v1",
       sels:  "fsp1.sels.v1",
@@ -559,7 +650,8 @@
       sortMode: "fsp1.sort.mode.v1",
       sortDirDur: "fsp1.sort.dur.dir.v1",
       sortDirDate: "fsp1.sort.date.dir.v1",
-      speed: "fsp1.speed.v1"
+      speed: "fsp1.speed.v1",
+      zoom: "fsp1.ui.zoom.v1"
     };
 
     const loadMap = (k) => { try { return JSON.parse(localStorage.getItem(k) || "{}"); } catch { return {}; } };
@@ -574,12 +666,14 @@
 
     let items = [];
     let activeId = null;
-    let lastVisible = [];
 
     let sortMode = localStorage.getItem(LS.sortMode) || "title";
     let durSortDir  = (localStorage.getItem(LS.sortDirDur) === "desc") ? "desc" : "asc";
     let dateSortDir = (localStorage.getItem(LS.sortDirDate) === "desc") ? "desc" : "asc";
 
+    // =========================
+    // SPEED
+    // =========================
     const SPEEDS = [0.5, 0.75, 0.9, 1, 1.25, 1.5, 1.75];
     let speedIndex = SPEEDS.indexOf(1);
 
@@ -618,6 +712,46 @@
     slowBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex - 1); });
     fastBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex + 1); });
 
+    // =========================
+    // ZOOM (% görünüm)
+    // =========================
+    const ZOOMS = [0.85, 0.9, 0.95, 1, 1.05, 1.1, 1.15, 1.2];
+    let zoomIndex = ZOOMS.indexOf(1);
+
+    function setZoomUI(v){
+      zoomValueEl.textContent = Math.round(v * 100) + "%";
+      zoomOutBtn.disabled = (zoomIndex <= 0);
+      zoomInBtn.disabled = (zoomIndex >= ZOOMS.length - 1);
+      zoomOutBtn.style.opacity = zoomOutBtn.disabled ? 0.45 : 1;
+      zoomInBtn.style.opacity = zoomInBtn.disabled ? 0.45 : 1;
+    }
+
+    function applyZoomByIndex(idx){
+      zoomIndex = Math.max(0, Math.min(ZOOMS.length - 1, idx));
+      const v = ZOOMS[zoomIndex];
+      appScaleEl.style.transform = `scale(${v})`;
+      localStorage.setItem(LS.zoom, String(v));
+      setZoomUI(v);
+      setTimeout(() => clampPlayerToViewport(), 0);
+    }
+
+    function restoreZoom(){
+      const saved = Number(localStorage.getItem(LS.zoom) || "1");
+      if (Number.isFinite(saved)){
+        const i = ZOOMS.findIndex(x => Math.abs(x - saved) < 0.001);
+        applyZoomByIndex(i === -1 ? ZOOMS.indexOf(1) : i);
+      } else {
+        applyZoomByIndex(ZOOMS.indexOf(1));
+      }
+    }
+
+    zoomOutBtn.addEventListener("click", (e) => { e.stopPropagation(); applyZoomByIndex(zoomIndex - 1); });
+    zoomInBtn.addEventListener("click", (e) => { e.stopPropagation(); applyZoomByIndex(zoomIndex + 1); });
+    zoomResetBtn.addEventListener("click", (e) => { e.stopPropagation(); applyZoomByIndex(ZOOMS.indexOf(1)); });
+
+    // =========================
+    // HELPERS
+    // =========================
     function escHtml(s){
       return (s ?? "").toString()
         .replace(/&/g,"&amp;")
@@ -633,6 +767,7 @@
       if (!m || m.index == null) return escHtml(raw);
 
       const i = m.index;
+
       const leftRaw = raw.slice(0, i);
       const leftTrim = leftRaw.trimEnd();
       if (!leftTrim.trim()) return escHtml(raw);
@@ -738,6 +873,9 @@
       render();
     });
 
+    // =========================
+    // DURATION LOADER
+    // =========================
     const durQueue = [];
     const durLoading = new Set();
     let durActive = 0;
@@ -774,6 +912,7 @@
       }
     }
 
+    // ✅ GEREKLİ FIX: timeout’ta cleanup + done guard
     function loadDurationFor(it){
       return new Promise((resolve, reject) => {
         const a = new Audio();
@@ -793,7 +932,7 @@
           done = true;
           cleanup();
           durLoading.delete(it.id);
-          ok ? resolve() : reject(err || new Error("duration failed"));
+          ok ? resolve() : reject(err || new Error("metadata error"));
         };
 
         const onMeta = () => {
@@ -817,6 +956,9 @@
       });
     }
 
+    // =========================
+    // DOWNLOAD (worker)
+    // =========================
     function makeProxyUrl(fileUrl, filename){
       const u = DL_PROXY + "?u=" + encodeURIComponent(fileUrl);
       return filename ? (u + "&f=" + encodeURIComponent(filename)) : u;
@@ -847,11 +989,14 @@
         const url = URL.createObjectURL(blob);
         clickDownload(url, filename);
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
-      }catch{
+      }catch(err){
         window.location.href = fileUrl;
       }
     }
 
+    // =========================
+    // LOAD (IA metadata)
+    // =========================
     function buildDownloadUrl(identifier, name){
       const parts = (name || "").split("/").map(p => encodeURIComponent(p));
       return `https://archive.org/download/${identifier}/${parts.join("/")}`;
@@ -859,6 +1004,7 @@
 
     async function loadItems(){
       statusEl.textContent = "Yükleniyor...";
+
       try{
         const metaUrl = `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}?v=${Date.now()}`;
         const res = await fetch(metaUrl, { cache: "no-store" });
@@ -883,8 +1029,8 @@
           });
 
         list.sort((x,y) => x.title.localeCompare(y.title, "tr"));
-        items = list;
 
+        items = list;
         statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
         render();
       }catch(err){
@@ -893,7 +1039,10 @@
       }
     }
 
-    function computeVisible(){
+    // =========================
+    // FILTER + SORT + RENDER
+    // =========================
+    function getVisibleItems(){
       const q = foldTR((searchEl.value || "").trim());
 
       let arr = items.filter(it => {
@@ -934,53 +1083,27 @@
       return arr;
     }
 
-    function iconSvg(kind, on){
-      if (kind === "star"){
-        return `
-          <svg viewBox="0 0 24 24" fill="${on ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2">
-            <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
-          </svg>`;
-      }
-      if (kind === "check"){
-        return `
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 6L9 17l-5-5"/>
-          </svg>`;
-      }
-      return `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 3v12"/>
-          <path d="M7 10l5 5 5-5"/>
-          <path d="M5 21h14"/>
-        </svg>`;
-    }
-
     function render(){
-      lastVisible = computeVisible();
-
-      metaEl.textContent = `Görünən: ${lastVisible.length} / Toplam: ${items.length}`;
+      const visible = getVisibleItems();
+      metaEl.textContent = `Görünən: ${visible.length} / Toplam: ${items.length}`;
 
       filterFavBtn.classList.toggle("on", filterFav);
       filterSelBtn.classList.toggle("on", filterSel);
+
       filterFavBtn.setAttribute("aria-pressed",  String(filterFav));
       filterSelBtn.setAttribute("aria-pressed",  String(filterSel));
 
       listEl.innerHTML = "";
 
-      const toMeasure = (sortMode === "dur") ? items : lastVisible;
+      // ❗ visible sınırlama yok: dur modunda yine tüm item ölçülür (senin isteğin)
+      const toMeasure = (sortMode === "dur") ? items : visible;
       for (const it of toMeasure){
         if (!(durs[it.id] > 0)) requestDuration(it);
       }
 
-      const frag = document.createDocumentFragment();
-
-      for (const it of lastVisible){
+      for (const it of visible){
         const row = document.createElement("div");
         row.className = "itemRow" + (it.id === activeId ? " active" : "");
-        row.dataset.id = it.id;
-        row.setAttribute("role", "listitem");
-        row.tabIndex = 0;
-        row.setAttribute("aria-label", it.title);
 
         const title = document.createElement("div");
         title.className = "title";
@@ -990,29 +1113,36 @@
         dur.className = "dur";
         dur.textContent = (durs[it.id] > 0) ? fmtDur(durs[it.id]) : "…";
 
-        const favOn = !!favs[it.id];
-        const selOn = !!sels[it.id];
+        const favBtn = iconButton("star", !!favs[it.id], "Favori");
+        const selBtn = iconButton("check", !!sels[it.id], "Seç");
+        const dlBtn  = iconButton("download", false, "İndir");
 
-        const favBtn = document.createElement("button");
-        favBtn.type = "button";
-        favBtn.className = "iconBtn" + (favOn ? " on" : "");
-        favBtn.dataset.kind = "star";
-        favBtn.title = "Favori";
-        favBtn.innerHTML = iconSvg("star", favOn);
+        favBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          favs[it.id] = !favs[it.id];
+          saveMap(LS.favs, favs);
+          render();
+        });
 
-        const selBtn = document.createElement("button");
-        selBtn.type = "button";
-        selBtn.className = "iconBtn" + (selOn ? " on" : "");
-        selBtn.dataset.kind = "check";
-        selBtn.title = "Seç";
-        selBtn.innerHTML = iconSvg("check", selOn);
+        selBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          sels[it.id] = !sels[it.id];
+          saveMap(LS.sels, sels);
+          render();
+        });
 
-        const dlBtn = document.createElement("button");
-        dlBtn.type = "button";
-        dlBtn.className = "iconBtn";
-        dlBtn.dataset.kind = "download";
-        dlBtn.title = "İndir";
-        dlBtn.innerHTML = iconSvg("download", false);
+        dlBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const filename =
+            (it.name || it.file || "").split("/").pop() ||
+            (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".mp3";
+          forceDownload(it.url, filename);
+        });
+
+        for (const b of [favBtn, selBtn, dlBtn]){
+          b.addEventListener("pointerup", (e) => e.stopPropagation());
+          b.addEventListener("pointerdown", (e) => e.stopPropagation());
+        }
 
         row.appendChild(title);
         row.appendChild(dur);
@@ -1020,14 +1150,53 @@
         row.appendChild(selBtn);
         row.appendChild(dlBtn);
 
-        frag.appendChild(row);
+        row.addEventListener("click", () => playById(it.id));
+        listEl.appendChild(row);
+      }
+    }
+
+    function iconButton(kind, on, title){
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "iconBtn" + (on ? " on" : "");
+      btn.title = title;
+      btn.dataset.kind = kind;
+
+      if (kind === "star"){
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="${on ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2">
+            <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
+          </svg>`;
+      } else if (kind === "check"){
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>`;
+      } else if (kind === "download"){
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 3v12"/>
+            <path d="M7 10l5 5 5-5"/>
+            <path d="M5 21h14"/>
+          </svg>`;
       }
 
-      listEl.appendChild(frag);
+      return btn;
+    }
+
+    // =========================
+    // PLAYBACK
+    // =========================
+    function playById(id){
+      const visible = getVisibleItems();
+      const idx = visible.findIndex(x => x.id === id);
+      if (idx === -1) return;
+      playAtVisibleIndex(idx);
     }
 
     function playAtVisibleIndex(idx){
-      const it = lastVisible[idx];
+      const visible = getVisibleItems();
+      const it = visible[idx];
       if (!it) return;
 
       statusEl.textContent = "";
@@ -1065,30 +1234,27 @@
       setTimeout(() => { if (playerEl.paused) tryPlay(); }, 600);
     }
 
-    function playById(id){
-      const idx = lastVisible.findIndex(x => x.id === id);
-      if (idx === -1) return;
-      playAtVisibleIndex(idx);
-    }
-
     function playPrev(){
-      if (!lastVisible.length) return;
-      let idx = lastVisible.findIndex(x => x.id === activeId);
+      const visible = getVisibleItems();
+      if (!visible.length) return;
+      let idx = visible.findIndex(x => x.id === activeId);
       if (idx === -1) idx = 0;
-      idx = (idx - 1 + lastVisible.length) % lastVisible.length;
+      idx = (idx - 1 + visible.length) % visible.length;
       playAtVisibleIndex(idx);
     }
 
     function playNext(){
-      if (!lastVisible.length) return;
-      let idx = lastVisible.findIndex(x => x.id === activeId);
+      const visible = getVisibleItems();
+      if (!visible.length) return;
+      let idx = visible.findIndex(x => x.id === activeId);
       if (idx === -1) idx = 0;
-      idx = (idx + 1) % lastVisible.length;
+      idx = (idx + 1) % visible.length;
       playAtVisibleIndex(idx);
     }
 
     prevBtn.addEventListener("click", playPrev);
     nextBtn.addEventListener("click", playNext);
+
     plyr.on("ended", () => { setTimeout(() => playNext(), 0); });
 
     document.addEventListener("keydown", (e) => {
@@ -1108,6 +1274,9 @@
       }
     });
 
+    // =========================
+    // FILTERS
+    // =========================
     filterFavBtn.addEventListener("click", () => { filterFav = !filterFav; render(); });
     filterSelBtn.addEventListener("click", () => { filterSel = !filterSel; render(); });
 
@@ -1123,69 +1292,16 @@
       render();
     });
 
+    // ✅ GEREKLİ FIX: search debounce (render spam azalır)
     let searchTimer = null;
     searchEl.addEventListener("input", () => {
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => render(), 90);
     });
 
-    listEl.addEventListener("click", (e) => {
-      const btn = e.target && e.target.closest ? e.target.closest(".iconBtn") : null;
-      const row = e.target && e.target.closest ? e.target.closest(".itemRow") : null;
-      if (!row) return;
-
-      const id = row.dataset.id;
-      if (!id) return;
-
-      if (btn){
-        e.stopPropagation();
-        const kind = btn.dataset.kind;
-
-        if (kind === "star"){
-          favs[id] = !favs[id];
-          saveMap(LS.favs, favs);
-          render();
-          return;
-        }
-
-        if (kind === "check"){
-          sels[id] = !sels[id];
-          saveMap(LS.sels, sels);
-          render();
-          return;
-        }
-
-        if (kind === "download"){
-          const it = items.find(x => x.id === id);
-          if (!it) return;
-          const filename =
-            (it.name || it.file || "").split("/").pop() ||
-            (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".mp3";
-          forceDownload(it.url, filename);
-          return;
-        }
-      }
-
-      playById(id);
-    });
-
-    listEl.addEventListener("keydown", (e) => {
-      const row = e.target && e.target.closest ? e.target.closest(".itemRow") : null;
-      if (!row) return;
-      if (e.key === "Enter"){
-        e.preventDefault();
-        playById(row.dataset.id);
-      }
-    });
-
-    function getViewport(){
-      const vv = window.visualViewport;
-      return {
-        w: (vv && vv.width) ? vv.width : window.innerWidth,
-        h: (vv && vv.height) ? vv.height : window.innerHeight
-      };
-    }
-
+    // =========================
+    // DRAGGABLE PLAYER + clamp fix
+    // =========================
     function restorePlayerPos(){
       try{
         const s = JSON.parse(localStorage.getItem(LS.pos) || "null");
@@ -1203,8 +1319,15 @@
       localStorage.setItem(LS.pos, JSON.stringify({x,y}));
     }
 
+    function getViewportWH(){
+      const vv = window.visualViewport;
+      const vw = (vv && vv.width)  ? vv.width  : window.innerWidth;
+      const vh = (vv && vv.height) ? vv.height : window.innerHeight;
+      return { vw, vh };
+    }
+
     function clampPlayerToViewport(){
-      const { w: vw, h: vh } = getViewport();
+      const { vw, vh } = getViewportWH();
 
       const w = fp.offsetWidth;
       const h = fp.offsetHeight;
@@ -1252,15 +1375,17 @@
       fp.style.right = "auto";
     });
 
+    // ✅ GEREKLİ FIX: drag hareketinde de visualViewport kullan (tutarlı)
     fpHeader.addEventListener("pointermove", (e) => {
       if (!dragging) return;
 
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
 
-      const { w: vw, h: vh } = getViewport();
       const w = fp.offsetWidth;
       const h = fp.offsetHeight;
+
+      const { vw, vh } = getViewportWH();
 
       const minX = 8;
       const minY = 8;
@@ -1284,10 +1409,22 @@
     });
 
     window.addEventListener("resize", () => clampPlayerToViewport());
-    window.addEventListener("orientationchange", () => setTimeout(clampPlayerToViewport, 150));
+    window.addEventListener("orientationchange", () => {
+      setTimeout(clampPlayerToViewport, 150);
+    });
     if (window.visualViewport){
       window.visualViewport.addEventListener("resize", () => clampPlayerToViewport());
     }
+
+    // =========================
+    // INIT
+    // =========================
+    setSortIcons();
+    restorePlayerPos();
+    setTimeout(clampPlayerToViewport, 0);
+
+    restoreSpeed();
+    restoreZoom();
 
     (function setActiveNav(){
       const here = location.href.replace(/\/$/, "");
@@ -1299,10 +1436,6 @@
       });
     })();
 
-    setSortIcons();
-    restorePlayerPos();
-    setTimeout(clampPlayerToViewport, 0);
-    restoreSpeed();
     loadItems();
   </script>
 </body>
