@@ -35,7 +35,6 @@
       line-height: 1.10;
     }
 
-    /* ✅ Sayfa ölçek wrapper */
     #appScale{
       transform-origin: top left;
       will-change: transform;
@@ -51,7 +50,7 @@
       margin-bottom: 14px;
     }
 
-    /* ✅ NAV */
+    /* NAV */
     .navRow{
       display:flex;
       gap:10px;
@@ -83,7 +82,7 @@
 
     .topbar{
       display:flex;
-      gap:10px;
+      gap:12px;
       align-items:center;
       margin-bottom: 8px;
       flex-wrap: wrap;
@@ -110,39 +109,60 @@
     }
     #resetBtn:hover{ background: var(--hover); }
 
-    /* ✅ Safari-like zoom: iki "A" */
+    /* ✅ Zoom (Safari hissi) - 🐜 / 🐘 */
     .zoomWrap{
       display:flex;
       align-items:center;
-      gap: 6px;
-      padding: 4px;
+      gap: 24px;        /* ✅ yatay boşluk 2x */
+      margin-left: 14px;/* ✅ Hepsi'den uzak */
+      padding: 6px;
       border: 1px solid #d8d8d8;
       border-radius: 14px;
       background: white;
       user-select:none;
+      flex: 0 0 auto;
     }
     .zoomBtn{
       height: 36px;
-      width: 40px;
+      width: 48px;
       border-radius: 12px;
       border: 1px solid #d8d8d8;
       background: white;
       cursor: pointer;
-      font-weight: 900;
       line-height: 1;
       display:flex;
       align-items:center;
       justify-content:center;
       padding: 0;
+      font-size: 20px;
       -webkit-tap-highlight-color: transparent;
+      transition: opacity .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease, filter .15s ease;
     }
     .zoomBtn:hover{ background: var(--hover); }
-    .zoomBtn:disabled{
-      opacity: .45;
-      cursor: default;
+    .zoomBtn:disabled{ opacity: .35; cursor: default; }
+
+    /* pasifken daha soluk */
+    .zoomBtn.zoomOut,
+    .zoomBtn.zoomIn{
+      opacity: .55;
+      filter: saturate(1.2);
     }
-    .zoomSmall{ font-size: 16px; }
-    .zoomLarge{ font-size: 22px; }
+
+    /* aktifken canlı */
+    .zoomBtn.enabled.zoomOut{
+      opacity: 1;
+      background: rgba(255, 149, 0, .18);
+      border-color: rgba(255, 149, 0, .65);
+      box-shadow: 0 0 0 3px rgba(255, 149, 0, .16) inset, 0 8px 18px rgba(255, 149, 0, .10);
+      filter: saturate(1.6);
+    }
+    .zoomBtn.enabled.zoomIn{
+      opacity: 1;
+      background: rgba(34, 197, 94, .18);
+      border-color: rgba(34, 197, 94, .65);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, .16) inset, 0 8px 18px rgba(34, 197, 94, .10);
+      filter: saturate(1.6);
+    }
 
     #meta{
       color: var(--muted);
@@ -151,7 +171,7 @@
       line-height: 1.05;
     }
 
-    /* ✅ Grid: Kayıt | Süre | ⭐ | ✓ | ⬇︎ */
+    /* Grid: Kayıt | Süre | ⭐ | ✓ | ⬇︎ */
     .headerRow, .itemRow{
       display: grid;
       grid-template-columns: minmax(0, 1fr) 8ch 36px 36px 36px;
@@ -209,7 +229,7 @@
       border-bottom: 1px solid var(--border);
     }
 
-    /* ✅ Zebra */
+    /* Zebra */
     .itemRow{
       padding: 4px 8px;
       border-bottom: 1px solid #ececec;
@@ -223,7 +243,7 @@
       background: var(--hover);
     }
 
-    /* ✅ Aktif satır */
+    /* Aktif satır */
     .itemRow.active{
       background: var(--active) !important;
       box-shadow: var(--activeGlow);
@@ -339,6 +359,13 @@
       transform: translateZ(0);
       transform-origin: top left;
       will-change: transform;
+      transition: opacity .18s ease;
+    }
+
+    /* Arama sırasında player görünmesin */
+    #floatingPlayer.hiddenWhileTyping{
+      opacity: 0;
+      pointer-events: none;
     }
 
     #fpHeader{
@@ -431,9 +458,7 @@
       box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
     }
 
-    #fpBody{
-      padding: 10px 12px 12px 12px;
-    }
+    #fpBody{ padding: 10px 12px 12px 12px; }
 
     #status{
       margin: 8px 2px 0 2px;
@@ -488,16 +513,14 @@
       <input id="search" type="text" placeholder="Arama (ör. ACS, DM, PAVK)..." />
       <button id="resetBtn" type="button">Hepsi</button>
 
-      <!-- ✅ Safari-like: iki A, double tap = 100% -->
       <div class="zoomWrap" aria-label="Görünüm">
-        <button id="zoomOutBtn" class="zoomBtn zoomSmall" type="button" aria-label="Küçült">A</button>
-        <button id="zoomInBtn" class="zoomBtn zoomLarge" type="button" aria-label="Büyüt">A</button>
+        <button id="zoomOutBtn" class="zoomBtn zoomOut" type="button" aria-label="Küçült">🐜</button>
+        <button id="zoomInBtn" class="zoomBtn zoomIn" type="button" aria-label="Büyüt">🐘</button>
       </div>
     </div>
 
     <div id="meta">Görünən: 0 / Toplam: 0</div>
 
-    <!-- Header: Kayıt | Süre | ⭐ | ✓ | (boş) -->
     <div class="headerRow">
       <div class="colTitle">
         <div class="titleHead">
@@ -574,13 +597,23 @@
   <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
   <script>
+    // =========================
+    // GÜNCEL KAYNAK (IA metadata)
+    // =========================
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
 
+    // =========================
+    // DOM
+    // =========================
     const listEl   = document.getElementById("list");
     const searchEl = document.getElementById("search");
     const metaEl   = document.getElementById("meta");
     const statusEl = document.getElementById("status");
+
+    const appScaleEl = document.getElementById("appScale");
+    const zoomOutBtn = document.getElementById("zoomOutBtn");
+    const zoomInBtn  = document.getElementById("zoomInBtn");
 
     const fp = document.getElementById("floatingPlayer");
     const fpHeader = document.getElementById("fpHeader");
@@ -603,15 +636,14 @@
     const sortDateBtn  = document.getElementById("sortDateBtn");
     const sortDateIcon = document.getElementById("sortDateIcon");
 
-    const appScaleEl = document.getElementById("appScale");
-    const zoomOutBtn = document.getElementById("zoomOutBtn");
-    const zoomInBtn  = document.getElementById("zoomInBtn");
-
     const plyr = new Plyr(playerEl, {
       seekTime: 5,
       controls: ["rewind","play","fast-forward","progress","current-time","duration","mute","volume"]
     });
 
+    // =========================
+    // LOCAL STORAGE (Güncel için ayrı namespace)
+    // =========================
     const LS = {
       favs:  "fsp1.favs.v1",
       sels:  "fsp1.sels.v1",
@@ -693,7 +725,11 @@
     function setZoomUI(v){
       const pct = Math.round(v * 100) + "%";
       zoomOutBtn.disabled = (zoomIndex <= 0);
-      zoomInBtn.disabled = (zoomIndex >= ZOOMS.length - 1);
+      zoomInBtn.disabled  = (zoomIndex >= ZOOMS.length - 1);
+
+      zoomOutBtn.classList.toggle("enabled", !zoomOutBtn.disabled);
+      zoomInBtn.classList.toggle("enabled", !zoomInBtn.disabled);
+
       zoomOutBtn.title = `Küçült (${pct})`;
       zoomInBtn.title  = `Büyüt (${pct})`;
       zoomOutBtn.setAttribute("aria-label", `Küçült (${pct})`);
@@ -754,9 +790,17 @@
 
     zoomOutBtn.addEventListener("click", (e) => { e.stopPropagation(); applyZoomByIndex(zoomIndex - 1); });
     zoomInBtn.addEventListener("click", (e) => { e.stopPropagation(); applyZoomByIndex(zoomIndex + 1); });
-
     attachDoubleTapReset(zoomOutBtn);
     attachDoubleTapReset(zoomInBtn);
+
+    // =========================
+    // SEARCH: player sakla (mobilde yazı görünür)
+    // =========================
+    function setTypingMode(on){
+      fp.classList.toggle("hiddenWhileTyping", !!on);
+    }
+    searchEl.addEventListener("focus", () => setTypingMode(true));
+    searchEl.addEventListener("blur",  () => setTypingMode(false));
 
     // =========================
     // HELPERS
