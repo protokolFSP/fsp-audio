@@ -16,7 +16,6 @@
 
       --active:#cfe9ff;
       --activeGlow: 0 0 0 2px rgba(43,124,255,.34) inset, 0 12px 26px rgba(43,124,255,.14);
-
       --shadow: 0 12px 30px rgba(0,0,0,.12);
 
       --blue:#2b7cff;
@@ -109,7 +108,7 @@
     }
     #resetBtn:hover{ background: var(--hover); }
 
-    /* ✅ Zoom - SVG ikon (daha aralıklı + Hepsi'den uzak + canlı) */
+    /* Zoom (SVG) */
     .zoomWrap{
       display:flex;
       align-items:center;
@@ -182,7 +181,7 @@
       line-height: 1.05;
     }
 
-    /* Grid: Kayıt | Süre | ⭐ | ✓ | ⬇︎ */
+    /* Grid */
     .headerRow, .itemRow{
       display: grid;
       grid-template-columns: minmax(0, 1fr) 8ch 36px 36px 36px;
@@ -236,7 +235,9 @@
       box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
     }
 
-    #list{ border-bottom: 1px solid var(--border); }
+    #list{
+      border-bottom: 1px solid var(--border);
+    }
 
     /* Zebra */
     .itemRow{
@@ -245,7 +246,9 @@
       cursor: pointer;
       background: #f7f7f7;
     }
-    #list .itemRow:nth-child(even){ background: #eeeeee; }
+    #list .itemRow:nth-child(even){
+      background: #eeeeee;
+    }
     .itemRow:hover{ background: var(--hover); }
 
     /* Aktif satır */
@@ -292,6 +295,7 @@
         text-overflow: ellipsis;
       }
       #search{ flex: 1 1 100%; }
+      .zoomWrap{ margin-left: 0; }
     }
 
     .iconBtn{
@@ -324,7 +328,6 @@
       stroke: var(--green);
       stroke-width: 2.6;
     }
-
     .iconBtn svg{ width: 14px; height: 14px; opacity: .9; }
 
     .filterBtn{
@@ -346,18 +349,27 @@
     }
     .filterBtn svg{ width:14px; height:14px; }
 
-    /* Floating player */
+    /* ✅ Floating player: belirgin border + asimetrik shadow */
     #floatingPlayer{
       position: fixed;
       left: max(18px, env(safe-area-inset-left));
       bottom: max(18px, env(safe-area-inset-bottom));
       width: min(720px, calc(100vw - 36px));
       background: white;
-      border: 1px solid #e0e0e0;
+
+      border: 1.5px solid #d6d6d6;
+      border-right-color: #bdbdbd;
+      border-bottom-color:#b3b3b3;
       border-radius: 18px;
-      box-shadow: var(--shadow);
+
+      box-shadow:
+        10px 34px 86px rgba(0,0,0,.20),
+        4px 14px 30px rgba(0,0,0,.10),
+        0px 2px 6px rgba(0,0,0,.06);
+
       overflow: hidden;
       z-index: 9999;
+
       -webkit-transform: translateZ(0);
       transform: translateZ(0);
       transform-origin: top left;
@@ -366,24 +378,43 @@
       touch-action: none;
     }
 
-    /* ✅ Arama sırasında player görünmesin */
     #floatingPlayer.hiddenWhileTyping{
       opacity: 0;
       pointer-events: none;
     }
 
+    /* Header emboss çizgi + boş alanlar sürüklenebilir */
     #fpHeader{
       display:flex;
       align-items:center;
       justify-content:space-between;
       padding: 10px 12px;
-      border-bottom: 1px solid #f0f0f0;
       background: #fbfbfb;
+
       cursor: grab;
       user-select:none;
       gap: 10px;
       touch-action: none;
       line-height: 1.05;
+
+      border-bottom: none;
+      position: relative;
+
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.85),
+        inset 0 -1px 0 rgba(0,0,0,.04);
+    }
+
+    #fpHeader::after{
+      content:"";
+      position:absolute;
+      left:0; right:0; bottom:0;
+      height: 2px;
+      background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,.18),
+        rgba(255,255,255,.80)
+      );
     }
 
     #fpTitle{
@@ -462,7 +493,10 @@
       box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
     }
 
-    #fpBody{ padding: 10px 12px 12px 12px; }
+    #fpBody{
+      padding: 10px 12px 12px 12px;
+      box-shadow: inset 0 1px 0 rgba(0,0,0,.05);
+    }
 
     #status{
       margin: 8px 2px 0 2px;
@@ -495,7 +529,6 @@
       }
     }
 
-    /* Dr/dr + Fr/fr öncesi */
     .diseaseName{
       color: #c2410c;
       font-weight: 650;
@@ -539,7 +572,6 @@
 
     <div id="meta">Görünən: 0 / Toplam: 0</div>
 
-    <!-- Header: Kayıt | Süre | ⭐ | ✓ | (boş) -->
     <div class="headerRow">
       <div class="colTitle">
         <div class="titleHead">
@@ -620,8 +652,6 @@
     // GÜNCEL KAYNAK (IA metadata)
     // =========================
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
-
-    // Download Worker
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
 
     // =========================
@@ -697,7 +727,7 @@
     // =========================
     // SPEED
     // =========================
-    const SPEEDS = [0.5, 0.75, 0.9, 1, 1.25, 1.5, 1.75];
+    const SPEEDS = [0.5, 0.75, 0.9, 1, 1.25, 1.5, 1.75, 2.0, 2.25];
     let speedIndex = SPEEDS.indexOf(1);
 
     function fmtSpeed(v){
@@ -736,7 +766,7 @@
     fastBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex + 1); });
 
     // =========================
-    // ZOOM (% görünüm) - player dahil + double tap reset
+    // ZOOM (% görünüm) – player dahil + double-tap reset
     // =========================
     const ZOOMS = [0.85, 0.9, 0.95, 1, 1.05, 1.1, 1.15, 1.2];
     let zoomIndex = ZOOMS.indexOf(1);
@@ -884,7 +914,6 @@
       try { return decodeURIComponent(s); } catch { return s; }
     }
 
-    // dd.mm.yy / dd.mm.yyyy yakala (dosya adı sonu)
     function parseEndDate(item){
       const raw0 = (item.name || item.file || item.title || "").toString();
       let s;
@@ -978,12 +1007,10 @@
       while (durActive < DUR_CONCURRENCY && durQueue.length){
         const it = durQueue.shift();
         durActive++;
-        loadDurationFor(it)
-          .catch(() => {})
-          .finally(() => {
-            durActive--;
-            pumpDurationQueue();
-          });
+        loadDurationFor(it).catch(() => {}).finally(() => {
+          durActive--;
+          pumpDurationQueue();
+        });
       }
     }
 
@@ -1327,7 +1354,6 @@
 
     prevBtn.addEventListener("click", playPrev);
     nextBtn.addEventListener("click", playNext);
-
     plyr.on("ended", () => { setTimeout(() => playNext(), 0); });
 
     document.addEventListener("keydown", (e) => {
@@ -1372,7 +1398,7 @@
     });
 
     // =========================
-    // DRAGGABLE PLAYER + clamp (zoom uyumlu)
+    // DRAGGABLE PLAYER (tüm player) + clamp (zoom uyumlu) + drag sonrası click iptal
     // =========================
     function restorePlayerPos(){
       try{
@@ -1429,8 +1455,8 @@
 
     const DRAG_IGNORE_SELECTOR =
       "button, a, input, textarea, select, option, " +
-      "#fpHeaderRight, .speedWrap, " +
-      ".plyr__controls, .plyr__control, .plyr__progress, .plyr__seek, .plyr__volume, .plyr__time";
+      ".speedWrap, .speedCtlBtn, .miniBtn, " +
+      ".plyr__controls, .plyr__control, .plyr__progress, .plyr__seek, .plyr__volume, .plyr__time, .plyr__menu";
 
     function shouldStartDrag(target){
       return !(target && target.closest && target.closest(DRAG_IGNORE_SELECTOR));
@@ -1438,12 +1464,17 @@
 
     let dragging = false;
     let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+    let moved = false;
+    let suppressClickUntil = 0;
 
     fp.addEventListener("pointerdown", (e) => {
       if (!shouldStartDrag(e.target)) return;
 
       dragging = true;
+      moved = false;
+
       fp.setPointerCapture(e.pointerId);
+      fpHeader.style.cursor = "grabbing";
 
       const rect = fp.getBoundingClientRect();
       startX = e.clientX;
@@ -1451,7 +1482,6 @@
       startLeft = rect.left;
       startTop = rect.top;
 
-      fpHeader.style.cursor = "grabbing";
       fp.style.left = startLeft + "px";
       fp.style.top = startTop + "px";
       fp.style.bottom = "auto";
@@ -1463,6 +1493,7 @@
 
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
+      if (!moved && (Math.abs(dx) + Math.abs(dy) > 6)) moved = true;
 
       const w0 = fp.offsetWidth;
       const h0 = fp.offsetHeight;
@@ -1481,36 +1512,42 @@
 
       fp.style.left = nx + "px";
       fp.style.top = ny + "px";
-
       savePlayerPos(nx, ny);
     });
 
-    fp.addEventListener("pointerup", (e) => {
+    function endDrag(pointerId){
       if (!dragging) return;
       dragging = false;
       fpHeader.style.cursor = "grab";
-      try { fp.releasePointerCapture(e.pointerId); } catch {}
+
+      try { fp.releasePointerCapture(pointerId); } catch {}
       clampPlayerToViewport();
-    });
+
+      if (moved){
+        suppressClickUntil = Date.now() + 350;
+        moved = false;
+      }
+    }
+
+    fp.addEventListener("pointerup", (e) => endDrag(e.pointerId));
+    fp.addEventListener("pointercancel", (e) => endDrag(e.pointerId));
+
+    fp.addEventListener("click", (e) => {
+      if (Date.now() < suppressClickUntil){
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
 
     window.addEventListener("resize", () => clampPlayerToViewport());
-    window.addEventListener("orientationchange", () => {
-      setTimeout(clampPlayerToViewport, 150);
-    });
+    window.addEventListener("orientationchange", () => setTimeout(clampPlayerToViewport, 150));
     if (window.visualViewport){
       window.visualViewport.addEventListener("resize", () => clampPlayerToViewport());
     }
 
     // =========================
-    // INIT
-    // =========================
-    setSortIcons();
-    restorePlayerPos();
-    restoreSpeed();
-    restoreZoom();
-    setTimeout(clampPlayerToViewport, 0);
-
     // NAV ACTIVE
+    // =========================
     (function setActiveNav(){
       const here = location.href.replace(/\/$/, "");
       document.querySelectorAll(".navRow .navLink").forEach(a => {
@@ -1521,6 +1558,14 @@
       });
     })();
 
+    // =========================
+    // INIT
+    // =========================
+    setSortIcons();
+    restorePlayerPos();
+    restoreSpeed();
+    restoreZoom();
+    setTimeout(clampPlayerToViewport, 0);
     loadItems();
   </script>
 </body>
