@@ -37,7 +37,7 @@
 
     /* ✅ Sayfa ölçek wrapper */
     #appScale{
-      transform-origin: top center;
+      transform-origin: top left;
       will-change: transform;
     }
 
@@ -83,7 +83,7 @@
 
     .topbar{
       display:flex;
-      gap:12px;
+      gap:10px;
       align-items:center;
       margin-bottom: 8px;
       flex-wrap: wrap;
@@ -110,7 +110,7 @@
     }
     #resetBtn:hover{ background: var(--hover); }
 
-    /* ✅ Zoom UI */
+    /* ✅ Safari-like zoom: iki "A" */
     .zoomWrap{
       display:flex;
       align-items:center;
@@ -122,34 +122,27 @@
       user-select:none;
     }
     .zoomBtn{
-      height: 40px;
-      padding: 0 12px;
+      height: 36px;
+      width: 40px;
       border-radius: 12px;
       border: 1px solid #d8d8d8;
       background: white;
       cursor: pointer;
-      font-weight: 650;
+      font-weight: 900;
       line-height: 1;
       display:flex;
       align-items:center;
       justify-content:center;
-      min-width: 44px;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
     }
     .zoomBtn:hover{ background: var(--hover); }
-    .zoomValue{
-      min-width: 72px;
-      height: 40px;
-      border-radius: 12px;
-      border: 1px solid #d8d8d8;
-      background: white;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-variant-numeric: tabular-nums;
-      font-weight: 650;
-      padding: 0 10px;
+    .zoomBtn:disabled{
+      opacity: .45;
       cursor: default;
     }
+    .zoomSmall{ font-size: 16px; }
+    .zoomLarge{ font-size: 22px; }
 
     #meta{
       color: var(--muted);
@@ -344,6 +337,8 @@
       z-index: 9999;
       -webkit-transform: translateZ(0);
       transform: translateZ(0);
+      transform-origin: top left;
+      will-change: transform;
     }
 
     #fpHeader{
@@ -471,7 +466,7 @@
       }
     }
 
-    /* Hastalık adı (Dr/dr öncesi) */
+    /* Dr/dr veya Fr/fr öncesi */
     .diseaseName{
       color: #c2410c;
       font-weight: 650;
@@ -493,12 +488,10 @@
       <input id="search" type="text" placeholder="Arama (ör. ACS, DM, PAVK)..." />
       <button id="resetBtn" type="button">Hepsi</button>
 
-      <!-- ✅ % görünüm küçült/büyüt -->
+      <!-- ✅ Safari-like: iki A, double tap = 100% -->
       <div class="zoomWrap" aria-label="Görünüm">
-        <button id="zoomOutBtn" class="zoomBtn" type="button" title="Küçült">−</button>
-        <div id="zoomValue" class="zoomValue" title="Görünüm yüzdesi">100%</div>
-        <button id="zoomInBtn" class="zoomBtn" type="button" title="Büyüt">+</button>
-        <button id="zoomResetBtn" class="zoomBtn" type="button" title="Sıfırla">100</button>
+        <button id="zoomOutBtn" class="zoomBtn zoomSmall" type="button" aria-label="Küçült">A</button>
+        <button id="zoomInBtn" class="zoomBtn zoomLarge" type="button" aria-label="Büyüt">A</button>
       </div>
     </div>
 
@@ -581,17 +574,9 @@
   <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
   <script>
-    // =========================
-    // GÜNCEL KAYNAK (IA metadata)
-    // =========================
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
-
-    // Download Worker
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
 
-    // =========================
-    // DOM
-    // =========================
     const listEl   = document.getElementById("list");
     const searchEl = document.getElementById("search");
     const metaEl   = document.getElementById("meta");
@@ -618,30 +603,15 @@
     const sortDateBtn  = document.getElementById("sortDateBtn");
     const sortDateIcon = document.getElementById("sortDateIcon");
 
-    // ✅ Zoom DOM
     const appScaleEl = document.getElementById("appScale");
     const zoomOutBtn = document.getElementById("zoomOutBtn");
-    const zoomInBtn = document.getElementById("zoomInBtn");
-    const zoomResetBtn = document.getElementById("zoomResetBtn");
-    const zoomValueEl = document.getElementById("zoomValue");
+    const zoomInBtn  = document.getElementById("zoomInBtn");
 
     const plyr = new Plyr(playerEl, {
       seekTime: 5,
-      controls: [
-        "rewind",
-        "play",
-        "fast-forward",
-        "progress",
-        "current-time",
-        "duration",
-        "mute",
-        "volume"
-      ]
+      controls: ["rewind","play","fast-forward","progress","current-time","duration","mute","volume"]
     });
 
-    // =========================
-    // LOCAL STORAGE (Güncel için ayrı namespace)
-    // =========================
     const LS = {
       favs:  "fsp1.favs.v1",
       sels:  "fsp1.sels.v1",
@@ -651,7 +621,7 @@
       sortDirDur: "fsp1.sort.dur.dir.v1",
       sortDirDate: "fsp1.sort.date.dir.v1",
       speed: "fsp1.speed.v1",
-      zoom: "fsp1.ui.zoom.v1"
+      zoom:  "fsp1.ui.zoom.v1"
     };
 
     const loadMap = (k) => { try { return JSON.parse(localStorage.getItem(k) || "{}"); } catch { return {}; } };
@@ -713,23 +683,40 @@
     fastBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex + 1); });
 
     // =========================
-    // ZOOM (% görünüm)
+    // ZOOM (% görünüm) - player dahil + double tap reset
     // =========================
     const ZOOMS = [0.85, 0.9, 0.95, 1, 1.05, 1.1, 1.15, 1.2];
     let zoomIndex = ZOOMS.indexOf(1);
+    let uiScale = 1;
+    let useTransformScale = false;
 
     function setZoomUI(v){
-      zoomValueEl.textContent = Math.round(v * 100) + "%";
+      const pct = Math.round(v * 100) + "%";
       zoomOutBtn.disabled = (zoomIndex <= 0);
       zoomInBtn.disabled = (zoomIndex >= ZOOMS.length - 1);
-      zoomOutBtn.style.opacity = zoomOutBtn.disabled ? 0.45 : 1;
-      zoomInBtn.style.opacity = zoomInBtn.disabled ? 0.45 : 1;
+      zoomOutBtn.title = `Küçült (${pct})`;
+      zoomInBtn.title  = `Büyüt (${pct})`;
+      zoomOutBtn.setAttribute("aria-label", `Küçült (${pct})`);
+      zoomInBtn.setAttribute("aria-label", `Büyüt (${pct})`);
     }
 
     function applyZoomByIndex(idx){
       zoomIndex = Math.max(0, Math.min(ZOOMS.length - 1, idx));
       const v = ZOOMS[zoomIndex];
-      appScaleEl.style.transform = `scale(${v})`;
+      uiScale = v;
+
+      useTransformScale = !(window.CSS && CSS.supports && CSS.supports("zoom", "1"));
+
+      if (!useTransformScale){
+        document.documentElement.style.zoom = String(v);
+        appScaleEl.style.transform = "";
+        fp.style.transform = "";
+      } else {
+        document.documentElement.style.zoom = "";
+        appScaleEl.style.transform = `scale(${v})`;
+        fp.style.transform = `scale(${v})`;
+      }
+
       localStorage.setItem(LS.zoom, String(v));
       setZoomUI(v);
       setTimeout(() => clampPlayerToViewport(), 0);
@@ -745,9 +732,31 @@
       }
     }
 
+    function resetZoom100(){
+      applyZoomByIndex(ZOOMS.indexOf(1));
+    }
+
+    function attachDoubleTapReset(el){
+      el.addEventListener("dblclick", (e) => { e.preventDefault(); resetZoom100(); });
+
+      let lastTap = 0;
+      el.addEventListener("touchend", (e) => {
+        const now = Date.now();
+        if (now - lastTap < 320){
+          e.preventDefault();
+          resetZoom100();
+          lastTap = 0;
+          return;
+        }
+        lastTap = now;
+      }, { passive: false });
+    }
+
     zoomOutBtn.addEventListener("click", (e) => { e.stopPropagation(); applyZoomByIndex(zoomIndex - 1); });
     zoomInBtn.addEventListener("click", (e) => { e.stopPropagation(); applyZoomByIndex(zoomIndex + 1); });
-    zoomResetBtn.addEventListener("click", (e) => { e.stopPropagation(); applyZoomByIndex(ZOOMS.indexOf(1)); });
+
+    attachDoubleTapReset(zoomOutBtn);
+    attachDoubleTapReset(zoomInBtn);
 
     // =========================
     // HELPERS
@@ -761,13 +770,13 @@
         .replace(/'/g,"&#39;");
     }
 
+    // ✅ Dr/dr veya Fr/fr (noktalı/noktası) öncesi
     function highlightDisease(title){
       const raw = (title ?? "").toString();
-      const m = raw.match(/\bdr\b/i);
+      const m = raw.match(/\b(dr|fr)\b\.?/i);
       if (!m || m.index == null) return escHtml(raw);
 
       const i = m.index;
-
       const leftRaw = raw.slice(0, i);
       const leftTrim = leftRaw.trimEnd();
       if (!leftTrim.trim()) return escHtml(raw);
@@ -874,7 +883,7 @@
     });
 
     // =========================
-    // DURATION LOADER
+    // DURATION LOADER (timeout cleanup fix)
     // =========================
     const durQueue = [];
     const durLoading = new Set();
@@ -912,7 +921,6 @@
       }
     }
 
-    // ✅ GEREKLİ FIX: timeout’ta cleanup + done guard
     function loadDurationFor(it){
       return new Promise((resolve, reject) => {
         const a = new Audio();
@@ -989,7 +997,7 @@
         const url = URL.createObjectURL(blob);
         clickDownload(url, filename);
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
-      }catch(err){
+      }catch{
         window.location.href = fileUrl;
       }
     }
@@ -1095,7 +1103,6 @@
 
       listEl.innerHTML = "";
 
-      // ❗ visible sınırlama yok: dur modunda yine tüm item ölçülür (senin isteğin)
       const toMeasure = (sortMode === "dur") ? items : visible;
       for (const it of toMeasure){
         if (!(durs[it.id] > 0)) requestDuration(it);
@@ -1292,7 +1299,7 @@
       render();
     });
 
-    // ✅ GEREKLİ FIX: search debounce (render spam azalır)
+    // ✅ debounce
     let searchTimer = null;
     searchEl.addEventListener("input", () => {
       clearTimeout(searchTimer);
@@ -1300,7 +1307,7 @@
     });
 
     // =========================
-    // DRAGGABLE PLAYER + clamp fix
+    // DRAGGABLE PLAYER + clamp fix (viewport tutarlı)
     // =========================
     function restorePlayerPos(){
       try{
@@ -1329,8 +1336,10 @@
     function clampPlayerToViewport(){
       const { vw, vh } = getViewportWH();
 
-      const w = fp.offsetWidth;
-      const h = fp.offsetHeight;
+      const w0 = fp.offsetWidth;
+      const h0 = fp.offsetHeight;
+      const w = useTransformScale ? (w0 * uiScale) : w0;
+      const h = useTransformScale ? (h0 * uiScale) : h0;
 
       const minX = 8;
       const minY = 8;
@@ -1375,15 +1384,16 @@
       fp.style.right = "auto";
     });
 
-    // ✅ GEREKLİ FIX: drag hareketinde de visualViewport kullan (tutarlı)
     fpHeader.addEventListener("pointermove", (e) => {
       if (!dragging) return;
 
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
 
-      const w = fp.offsetWidth;
-      const h = fp.offsetHeight;
+      const w0 = fp.offsetWidth;
+      const h0 = fp.offsetHeight;
+      const w = useTransformScale ? (w0 * uiScale) : w0;
+      const h = useTransformScale ? (h0 * uiScale) : h0;
 
       const { vw, vh } = getViewportWH();
 
@@ -1409,9 +1419,7 @@
     });
 
     window.addEventListener("resize", () => clampPlayerToViewport());
-    window.addEventListener("orientationchange", () => {
-      setTimeout(clampPlayerToViewport, 150);
-    });
+    window.addEventListener("orientationchange", () => setTimeout(clampPlayerToViewport, 150));
     if (window.visualViewport){
       window.visualViewport.addEventListener("resize", () => clampPlayerToViewport());
     }
