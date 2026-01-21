@@ -25,13 +25,30 @@
       --greenGlow: 0 0 0 4px rgba(22,163,74,.22), 0 10px 22px rgba(22,163,74,.10);
     }
 
-    body{
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      margin: 18px;
-      max-width: 980px;
-      color:#111;
+    /* ✅ Pull-to-refresh / overscroll kontrolü */
+    html, body{
+      height: 100%;
+      overscroll-behavior-y: none;
       background: var(--bg);
+    }
+
+    body{
+      margin: 0;
+      overflow: hidden; /* body scroll yok => pull-to-refresh azalır */
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color:#111;
       line-height: 1.10;
+    }
+
+    /* ✅ Asıl scroll alanı */
+    #scrollArea{
+      height: 100%;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+      padding: 18px;
+      max-width: 980px;
+      margin: 0 auto;
     }
 
     #appScale{
@@ -287,7 +304,7 @@
     }
 
     @media (max-width: 680px){
-      body{ margin: 14px; }
+      #scrollArea{ padding: 14px; }
       .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 36px 36px 36px; }
       .title{
         white-space: nowrap;
@@ -349,7 +366,7 @@
     }
     .filterBtn svg{ width:14px; height:14px; }
 
-    /* ✅ Floating player: belirgin border + asimetrik shadow */
+    /* ✅ Floating player */
     #floatingPlayer{
       position: fixed;
       left: max(18px, env(safe-area-inset-left));
@@ -383,7 +400,6 @@
       pointer-events: none;
     }
 
-    /* Header emboss çizgi + boş alanlar sürüklenebilir */
     #fpHeader{
       display:flex;
       align-items:center;
@@ -537,88 +553,89 @@
 </head>
 
 <body>
-  <div id="appScale">
-    <h1 class="pageTitle">FSP Audio — Güncel</h1>
+  <div id="scrollArea">
+    <div id="appScale">
+      <h1 class="pageTitle">FSP Audio — Güncel</h1>
 
-    <nav class="navRow" aria-label="Sayfalar">
-      <a class="navLink" href="https://protokolfsp.github.io/fsp-audio/">Güncel</a>
-      <a class="navLink" href="https://protokolfsp.github.io/FSP2022-23/">2021–23</a>
-      <a class="navLink" href="https://protokolfsp.github.io/All-in-One/">All-in-One</a>
-      <a class="navLink" href="https://protokolfsp.github.io/Tlcfsp/">TLC</a>
-      <a class="navLink" href="https://protokolfsp.github.io/MenschiB/">MenschiB</a>
-
+      <nav class="navRow" aria-label="Sayfalar">
+        <a class="navLink" href="https://protokolfsp.github.io/fsp-audio/">Güncel</a>
+        <a class="navLink" href="https://protokolfsp.github.io/FSP2022-23/">2021–23</a>
+        <a class="navLink" href="https://protokolfsp.github.io/All-in-One/">All-in-One</a>
+        <a class="navLink" href="https://protokolfsp.github.io/Tlcfsp/">TLC</a>
+        <a class="navLink" href="https://protokolfsp.github.io/MenschiB/">MenschiB</a>
       </nav>
 
-    <div class="topbar">
-      <input id="search" type="text" placeholder="Arama (ör. ACS, DM, PAVK)..." />
-      <button id="resetBtn" type="button">Hepsi</button>
+      <div class="topbar">
+        <input id="search" type="text" placeholder="Arama (ör. ACS, DM, PAVK)..." />
+        <button id="resetBtn" type="button">Hepsi</button>
 
-      <div class="zoomWrap" aria-label="Görünüm">
-        <button id="zoomOutBtn" class="zoomBtn zoomOut" type="button" aria-label="Küçült">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="11" cy="11" r="6"></circle>
-            <path d="M20 20l-3.5-3.5"></path>
-            <path d="M8.5 11h5"></path>
-          </svg>
-        </button>
+        <div class="zoomWrap" aria-label="Görünüm">
+          <button id="zoomOutBtn" class="zoomBtn zoomOut" type="button" aria-label="Küçült">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="6"></circle>
+              <path d="M20 20l-3.5-3.5"></path>
+              <path d="M8.5 11h5"></path>
+            </svg>
+          </button>
 
-        <button id="zoomInBtn" class="zoomBtn zoomIn" type="button" aria-label="Büyüt">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="11" cy="11" r="6"></circle>
-            <path d="M20 20l-3.5-3.5"></path>
-            <path d="M11 8.5v5"></path>
-            <path d="M8.5 11h5"></path>
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <div id="meta">Görünən: 0 / Toplam: 0</div>
-
-    <div class="headerRow">
-      <div class="colTitle">
-        <div class="titleHead">
-          <span>Kayıt</span>
-          <button id="sortDateBtn" class="sortBtn" type="button" title="Tarihe göre sırala (dosya sonu)">
-            <svg id="sortDateIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 5v14"/><path d="M7 14l5 5 5-5"/>
+          <button id="zoomInBtn" class="zoomBtn zoomIn" type="button" aria-label="Büyüt">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="6"></circle>
+              <path d="M20 20l-3.5-3.5"></path>
+              <path d="M11 8.5v5"></path>
+              <path d="M8.5 11h5"></path>
             </svg>
           </button>
         </div>
       </div>
 
-      <div class="colDur" style="text-align:right;">
-        <div class="durHead">
-          <span>Süre</span>
-          <button id="sortDurBtn" class="sortBtn" type="button" title="Süreye göre sırala">
-            <svg id="sortDurIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 5v14"/><path d="M7 14l5 5 5-5"/>
+      <div id="meta">Görünən: 0 / Toplam: 0</div>
+
+      <div class="headerRow">
+        <div class="colTitle">
+          <div class="titleHead">
+            <span>Kayıt</span>
+            <button id="sortDateBtn" class="sortBtn" type="button" title="Tarihe göre sırala (dosya sonu)">
+              <svg id="sortDateIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14"/><path d="M7 14l5 5 5-5"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="colDur" style="text-align:right;">
+          <div class="durHead">
+            <span>Süre</span>
+            <button id="sortDurBtn" class="sortBtn" type="button" title="Süreye göre sırala">
+              <svg id="sortDurIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14"/><path d="M7 14l5 5 5-5"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="headIconCell">
+          <button id="filterFav" class="filterBtn" title="Favoriler filtrele" type="button" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
             </svg>
           </button>
         </div>
+
+        <div class="headIconCell">
+          <button id="filterSel" class="filterBtn" title="Seçilenler filtrele" type="button" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="headIconCell" aria-hidden="true"></div>
       </div>
 
-      <div class="headIconCell">
-        <button id="filterFav" class="filterBtn" title="Favoriler filtrele" type="button" aria-pressed="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
-          </svg>
-        </button>
-      </div>
-
-      <div class="headIconCell">
-        <button id="filterSel" class="filterBtn" title="Seçilenler filtrele" type="button" aria-pressed="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 6L9 17l-5-5"/>
-          </svg>
-        </button>
-      </div>
-
-      <div class="headIconCell" aria-hidden="true"></div>
+      <div id="list"></div>
+      <div id="status"></div>
     </div>
-
-    <div id="list"></div>
-    <div id="status"></div>
   </div>
 
   <div id="floatingPlayer" role="region" aria-label="Oynatıcı">
@@ -660,6 +677,8 @@
     // =========================
     // DOM
     // =========================
+    const scrollArea = document.getElementById("scrollArea");
+
     const listEl   = document.getElementById("list");
     const searchEl = document.getElementById("search");
     const metaEl   = document.getElementById("meta");
@@ -723,9 +742,14 @@
     let items = [];
     let activeId = null;
 
-    let sortMode = localStorage.getItem(LS.sortMode) || "title";
+    // ✅ Varsayılan: date + desc (en güncel en üstte)
+    let sortMode = localStorage.getItem(LS.sortMode) || "date";
     let durSortDir  = (localStorage.getItem(LS.sortDirDur) === "desc") ? "desc" : "asc";
-    let dateSortDir = (localStorage.getItem(LS.sortDirDate) === "desc") ? "desc" : "asc";
+    let dateSortDir = (localStorage.getItem(LS.sortDirDate) === "asc") ? "asc" : "desc";
+
+    // Eğer daha önce hiç kayıt yoksa defaultları yaz
+    if (!localStorage.getItem(LS.sortMode)) localStorage.setItem(LS.sortMode, sortMode);
+    if (!localStorage.getItem(LS.sortDirDate)) localStorage.setItem(LS.sortDirDate, dateSortDir);
 
     // =========================
     // SPEED
@@ -868,7 +892,6 @@
         .replace(/'/g,"&#39;");
     }
 
-    // ✅ Dr/dr veya Fr/fr (noktalı/noktası) öncesi, boşluğu korur
     function highlightDisease(title){
       const raw = (title ?? "").toString();
       const m = raw.match(/\b(dr|fr)\b\.?/i);
@@ -1132,8 +1155,7 @@
             return { id, title, name, url, src: "S1" };
           });
 
-        list.sort((x,y) => x.title.localeCompare(y.title, "tr"));
-
+        // Not: Sıralama artık render() içindeki sortMode=date(desc) ile yapılacak
         items = list;
         statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
         render();
@@ -1387,8 +1409,11 @@
       filterSel = false;
       searchEl.value = "";
 
-      sortMode = "title";
+      // ✅ Reset sonrası da en güncel en üstte
+      sortMode = "date";
+      dateSortDir = "desc";
       localStorage.setItem(LS.sortMode, sortMode);
+      localStorage.setItem(LS.sortDirDate, dateSortDir);
 
       setSortIcons();
       render();
@@ -1401,7 +1426,7 @@
     });
 
     // =========================
-    // DRAGGABLE PLAYER (tüm player) + clamp (zoom uyumlu) + drag sonrası click iptal
+    // DRAGGABLE PLAYER (FIX: transform-scale koordinat düzeltmesi)
     // =========================
     function restorePlayerPos(){
       try{
@@ -1427,22 +1452,26 @@
       return { vw, vh };
     }
 
+    function toLayoutPx(v){
+      return useTransformScale ? (v / uiScale) : v;
+    }
+
     function clampPlayerToViewport(){
       const { vw, vh } = getViewportWH();
 
-      const w0 = fp.offsetWidth;
-      const h0 = fp.offsetHeight;
-      const w = useTransformScale ? (w0 * uiScale) : w0;
-      const h = useTransformScale ? (h0 * uiScale) : h0;
+      const vwL = toLayoutPx(vw);
+      const vhL = toLayoutPx(vh);
+
+      const wL = fp.offsetWidth;
+      const hL = fp.offsetHeight;
 
       const minX = 8;
       const minY = 8;
-      const maxX = Math.max(minX, vw - w - 8);
-      const maxY = Math.max(minY, vh - h - 8);
+      const maxX = Math.max(minX, vwL - wL - 8);
+      const maxY = Math.max(minY, vhL - hL - 8);
 
       const left = parseFloat(fp.style.left);
       const top  = parseFloat(fp.style.top);
-
       if (!Number.isFinite(left) || !Number.isFinite(top)) return;
 
       const nx = Math.min(maxX, Math.max(minX, left));
@@ -1466,9 +1495,21 @@
     }
 
     let dragging = false;
-    let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+    let startClientX = 0, startClientY = 0;
+    let startLeft = 0, startTop = 0;
     let moved = false;
     let suppressClickUntil = 0;
+
+    function getCurrentLeftTopLayout(){
+      const left = parseFloat(fp.style.left);
+      const top  = parseFloat(fp.style.top);
+      if (Number.isFinite(left) && Number.isFinite(top)) return { left, top };
+
+      const rect = fp.getBoundingClientRect();
+      const l = useTransformScale ? (rect.left / uiScale) : rect.left;
+      const t = useTransformScale ? (rect.top  / uiScale) : rect.top;
+      return { left: l, top: t };
+    }
 
     fp.addEventListener("pointerdown", (e) => {
       if (!shouldStartDrag(e.target)) return;
@@ -1479,42 +1520,47 @@
       fp.setPointerCapture(e.pointerId);
       fpHeader.style.cursor = "grabbing";
 
-      const rect = fp.getBoundingClientRect();
-      startX = e.clientX;
-      startY = e.clientY;
-      startLeft = rect.left;
-      startTop = rect.top;
+      startClientX = e.clientX;
+      startClientY = e.clientY;
+
+      const cur = getCurrentLeftTopLayout();
+      startLeft = cur.left;
+      startTop  = cur.top;
 
       fp.style.left = startLeft + "px";
-      fp.style.top = startTop + "px";
+      fp.style.top  = startTop + "px";
       fp.style.bottom = "auto";
-      fp.style.right = "auto";
+      fp.style.right  = "auto";
     });
 
     fp.addEventListener("pointermove", (e) => {
       if (!dragging) return;
 
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      if (!moved && (Math.abs(dx) + Math.abs(dy) > 6)) moved = true;
+      const dxClient = e.clientX - startClientX;
+      const dyClient = e.clientY - startClientY;
 
-      const w0 = fp.offsetWidth;
-      const h0 = fp.offsetHeight;
-      const w = useTransformScale ? (w0 * uiScale) : w0;
-      const h = useTransformScale ? (h0 * uiScale) : h0;
+      const dx = useTransformScale ? (dxClient / uiScale) : dxClient;
+      const dy = useTransformScale ? (dyClient / uiScale) : dyClient;
+
+      if (!moved && (Math.abs(dxClient) + Math.abs(dyClient) > 6)) moved = true;
 
       const { vw, vh } = getViewportWH();
+      const vwL = toLayoutPx(vw);
+      const vhL = toLayoutPx(vh);
+
+      const wL = fp.offsetWidth;
+      const hL = fp.offsetHeight;
 
       const minX = 8;
       const minY = 8;
-      const maxX = Math.max(minX, vw - w - 8);
-      const maxY = Math.max(minY, vh - h - 8);
+      const maxX = Math.max(minX, vwL - wL - 8);
+      const maxY = Math.max(minY, vhL - hL - 8);
 
       const nx = Math.min(maxX, Math.max(minX, startLeft + dx));
-      const ny = Math.min(maxY, Math.max(minY, startTop + dy));
+      const ny = Math.min(maxY, Math.max(minY, startTop  + dy));
 
       fp.style.left = nx + "px";
-      fp.style.top = ny + "px";
+      fp.style.top  = ny + "px";
       savePlayerPos(nx, ny);
     });
 
@@ -1547,6 +1593,27 @@
     if (window.visualViewport){
       window.visualViewport.addEventListener("resize", () => clampPlayerToViewport());
     }
+
+    // =========================
+    // ✅ Pull-to-refresh guard (özellikle Android/Chrome)
+    // =========================
+    (function disablePullToRefresh(){
+      let startY = 0;
+      scrollArea.addEventListener("touchstart", (e) => {
+        if (!e.touches || !e.touches.length) return;
+        startY = e.touches[0].clientY;
+      }, { passive: true });
+
+      scrollArea.addEventListener("touchmove", (e) => {
+        if (!e.touches || !e.touches.length) return;
+        const y = e.touches[0].clientY;
+
+        // En üstteyken aşağı çekme => default'u engelle (pull-to-refresh)
+        if (scrollArea.scrollTop <= 0 && y > startY + 4){
+          e.preventDefault();
+        }
+      }, { passive: false });
+    })();
 
     // =========================
     // NAV ACTIVE
