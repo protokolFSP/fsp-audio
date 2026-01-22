@@ -3,7 +3,11 @@ name: Update OG Screenshot
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 * * * *"  # her saat
+    - cron: "*/15 * * * *"  # 15 dakikada bir  # her saat
+
+concurrency:
+  group: og-screenshot
+  cancel-in-progress: true
 
 permissions:
   contents: write
