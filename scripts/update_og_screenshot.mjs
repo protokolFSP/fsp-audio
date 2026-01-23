@@ -67,7 +67,7 @@ async function main() {
   cropH = clamp(cropH, 1, meta.height);
 
   await sharp(fullPng)
-    .extract({ left: 0, top: 20, width: cropW, height: cropH }) // ✅ sol-üst
+    .extract({ left: 0, top: 50, width: cropW, height: cropH }) // ✅ sol-üst
     .resize(OG_W, OG_H, { fit: "fill" }) // ✅ ratio aynı -> yanlardan kesmez
     .png({ compressionLevel: 9, adaptiveFiltering: true })
     .toFile(OUT_FILE);
