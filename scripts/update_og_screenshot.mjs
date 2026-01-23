@@ -5,24 +5,15 @@ import sharp from "sharp";
 const PAGE_URL = process.env.PAGE_URL ?? "https://protokolfsp.github.io/fsp-audio/";
 const OUT_FILE = process.env.OUT_FILE ?? "og-home.png";
 
-// ✅ İSTEDİĞİN GÖRÜNÜM (daha yakın / okunaklı)
-const CROP_ZOOM = 0.76; // 0.72 daha yakın, 0.80 daha uzak
-const X_BIAS = 0.0;     // 0 = soldan başla (sağ ikonlar biraz kesilsin)
-const TRIM = 22;        // dış boşlukları temizler
-
-const VIEWPORT = { width: 1200, height: 850 };
+const VIEWPORT = { width: 1600, height: 900 }; // sabit ekran
 const DEVICE_SCALE = 2;
 
+const CROP_FRACTION = 0.6; // %60 x %60 sol-üst
 const OG_W = 1200;
 const OG_H = 630;
-const OG_RATIO = OG_W / OG_H;
-
-function clamp(n, min, max) {
-  return Math.max(min, Math.min(max, n));
-}
 
 async function main() {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ args: ["--no-sandbox"] });
   const context = await browser.newContext({
     viewport: VIEWPORT,
     deviceScaleFactor: DEVICE_SCALE,
@@ -30,64 +21,39 @@ async function main() {
 
   const page = await context.newPage();
 
+  // cache kır
   const url = new URL(PAGE_URL);
   url.searchParams.set("ogcap", String(Date.now()));
-  await page.goto(url.toString(), { waitUntil: "domcontentloaded", timeout: 90_000 });
 
-  await page.waitForSelector("#list .itemRow", { timeout: 120_000 });
-
-  await page.evaluate(() => {
-    const scrollArea = document.getElementById("scrollArea");
-    if (scrollArea) scrollArea.scrollTop = 0;
-    const fp = document.getElementById("floatingPlayer");
-    if (fp) fp.style.display = "none";
-    window.scrollTo(0, 0);
-  });
-
-  await page.waitForTimeout(700);
-
-  // Önce appScale; olmazsa scrollArea fallback
-  let rawBuf;
+  // sayfaya git (fail olursa bile screenshot alacağız)
   try {
-    rawBuf = await page.locator("#appScale").screenshot({ type: "png" });
-  } catch {
-    rawBuf = await page.locator("#scrollArea").screenshot({ type: "png" });
-  }
+    await page.goto(url.toString(), { waitUntil: "domcontentloaded", timeout: 90_000 });
+  } catch {}
 
-  // 1) Dış boşlukları trimle
-  const trimmedBuf = await sharp(rawBuf).trim(TRIM).toBuffer();
-  const meta = await sharp(trimmedBuf).metadata();
-  if (!meta.width || !meta.height) throw new Error("No image metadata");
+  // liste gelmeye çalışsın ama gelmezse yine de devam
+  try {
+    await page.waitForSelector("#list .itemRow", { timeout: 60_000 });
+  } catch {}
 
-  // 2) OG oranında ama daha küçük bir alan seç (zoom-in)
-  let cropW = Math.round(meta.width * CROP_ZOOM);
-  let cropH = Math.round(cropW / OG_RATIO);
+  // üste al + floating player kapat
+  try {
+    await page.evaluate(() => {
+      const scrollArea = document.getElementById("scrollArea");
+      if (scrollArea) scrollArea.scrollTop = 0;
+      const fp = document.getElementById("floatingPlayer");
+      if (fp) fp.style.display = "none";
+      window.scrollTo(0, 0);
+    });
+  } catch {}
 
-  // yükseklik yetmezse yükseklikten hesapla
-  if (cropH > meta.height) {
-    cropH = Math.round(meta.height * CROP_ZOOM);
-    cropW = Math.round(cropH * OG_RATIO);
-  }
+  await page.waitForTimeout(600);
 
-  cropW = clamp(cropW, 1, meta.width);
-  cropH = clamp(cropH, 1, meta.height);
+  // 1) tam sayfa ekran görüntüsü
+  const fullPng = await page.screenshot({ type: "png" });
 
-  const maxX = meta.width - cropW;
-  const x = clamp(Math.round(maxX * X_BIAS), 0, maxX);
-  const y = 0; // üstten başla (ilk satırlar görünsün)
+  // 2) sol-üst %60x%60 crop
+  const meta = await sharp(fullPng).metadata();
+  if (!meta.width || !meta.height) throw new Error("Screenshot metadata missing");
 
-  // 3) Crop + export
-  await sharp(trimmedBuf)
-    .extract({ left: x, top: y, width: cropW, height: cropH })
-    .resize(OG_W, OG_H, { fit: "fill" })
-    .png({ compressionLevel: 9, adaptiveFiltering: true })
-    .toFile(OUT_FILE);
-
-  await browser.close();
-  console.log(`Wrote ${OUT_FILE}`);
-}
-
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+  const cropW = Math.max(1, Math.floor(meta.width * CROP_FRACTION));
+  const cropH = Math.max(1, Math.floor(meta.height * CROP_FRACTION));_*
