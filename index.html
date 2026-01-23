@@ -1281,7 +1281,7 @@
           e.stopPropagation();
           const filename =
             (it.name || it.file || "").split("/").pop() ||
-            (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".mp3";
+            (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
           forceDownload(it.url, filename);
         });
 
