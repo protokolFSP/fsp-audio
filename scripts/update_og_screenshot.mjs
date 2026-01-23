@@ -5,15 +5,18 @@ import sharp from "sharp";
 const PAGE_URL = process.env.PAGE_URL ?? "https://protokolfsp.github.io/fsp-audio/";
 const OUT_FILE = process.env.OUT_FILE ?? "og-home.png";
 
-const VIEWPORT = { width: 1600, height: 900 }; // sabit ekran
+const VIEWPORT = { width: 1600, height: 900 };
 const DEVICE_SCALE = 2;
 
-const CROP_FRACTION = 0.6; // %60 x %60 sol-üst
+const CROP_FRACTION = 0.6; // ✅ sol-üstten %60 x %60
 const OG_W = 1200;
 const OG_H = 630;
 
 async function main() {
-  const browser = await chromium.launch({ args: ["--no-sandbox"] });
+  const browser = await chromium.launch({
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
   const context = await browser.newContext({
     viewport: VIEWPORT,
     deviceScaleFactor: DEVICE_SCALE,
@@ -25,12 +28,14 @@ async function main() {
   const url = new URL(PAGE_URL);
   url.searchParams.set("ogcap", String(Date.now()));
 
-  // sayfaya git (fail olursa bile screenshot alacağız)
   try {
-    await page.goto(url.toString(), { waitUntil: "domcontentloaded", timeout: 90_000 });
+    await page.goto(url.toString(), {
+      waitUntil: "domcontentloaded",
+      timeout: 90_000,
+    });
   } catch {}
 
-  // liste gelmeye çalışsın ama gelmezse yine de devam
+  // liste gelmese bile devam
   try {
     await page.waitForSelector("#list .itemRow", { timeout: 60_000 });
   } catch {}
@@ -48,12 +53,28 @@ async function main() {
 
   await page.waitForTimeout(600);
 
-  // 1) tam sayfa ekran görüntüsü
+  // viewport screenshot (sol-üst zaten burada)
   const fullPng = await page.screenshot({ type: "png" });
 
-  // 2) sol-üst %60x%60 crop
   const meta = await sharp(fullPng).metadata();
   if (!meta.width || !meta.height) throw new Error("Screenshot metadata missing");
 
   const cropW = Math.max(1, Math.floor(meta.width * CROP_FRACTION));
-  const cropH = Math.max(1, Math.floor(meta.height * CROP_FRACTION));_*
+  const cropH = Math.max(1, Math.floor(meta.height * CROP_FRACTION));
+
+  await sharp(fullPng)
+    .extract({ left: 0, top: 0, width: cropW, height: cropH })
+    .resize(OG_W, OG_H, { fit: "cover", position: "top" })
+    .png({ compressionLevel: 9, adaptiveFiltering: true })
+    .toFile(OUT_FILE);
+
+  await context.close();
+  await browser.close();
+
+  console.log(`Wrote ${OUT_FILE}`);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
