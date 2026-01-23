@@ -1,13 +1,25 @@
-// File: scripts/update_og_screenshot.mjs
 import { chromium } from "playwright";
 import sharp from "sharp";
 
 const PAGE_URL = process.env.PAGE_URL ?? "https://protokolfsp.github.io/fsp-audio/";
 const OUT_FILE = process.env.OUT_FILE ?? "og-home.png";
 
-// Daha net: biraz büyük render alıp kırpıyoruz
 const VIEWPORT = { width: 1400, height: 900 };
-const DEVICE_SCALE = 3; // 2 -> 3 daha net (dosya boyutu artar)
+const DEVICE_SCALE = 2;
+
+async function gotoWithRetry(page, url, tries = 3) {
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    try {
+      await page.goto(url, { waitUntil: "networkidle", timeout: 90_000 });
+      return;
+    } catch (e) {
+      lastErr = e;
+      await page.waitForTimeout(2000);
+    }
+  }
+  throw lastErr;
+}
 
 async function main() {
   const browser = await chromium.launch();
@@ -18,35 +30,27 @@ async function main() {
 
   const page = await context.newPage();
 
-  // Cache kır (capture sırasında)
   const url = new URL(PAGE_URL);
   url.searchParams.set("ogcap", String(Date.now()));
-  await page.goto(url.toString(), { waitUntil: "domcontentloaded" });
+  await gotoWithRetry(page, url.toString(), 3);
 
-  // Liste dolsun
-  await page.waitForSelector("#list .itemRow", { timeout: 45_000 });
+  await page.waitForSelector("#list .itemRow", { timeout: 120_000 });
 
-  // En üste
   await page.evaluate(() => {
-    const el = document.getElementById("scrollArea");
-    if (el) el.scrollTop = 0;
+    const scrollArea = document.getElementById("scrollArea");
+    if (scrollArea) scrollArea.scrollTop = 0;
+    const fp = document.getElementById("floatingPlayer");
+    if (fp) fp.style.display = "none";
     window.scrollTo(0, 0);
   });
 
-  // Biraz boya
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(800);
 
-  // ✅ Boşluk az olsun diye direkt içerik container'ını çek
   const target = page.locator("#appScale");
-  await target.waitFor({ state: "visible", timeout: 10_000 });
-
   const buf = await target.screenshot({ type: "png" });
 
-  // ✅ Crop/Netlik:
-  // - trim(): dıştaki gereksiz beyaz/boş alanı kırpar
-  // - resize cover (top): üst bölüm + ilk satırlar görünsün
   await sharp(buf)
-    .trim(18) // daha agresif istersen 22-28 yap
+    .trim(24) // netlik için biraz daha agresif crop
     .resize(1200, 630, { fit: "cover", position: "top" })
     .png({ compressionLevel: 9, adaptiveFiltering: true })
     .toFile(OUT_FILE);
