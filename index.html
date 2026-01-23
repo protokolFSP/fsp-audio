@@ -16,7 +16,7 @@
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://protokolfsp.github.io/fsp-audio/og-home.png" />
-  
+
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-TNRQ49C157"></script>
   <script>
@@ -46,7 +46,6 @@
       --greenGlow: 0 0 0 4px rgba(22,163,74,.22), 0 10px 22px rgba(22,163,74,.10);
     }
 
-    /* ✅ Pull-to-refresh / overscroll kontrolü */
     html, body{
       height: 100%;
       overscroll-behavior-y: none;
@@ -55,13 +54,12 @@
 
     body{
       margin: 0;
-      overflow: hidden; /* body scroll yok => pull-to-refresh azalır */
+      overflow: hidden;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color:#111;
       line-height: 1.10;
     }
 
-    /* ✅ Asıl scroll alanı */
     #scrollArea{
       height: 100%;
       overflow: auto;
@@ -87,7 +85,6 @@
       margin-bottom: 14px;
     }
 
-    /* NAV */
     .navRow{
       display:flex;
       gap:10px;
@@ -146,7 +143,6 @@
     }
     #resetBtn:hover{ background: var(--hover); }
 
-    /* Zoom (SVG) */
     .zoomWrap{
       display:flex;
       align-items:center;
@@ -219,7 +215,6 @@
       line-height: 1.05;
     }
 
-    /* Grid */
     .headerRow, .itemRow{
       display: grid;
       grid-template-columns: minmax(0, 1fr) 8ch 36px 36px 36px;
@@ -277,7 +272,6 @@
       border-bottom: 1px solid var(--border);
     }
 
-    /* Zebra */
     .itemRow{
       padding: 4px 8px;
       border-bottom: 1px solid #ececec;
@@ -289,7 +283,6 @@
     }
     .itemRow:hover{ background: var(--hover); }
 
-    /* Aktif satır */
     .itemRow.active{
       background: var(--active) !important;
       box-shadow: var(--activeGlow);
@@ -387,7 +380,6 @@
     }
     .filterBtn svg{ width:14px; height:14px; }
 
-    /* ✅ Floating player */
     #floatingPlayer{
       position: fixed;
       left: max(18px, env(safe-area-inset-left));
@@ -736,6 +728,42 @@
     });
 
     // =========================
+    // ✅ ANALYTICS HELPERS (GA4 + local counts)
+    // =========================
+    function gaEvent(name, params = {}) {
+      try {
+        if (typeof gtag === "function") {
+          gtag("event", name, params);
+        }
+      } catch {}
+    }
+
+    function safeFileExt(filename) {
+      const m = String(filename || "").match(/\.([a-z0-9]+)$/i);
+      return m ? m[1].toLowerCase() : "";
+    }
+
+    // Local sayaçlar (opsiyonel): sadece cihaz bazlı
+    const LS_COUNTS = {
+      plays: "fsp1.counts.plays.v1",
+      downloads: "fsp1.counts.downloads.v1",
+    };
+
+    function loadCounts(k) {
+      try { return JSON.parse(localStorage.getItem(k) || "{}"); } catch { return {}; }
+    }
+    function saveCounts(k, v) {
+      localStorage.setItem(k, JSON.stringify(v));
+    }
+    function bumpCount(mapObj, key) {
+      mapObj[key] = (mapObj[key] || 0) + 1;
+      return mapObj[key];
+    }
+
+    const playCounts = loadCounts(LS_COUNTS.plays);
+    const downloadCounts = loadCounts(LS_COUNTS.downloads);
+
+    // =========================
     // LOCAL STORAGE (Güncel için ayrı namespace)
     // =========================
     const LS = {
@@ -763,12 +791,10 @@
     let items = [];
     let activeId = null;
 
-    // ✅ Varsayılan: date + desc (en güncel en üstte)
     let sortMode = localStorage.getItem(LS.sortMode) || "date";
     let durSortDir  = (localStorage.getItem(LS.sortDirDur) === "desc") ? "desc" : "asc";
     let dateSortDir = (localStorage.getItem(LS.sortDirDate) === "asc") ? "asc" : "desc";
 
-    // Eğer daha önce hiç kayıt yoksa defaultları yaz
     if (!localStorage.getItem(LS.sortMode)) localStorage.setItem(LS.sortMode, sortMode);
     if (!localStorage.getItem(LS.sortDirDate)) localStorage.setItem(LS.sortDirDate, dateSortDir);
 
@@ -814,7 +840,7 @@
     fastBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex + 1); });
 
     // =========================
-    // ZOOM (% görünüm) – player dahil + double-tap reset
+    // ZOOM (% görünüm)
     // =========================
     const ZOOMS = [0.85, 0.9, 0.95, 1, 1.05, 1.1, 1.15, 1.2];
     let zoomIndex = ZOOMS.indexOf(1);
@@ -1176,7 +1202,6 @@
             return { id, title, name, url, src: "S1" };
           });
 
-        // Not: Sıralama artık render() içindeki sortMode=date(desc) ile yapılacak
         items = list;
         statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
         render();
@@ -1279,9 +1304,35 @@
 
         dlBtn.addEventListener("click", (e) => {
           e.stopPropagation();
+
           const filename =
             (it.name || it.file || "").split("/").pop() ||
             (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
+
+          // ✅ LOCAL count (opsiyonel)
+          const dlN = bumpCount(downloadCounts, it.id);
+          saveCounts(LS_COUNTS.downloads, downloadCounts);
+
+          // ✅ GA4 events
+          gaEvent("file_download", {
+            link_url: it.url,
+            link_text: it.title,
+            file_name: filename,
+            file_extension: safeFileExt(filename),
+            audio_id: it.id,
+            audio_title: it.title,
+            source: it.src || "S1",
+            download_count_local: dlN
+          });
+
+          gaEvent("audio_download", {
+            audio_id: it.id,
+            audio_title: it.title,
+            link_url: it.url,
+            file_name: filename,
+            source: it.src || "S1"
+          });
+
           forceDownload(it.url, filename);
         });
 
@@ -1344,6 +1395,19 @@
       const visible = getVisibleItems();
       const it = visible[idx];
       if (!it) return;
+
+      // ✅ LOCAL play count (opsiyonel)
+      const playN = bumpCount(playCounts, it.id);
+      saveCounts(LS_COUNTS.plays, playCounts);
+
+      // ✅ GA4 event
+      gaEvent("audio_play", {
+        audio_id: it.id,
+        audio_title: it.title,
+        audio_url: it.url,
+        source: it.src || "S1",
+        play_count_local: playN
+      });
 
       statusEl.textContent = "";
       activeId = it.id;
@@ -1430,7 +1494,6 @@
       filterSel = false;
       searchEl.value = "";
 
-      // ✅ Reset sonrası da en güncel en üstte
       sortMode = "date";
       dateSortDir = "desc";
       localStorage.setItem(LS.sortMode, sortMode);
@@ -1447,7 +1510,7 @@
     });
 
     // =========================
-    // DRAGGABLE PLAYER (FIX: transform-scale koordinat düzeltmesi)
+    // DRAGGABLE PLAYER (transform-scale koordinat fix)
     // =========================
     function restorePlayerPos(){
       try{
@@ -1616,7 +1679,7 @@
     }
 
     // =========================
-    // ✅ Pull-to-refresh guard (özellikle Android/Chrome)
+    // Pull-to-refresh guard
     // =========================
     (function disablePullToRefresh(){
       let startY = 0;
@@ -1629,7 +1692,6 @@
         if (!e.touches || !e.touches.length) return;
         const y = e.touches[0].clientY;
 
-        // En üstteyken aşağı çekme => default'u engelle (pull-to-refresh)
         if (scrollArea.scrollTop <= 0 && y > startY + 4){
           e.preventDefault();
         }
