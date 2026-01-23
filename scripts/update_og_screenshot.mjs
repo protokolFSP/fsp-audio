@@ -9,7 +9,7 @@ const VIEWPORT = { width: 1600, height: 900 };
 const DEVICE_SCALE = 2;
 
 // ✅ sol-üstten, OG oranında crop
-const CROP_WIDTH_FRACTION = 0.60; // genişlik %60
+const CROP_WIDTH_FRACTION = 0.66; // genişlik %66
 const OG_W = 1200;
 const OG_H = 630;
 const OG_RATIO = OG_W / OG_H;
@@ -67,7 +67,7 @@ async function main() {
   cropH = clamp(cropH, 1, meta.height);
 
   await sharp(fullPng)
-    .extract({ left: 0, top: 0, width: cropW, height: cropH }) // ✅ sol-üst
+    .extract({ left: 0, top: 20, width: cropW, height: cropH }) // ✅ sol-üst
     .resize(OG_W, OG_H, { fit: "fill" }) // ✅ ratio aynı -> yanlardan kesmez
     .png({ compressionLevel: 9, adaptiveFiltering: true })
     .toFile(OUT_FILE);
