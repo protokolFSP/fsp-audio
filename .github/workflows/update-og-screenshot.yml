@@ -1,3 +1,4 @@
+# File: .github/workflows/update-og-screenshot.yml
 name: Update OG Screenshot
 
 on:
@@ -20,31 +21,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: Install deps (retry)
+      # lock yok => npm install
+      - name: Install deps
         run: |
-          set -e
           npm config set fund false
           npm config set audit false
-          for i in 1 2 3; do
-            npm ci && break || npm install && break || true
-            echo "npm install retry $i..."
-            sleep 3
-          done
+          npm install
 
-      - name: Install Playwright Chromium (retry)
-        run: |
-          set -e
-          for i in 1 2 3; do
-            npx playwright install --with-deps chromium && break || true
-            echo "playwright install retry $i..."
-            sleep 5
-          done
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Capture og-home.png
         env:
@@ -54,15 +47,21 @@ jobs:
 
       - name: Commit & push (if changed)
         run: |
-          if [ -z "$(git status --porcelain)" ]; then
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add og-home.png
+          if git diff --cached --quiet; then
             echo "No changes."
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add og-home.png
+
           git commit -m "chore: update og-home.png (screenshot)"
-          git push
+
+          git fetch origin main
+          git pull --rebase origin main
+          git push origin HEAD:main
 
       - name: Upload artifact (always)
         if: always()
