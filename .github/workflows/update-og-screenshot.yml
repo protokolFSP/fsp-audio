@@ -3,7 +3,7 @@ name: Update OG Screenshot
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/15 * * * *"  # 15 dakikada bir  # her saat
+    - cron: "*/15 * * * *"
 
 concurrency:
   group: og-screenshot
@@ -15,6 +15,8 @@ permissions:
 jobs:
   og:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,13 +25,27 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: "npm"
 
-      - name: Install deps
+      - name: Install deps (retry)
         run: |
-          npm ci || npm install
+          set -e
+          npm config set fund false
+          npm config set audit false
+          for i in 1 2 3; do
+            npm ci && break || npm install && break || true
+            echo "npm install retry $i..."
+            sleep 3
+          done
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright Chromium (retry)
+        run: |
+          set -e
+          for i in 1 2 3; do
+            npx playwright install --with-deps chromium && break || true
+            echo "playwright install retry $i..."
+            sleep 5
+          done
 
       - name: Capture og-home.png
         env:
@@ -48,3 +64,11 @@ jobs:
           git add og-home.png
           git commit -m "chore: update og-home.png (screenshot)"
           git push
+
+      - name: Upload artifact (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: og-output
+          path: |
+            og-home.png
