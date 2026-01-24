@@ -222,10 +222,10 @@
       line-height: 1.05;
     }
 
-    /* ✅ 1 kolon eklendi: plays */
+    /* ✅ Grid: Süre'den sonra Dinlenme kolonu eklendi */
     .headerRow, .itemRow{
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 8ch 7ch 36px 36px 36px;
+      grid-template-columns: minmax(0, 1fr) 8ch 9ch 36px 36px 36px;
       align-items: center;
       column-gap: 8px;
     }
@@ -239,7 +239,7 @@
       line-height: 1.05;
     }
 
-    .titleHead, .durHead, .playsHead{
+    .titleHead, .durHead{
       display:flex;
       align-items:center;
       gap:8px;
@@ -248,17 +248,6 @@
     }
     .titleHead{ justify-content:flex-start; }
     .durHead{ justify-content:flex-end; }
-    .playsHead{ justify-content:flex-end; }
-
-    .plays{
-      text-align:right;
-      color: var(--muted);
-      font-variant-numeric: tabular-nums;
-      font-size: .95rem;
-      user-select:none;
-      white-space: nowrap;
-      line-height: 1.00;
-    }
 
     .headIconCell{
       display:flex;
@@ -336,10 +325,19 @@
       line-height: 1.00;
     }
 
+    .plays{
+      text-align:right;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      font-size: .95rem;
+      user-select:none;
+      white-space: nowrap;
+      line-height: 1.00;
+    }
+
     @media (max-width: 680px){
       #scrollArea{ padding: 14px; }
-      /* ✅ mobilde de plays kolonu var */
-      .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 7ch 36px 36px 36px; }
+      .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 9ch 36px 36px 36px; }
       .title{
         white-space: nowrap;
         overflow: hidden;
@@ -623,7 +621,6 @@
       </div>
 
       <div id="meta">Görünən: 0 / Toplam: 0</div>
-      <div id="topDownloads"></div>
 
       <div class="headerRow">
         <div class="colTitle">
@@ -648,14 +645,15 @@
           </div>
         </div>
 
-        <!-- ✅ Yeni: Play count sort (ikon başlık) -->
+        <!-- ✅ Dinlenme (Hoparlör) + sıralama -->
         <div class="colPlays" style="text-align:right;">
-          <div class="playsHead">
+          <div class="durHead" style="justify-content:flex-end;">
             <button id="sortPlayBtn" class="sortBtn" type="button" title="En çok dinlenen">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 10v4h3l5 4V6L7 10H4z" fill="#2b7cff"></path>
-                <path d="M16.5 8.5c1.5 1.5 1.5 5.5 0 7" fill="none" stroke="#ff9500" stroke-width="2" stroke-linecap="round"></path>
-                <path d="M19 6c3 3 3 9 0 12" fill="none" stroke="#ff9500" stroke-width="2" stroke-linecap="round"></path>
+              <svg id="sortPlayIcon" viewBox="0 0 24 24" aria-hidden="true">
+                <!-- turuncu+mavi hoparlör -->
+                <path d="M3 10v4h3l4 3V7L6 10H3z" fill="#f59e0b"></path>
+                <path d="M14.5 8.5c1.6 1.6 1.6 5.4 0 7" fill="none" stroke="#2b7cff" stroke-width="2" stroke-linecap="round"></path>
+                <path d="M16.8 6.2c3 3 3 8.6 0 11.6" fill="none" stroke="#2b7cff" stroke-width="2" stroke-linecap="round" opacity=".9"></path>
               </svg>
             </button>
           </div>
@@ -721,9 +719,9 @@
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
 
-    // ✅ Global sayaç API (Cloudflare Worker)
-    // (Değiştirmen gerekirse: fspdlcounter'ın gerçek URL'si)
-    const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
+    // ✅ Counter Worker (GLOBAL sayaç)
+    const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev"; // <-- gerekirse değiştir
+    const MIN_LISTEN_SECONDS = 30;
 
     // =========================
     // DOM
@@ -760,8 +758,8 @@
     const sortDateBtn  = document.getElementById("sortDateBtn");
     const sortDateIcon = document.getElementById("sortDateIcon");
 
-    // ✅ yeni sort butonu
-    const sortPlayBtn = document.getElementById("sortPlayBtn");
+    const sortPlayBtn  = document.getElementById("sortPlayBtn");
+    const sortPlayIcon = document.getElementById("sortPlayIcon");
 
     const plyr = new Plyr(playerEl, {
       seekTime: 5,
@@ -769,15 +767,12 @@
     });
 
     // =========================
-    // ✅ GA4 HELPERS (TEK KAYNAK)
+    // ✅ GA4 HELPERS (kalsın)
     // =========================
     function gaEvent(name, params = {}) {
       try {
         if (typeof gtag !== "function") return;
-        gtag("event", name, {
-          ...params,
-          page_path: location.pathname
-        });
+        gtag("event", name, { ...params, page_path: location.pathname });
       } catch {}
     }
 
@@ -800,67 +795,115 @@
     }
 
     // =========================
-    // ✅ GLOBAL PLAY COUNTS (Cloudflare)
+    // ✅ GLOBAL COUNTERS (play/download)
     // =========================
-    const globalPlayCounts = {}; // id -> count
+    let plays = {};
+    let downloads = {};
 
-    function bumpGlobalPlayLocal(id, delta=1){
-      globalPlayCounts[id] = (globalPlayCounts[id] || 0) + delta;
+    function counterBase(){
+      return (COUNTER_API || "").replace(/\/$/, "");
     }
 
-    async function sendPlayHit(it){
-      if (!COUNTER_API) return;
-      try{
-        const u = `${COUNTER_API}/hit?type=play&id=${encodeURIComponent(it.id)}&t=${encodeURIComponent(it.title || "")}`;
-        // keepalive: sayfa kapanırken bile gidebilsin
-        fetch(u, { method:"GET", mode:"cors", keepalive:true, cache:"no-store" }).catch(()=>{});
-      }catch{}
+    async function counterHit(type, it){
+      const base = counterBase();
+      if (!base || !it) return;
+
+      const u = new URL(base + "/hit");
+      u.searchParams.set("type", type);
+      u.searchParams.set("id", it.id);
+      u.searchParams.set("t", it.title || "");
+      u.searchParams.set("f", (it.name || "").split("/").pop() || "");
+
+      try { await fetch(u.toString(), { mode: "cors", cache: "no-store" }); } catch {}
     }
 
-    async function hydrateGlobalPlayCounts(){
-      if (!COUNTER_API || !items.length) return;
+    async function fetchCounts(type, ids){
+      const base = counterBase();
+      if (!base || !ids.length) return {};
 
-      // Önce /counts endpoint varsa batch çek
-      const ids = items.map(it => it.id);
-      const batchSize = 80;
+      const out = {};
+      const chunks = [];
+      for (let i = 0; i < ids.length; i += 200) chunks.push(ids.slice(i, i + 200));
 
-      let didAny = false;
+      for (const chunk of chunks){
+        const u = new URL(base + "/counts");
+        u.searchParams.set("type", type);
+        u.searchParams.set("ids", chunk.join(","));
 
-      for (let i=0; i<ids.length; i+=batchSize){
-        const batch = ids.slice(i, i+batchSize);
         try{
-          const res = await fetch(`${COUNTER_API}/counts?type=play&ids=${encodeURIComponent(batch.join(","))}`, { cache:"no-store" });
-          if (!res.ok) throw new Error("no counts");
+          const res = await fetch(u.toString(), { mode: "cors", cache: "no-store" });
+          if (!res.ok) continue;
           const j = await res.json();
-          if (j && j.ok && j.counts){
-            for (const [id, cnt] of Object.entries(j.counts)){
-              globalPlayCounts[id] = Number(cnt) || 0;
-            }
-            didAny = true;
-          }
-        }catch{
-          // /counts yoksa break; sonra /top fallback deneyeceğiz
-          break;
-        }
-      }
-
-      // Fallback: /top?type=play ile sadece en çok dinlenenleri al (diğerleri 0 kalır)
-      if (!didAny){
-        try{
-          const res = await fetch(`${COUNTER_API}/top?type=play&limit=50`, { cache:"no-store" });
-          if (res.ok){
-            const arr = await res.json();
-            if (Array.isArray(arr)){
-              for (const row of arr){
-                if (row && row.id) globalPlayCounts[row.id] = Number(row.count) || 0;
-              }
-            }
-          }
+          if (!j || !j.ok || !j.counts) continue;
+          Object.assign(out, j.counts);
         }catch{}
       }
 
+      return out;
+    }
+
+    async function refreshAllCounts(){
+      const ids = items.map(x => x.id);
+      const [p, d] = await Promise.all([
+        fetchCounts("play", ids),
+        fetchCounts("download", ids)
+      ]);
+      plays = p || {};
+      downloads = d || {};
       render();
     }
+
+    // =========================
+    // ✅ 30sn dinlenince 1 kez play say
+    // =========================
+    let listenState = { id: null, seconds: 0, sent: false, timer: null, lastTick: 0 };
+
+    function stopListenTimer(){
+      if (listenState.timer){
+        clearInterval(listenState.timer);
+        listenState.timer = null;
+      }
+    }
+
+    function resetListenState(id){
+      stopListenTimer();
+      listenState = { id, seconds: 0, sent: false, timer: null, lastTick: 0 };
+    }
+
+    function startListenTimer(){
+      if (!activeId) return;
+      if (listenState.sent) return;
+      if (listenState.timer) return;
+      if (listenState.id !== activeId) resetListenState(activeId);
+
+      listenState.lastTick = Date.now();
+
+      listenState.timer = setInterval(async () => {
+        if (playerEl.paused) return;
+
+        const now = Date.now();
+        const delta = (now - listenState.lastTick) / 1000;
+        listenState.lastTick = now;
+
+        if (delta > 0 && delta < 5) listenState.seconds += delta;
+
+        if (!listenState.sent && listenState.seconds >= MIN_LISTEN_SECONDS){
+          listenState.sent = true;
+          stopListenTimer();
+
+          const it = items.find(x => x.id === activeId);
+          if (it){
+            plays[it.id] = (Number(plays[it.id] || 0) + 1);
+            render();
+            await counterHit("play", it);
+          }
+        }
+      }, 500);
+    }
+
+    plyr.on("playing", () => startListenTimer());
+    plyr.on("pause", () => stopListenTimer());
+    plyr.on("ended", () => stopListenTimer());
 
     // =========================
     // LOCAL STORAGE (Güncel için ayrı namespace)
@@ -873,7 +916,6 @@
       sortMode: "fsp1.sort.mode.v1",
       sortDirDur: "fsp1.sort.dur.dir.v1",
       sortDirDate: "fsp1.sort.date.dir.v1",
-      // ✅ plays sort yönü
       sortDirPlay: "fsp1.sort.play.dir.v1",
       speed: "fsp1.speed.v1",
       zoom:  "fsp1.ui.zoom.v1"
@@ -892,6 +934,7 @@
     let items = [];
     let activeId = null;
 
+    // ✅ Varsayılan: date + desc
     let sortMode = localStorage.getItem(LS.sortMode) || "date";
     let durSortDir  = (localStorage.getItem(LS.sortDirDur) === "desc") ? "desc" : "asc";
     let dateSortDir = (localStorage.getItem(LS.sortDirDate) === "asc") ? "asc" : "desc";
@@ -899,6 +942,7 @@
 
     if (!localStorage.getItem(LS.sortMode)) localStorage.setItem(LS.sortMode, sortMode);
     if (!localStorage.getItem(LS.sortDirDate)) localStorage.setItem(LS.sortDirDate, dateSortDir);
+    if (!localStorage.getItem(LS.sortDirPlay)) localStorage.setItem(LS.sortDirPlay, playSortDir);
 
     // =========================
     // SPEED
@@ -1131,7 +1175,9 @@
 
       if (sortMode === "dur") sortDurBtn.classList.add("on");
       if (sortMode === "date") sortDateBtn.classList.add("on");
-      if (sortMode === "plays") sortPlayBtn.classList.add("on");
+      if (sortMode === "play") sortPlayBtn.classList.add("on");
+
+      sortPlayBtn.title = `En çok dinlenen (${playSortDir === "desc" ? "azalan" : "artan"})`;
     }
 
     sortDurBtn.addEventListener("click", (e) => {
@@ -1154,11 +1200,10 @@
       render();
     });
 
-    // ✅ plays sort: ilk tıkla "en çok dinlenen" (desc)
     sortPlayBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (sortMode !== "plays") sortMode = "plays";
-      else playSortDir = (playSortDir === "desc") ? "asc" : "desc";
+      if (sortMode !== "play") sortMode = "play";
+      else playSortDir = (playSortDir === "asc") ? "desc" : "asc";
       localStorage.setItem(LS.sortMode, sortMode);
       localStorage.setItem(LS.sortDirPlay, playSortDir);
       setSortIcons();
@@ -1320,9 +1365,7 @@
         items = list;
         statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
 
-        // ✅ global play count'ları yükle (arka planda), sonra render
-        hydrateGlobalPlayCounts().catch(()=>{});
-
+        await refreshAllCounts();
         render();
       }catch(err){
         console.error(err);
@@ -1356,14 +1399,6 @@
           }
           return a.title.localeCompare(b.title, "tr");
         });
-      } else if (sortMode === "plays"){
-        const dir = (playSortDir === "asc") ? 1 : -1;
-        arr.sort((a,b) => {
-          const ca = globalPlayCounts[a.id] || 0;
-          const cb = globalPlayCounts[b.id] || 0;
-          if (ca !== cb) return (ca - cb) * dir;
-          return a.title.localeCompare(b.title, "tr");
-        });
       } else if (sortMode === "date"){
         const dir = (dateSortDir === "asc") ? 1 : -1;
         arr.sort((a,b) => {
@@ -1373,6 +1408,14 @@
           const hb = (tb !== null);
           if (ha !== hb) return ha ? -1 : 1;
           if (ha && hb && ta !== tb) return (ta - tb) * dir;
+          return a.title.localeCompare(b.title, "tr");
+        });
+      } else if (sortMode === "play"){
+        const dir = (playSortDir === "asc") ? 1 : -1;
+        arr.sort((a,b) => {
+          const pa = Number(plays[a.id] || 0);
+          const pb = Number(plays[b.id] || 0);
+          if (pa !== pb) return (pa - pb) * dir;
           return a.title.localeCompare(b.title, "tr");
         });
       } else {
@@ -1411,10 +1454,9 @@
         dur.className = "dur";
         dur.textContent = (durs[it.id] > 0) ? fmtDur(durs[it.id]) : "…";
 
-        // ✅ plays hücresi
-        const plays = document.createElement("div");
-        plays.className = "plays";
-        plays.textContent = String(globalPlayCounts[it.id] || 0);
+        const playCell = document.createElement("div");
+        playCell.className = "plays";
+        playCell.textContent = String(Number(plays[it.id] || 0));
 
         const favBtn = iconButton("star", !!favs[it.id], "Favori");
         const selBtn = iconButton("check", !!sels[it.id], "Seç");
@@ -1434,14 +1476,19 @@
           render();
         });
 
-        dlBtn.addEventListener("click", (e) => {
+        dlBtn.addEventListener("click", async (e) => {
           e.stopPropagation();
           const filename =
             (it.name || it.file || "").split("/").pop() ||
             (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
 
-          // ✅ Event: download tıklandı
+          // GA (kalsın)
           trackAudioDownload(it, filename);
+
+          // ✅ GLOBAL download hit
+          downloads[it.id] = (Number(downloads[it.id] || 0) + 1);
+          counterHit("download", it).catch(() => {});
+          render();
 
           forceDownload(it.url, filename);
         });
@@ -1453,7 +1500,7 @@
 
         row.appendChild(title);
         row.appendChild(dur);
-        row.appendChild(plays);   // ✅ yeni kolon
+        row.appendChild(playCell);
         row.appendChild(favBtn);
         row.appendChild(selBtn);
         row.appendChild(dlBtn);
@@ -1507,17 +1554,12 @@
       const it = visible[idx];
       if (!it) return;
 
-      // ✅ Event: play seçildi (GA)
+      // GA (kalsın)
       trackAudioPlay(it);
-
-      // ✅ Global sayaç: lokalde anında artır + worker'a hit at
-      bumpGlobalPlayLocal(it.id, 1);
-      sendPlayHit(it);
-      // plays kolonu hemen güncellensin
-      if (sortMode !== "dur") render(); // dur modunda ölçüm kuyruğu sebebiyle render sık olabilir
 
       statusEl.textContent = "";
       activeId = it.id;
+      resetListenState(it.id); // ✅ 30sn sayaç reset
       fpTitle.textContent = it.title;
       render();
 
