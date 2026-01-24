@@ -23,7 +23,14 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    gtag('config', 'G-TNRQ49C157');
+
+    // DebugView için: siteyi ?debug=1 ile aç
+    const __isDebug = new URLSearchParams(location.search).has('debug');
+
+    gtag('config', 'G-TNRQ49C157', {
+      debug_mode: __isDebug,
+      send_page_view: true
+    });
   </script>
 
   <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
@@ -728,15 +735,14 @@
     });
 
     // =========================
-    // ✅ GA4 EVENT HELPERS (TEK KOPYA)
+    // ✅ GA4 HELPERS (TEK KAYNAK)
     // =========================
     function gaEvent(name, params = {}) {
-      // AdGuard/ITP vs. yüzünden gtag bazen bloklanabilir -> sessizce geç
       try {
         if (typeof gtag !== "function") return;
         gtag("event", name, {
           ...params,
-          page_path: location.pathname,
+          page_path: location.pathname
         });
       } catch {}
     }
@@ -745,7 +751,7 @@
       gaEvent("audio_play", {
         audio_id: it.id,
         audio_title: it.title,
-        file_name: (it.name || it.file || "").split("/").pop() || "",
+        file_name: (it.name || "").split("/").pop() || "",
         src: it.src || "S1"
       });
     }
@@ -754,7 +760,7 @@
       gaEvent("audio_download", {
         audio_id: it.id,
         audio_title: it.title,
-        file_name: filename || (it.name || it.file || "").split("/").pop() || "",
+        file_name: filename || (it.name || "").split("/").pop() || "",
         src: it.src || "S1"
       });
     }
@@ -1300,7 +1306,6 @@
 
         dlBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-
           const filename =
             (it.name || it.file || "").split("/").pop() ||
             (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
