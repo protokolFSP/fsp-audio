@@ -178,6 +178,7 @@
     }
     .zoomBtn:hover{ background: var(--hover); }
     .zoomBtn:disabled{ opacity: .35; cursor: default; }
+
     .zoomBtn svg{
       width: 20px;
       height: 20px;
@@ -188,12 +189,14 @@
       stroke-linejoin: round;
       opacity: .95;
     }
+
     .zoomBtn.zoomOut,
     .zoomBtn.zoomIn{
       opacity: .55;
       filter: saturate(1.2);
       color: #111;
     }
+
     .zoomBtn.enabled.zoomOut{
       opacity: 1;
       background: rgba(255, 149, 0, .18);
@@ -218,10 +221,11 @@
       line-height: 1.05;
     }
 
-    /* ✅ 7 kolon: title | duration | playCount | fav | sel | downloadBtn | downloadCount */
+    /* ✅ 2 yeni kolon: playCount ve downloadCount
+       (dar olsun diye ch kullandık) */
     .headerRow, .itemRow{
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 8ch 8ch 36px 36px 36px 8ch;
+      grid-template-columns: minmax(0, 1fr) 7ch 5ch 34px 34px 34px 5ch;
       align-items: center;
       column-gap: 8px;
     }
@@ -272,22 +276,9 @@
       box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
     }
 
-    .countHead{
-      display:flex;
-      align-items:center;
-      justify-content:flex-end;
-      gap: 6px;
-      width: 100%;
-      user-select:none;
-    }
-    .countCell{
-      text-align:right;
-      color: var(--muted);
-      font-variant-numeric: tabular-nums;
-      font-size: .95rem;
-      user-select:none;
-      white-space: nowrap;
-      line-height: 1.00;
+    .sortBtn.iconOnly svg{
+      width: 16px;
+      height: 16px;
     }
 
     #list{
@@ -339,10 +330,20 @@
       line-height: 1.00;
     }
 
+    .cnt{
+      text-align:right;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      font-size: .95rem;
+      user-select:none;
+      white-space: nowrap;
+      line-height: 1.00;
+    }
+
     @media (max-width: 680px){
       #scrollArea{ padding: 14px; }
       .headerRow, .itemRow{
-        grid-template-columns: minmax(0, 1fr) 8ch 7ch 36px 36px 36px 7ch;
+        grid-template-columns: minmax(0, 1fr) 7ch 5ch 34px 34px 34px 5ch;
       }
       .title{
         white-space: nowrap;
@@ -404,7 +405,6 @@
     }
     .filterBtn svg{ width:14px; height:14px; }
 
-    /* ✅ Floating player */
     #floatingPlayer{
       position: fixed;
       left: max(18px, env(safe-area-inset-left));
@@ -587,8 +587,6 @@
       color: #c2410c;
       font-weight: 650;
     }
-
-    .countSortBtn svg{ width: 18px; height: 18px; }
   </style>
 </head>
 
@@ -654,19 +652,21 @@
           </div>
         </div>
 
-        <!-- ✅ Dinlenme (hoparlör) -->
-        <div class="colPlay" style="text-align:right;">
-          <div class="countHead">
-            <button id="sortPlayBtn" class="sortBtn countSortBtn" type="button" title="En çok dinlenen">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <!-- mavi gövde -->
-                <path d="M4 10v4h3l4 3V7L7 10H4z" fill="#2b7cff"></path>
-                <!-- turuncu dalga -->
-                <path d="M14 9c1.5 1.5 1.5 4.5 0 6" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
-                <path d="M16.5 7.5c3 3 3 9 0 12" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </button>
-          </div>
+        <!-- ✅ Hoparlör ikonlu: en çok dinlenen -->
+        <div class="headIconCell">
+          <button id="sortPlayBtn" class="sortBtn iconOnly" type="button" title="En çok dinlenen">
+            <svg id="sortPlayIcon" viewBox="0 0 24 24" aria-hidden="true">
+              <defs>
+                <linearGradient id="gradOB" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#ff8a00"/>
+                  <stop offset="1" stop-color="#2b7cff"/>
+                </linearGradient>
+              </defs>
+              <path d="M3 10v4h4l5 4V6L7 10H3z" fill="url(#gradOB)"/>
+              <path d="M16 9.5a4 4 0 0 1 0 5" fill="none" stroke="url(#gradOB)" stroke-width="2" stroke-linecap="round"/>
+              <path d="M18.5 7a7 7 0 0 1 0 10" fill="none" stroke="url(#gradOB)" stroke-width="2" stroke-linecap="round" opacity=".85"/>
+            </svg>
+          </button>
         </div>
 
         <div class="headIconCell">
@@ -687,20 +687,21 @@
 
         <div class="headIconCell" aria-hidden="true"></div>
 
-        <!-- ✅ Download (disk) -->
-        <div class="colDlCount" style="text-align:right;">
-          <div class="countHead">
-            <button id="sortDlBtn" class="sortBtn countSortBtn" type="button" title="En çok indirilen">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <!-- mavi disk -->
-                <circle cx="12" cy="12" r="8" fill="#2b7cff"></circle>
-                <!-- turuncu etiket -->
-                <path d="M12 4a8 8 0 0 1 8 8h-6a2 2 0 0 0-2-2V4z" fill="#f59e0b"></path>
-                <!-- delik -->
-                <circle cx="12" cy="12" r="2.2" fill="#ffffff"></circle>
-              </svg>
-            </button>
-          </div>
+        <!-- ✅ Disk ikonlu: en çok indirilen (kolon başlığı) -->
+        <div class="headIconCell">
+          <button id="sortDlBtn" class="sortBtn iconOnly" type="button" title="En çok indirilen">
+            <svg id="sortDlIcon" viewBox="0 0 24 24" aria-hidden="true">
+              <defs>
+                <linearGradient id="gradOB2" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#ff8a00"/>
+                  <stop offset="1" stop-color="#2b7cff"/>
+                </linearGradient>
+              </defs>
+              <path d="M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20z" fill="url(#gradOB2)" opacity=".95"/>
+              <path d="M12 7a5 5 0 1 0 0 10a5 5 0 0 0 0-10z" fill="#fff" opacity=".92"/>
+              <path d="M12 10.2a1.8 1.8 0 1 0 0 3.6a1.8 1.8 0 0 0 0-3.6z" fill="url(#gradOB2)"/>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -740,14 +741,14 @@
 
   <script>
     // =========================
-    // CONFIG
+    // GÜNCEL KAYNAK (IA metadata)
     // =========================
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
 
-    // ✅ Cloudflare Counter Worker (senin URL)
-    // örn: https://fspdlcounter.<subdomain>.workers.dev
-    const COUNTER_BASE = "https://YOUR_COUNTER_WORKER_DOMAIN";
+    // ✅ Cloudflare sayaç API (fspdlcounter worker)
+    const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
+    const PLAY_QUALIFY_MS = 30_000; // ✅ 30 sn dinleme sonrası say
 
     // =========================
     // DOM
@@ -793,12 +794,15 @@
     });
 
     // =========================
-    // GA HELPERS (kalsın)
+    // ✅ GA4 HELPERS (TEK KAYNAK)
     // =========================
     function gaEvent(name, params = {}) {
       try {
         if (typeof gtag !== "function") return;
-        gtag("event", name, { ...params, page_path: location.pathname });
+        gtag("event", name, {
+          ...params,
+          page_path: location.pathname
+        });
       } catch {}
     }
 
@@ -821,7 +825,90 @@
     }
 
     // =========================
-    // LOCAL STORAGE
+    // ✅ GLOBAL COUNTERS (Cloudflare)
+    // =========================
+    const playCountsRemote = {};   // id -> number
+    const dlCountsRemote   = {};   // id -> number
+    const pendingPlayIds = new Set();
+    const pendingDlIds   = new Set();
+    let countsRerenderTimer = null;
+
+    function scheduleCountsRerender(){
+      if (countsRerenderTimer) return;
+      countsRerenderTimer = setTimeout(() => {
+        countsRerenderTimer = null;
+        render();
+      }, 120);
+    }
+
+    async function fetchCounts(type, ids){
+      if (!ids.length) return;
+      try{
+        const url = `${COUNTER_API}/counts?type=${encodeURIComponent(type)}&ids=${encodeURIComponent(ids.join(","))}`;
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!j || !j.ok || !j.counts) return;
+        const m = j.counts;
+        for (const [id, val] of Object.entries(m)){
+          const n = Number(val);
+          if (type === "play") playCountsRemote[id] = Number.isFinite(n) ? n : 0;
+          else dlCountsRemote[id] = Number.isFinite(n) ? n : 0;
+        }
+        scheduleCountsRerender();
+      }catch{}
+    }
+
+    function ensureCountsLoaded(visibleItems){
+      const needPlay = [];
+      const needDl   = [];
+      for (const it of visibleItems){
+        if (!(it.id in playCountsRemote) && !pendingPlayIds.has(it.id)){
+          pendingPlayIds.add(it.id);
+          needPlay.push(it.id);
+        }
+        if (!(it.id in dlCountsRemote) && !pendingDlIds.has(it.id)){
+          pendingDlIds.add(it.id);
+          needDl.push(it.id);
+        }
+      }
+
+      // worker 200 limiti -> batch
+      const batch = (arr, size) => {
+        const out = [];
+        for (let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
+        return out;
+      };
+
+      for (const b of batch(needPlay, 180)){
+        fetchCounts("play", b).finally(() => { for (const id of b) pendingPlayIds.delete(id); });
+      }
+      for (const b of batch(needDl, 180)){
+        fetchCounts("download", b).finally(() => { for (const id of b) pendingDlIds.delete(id); });
+      }
+    }
+
+    // fire-and-forget hit
+    function hitCounter(type, it, filename){
+      try{
+        const u = new URL(COUNTER_API + "/hit");
+        u.searchParams.set("type", type);
+        u.searchParams.set("id", it.id);
+        u.searchParams.set("t", it.title || "");
+        if (filename) u.searchParams.set("f", filename);
+        fetch(u.toString(), { method: "GET", cache: "no-store" }).then(async (res) => {
+          if (!res.ok) return;
+          const j = await res.json().catch(() => null);
+          if (!j || typeof j.count !== "number") return;
+          if (type === "play") playCountsRemote[it.id] = j.count;
+          else dlCountsRemote[it.id] = j.count;
+          scheduleCountsRerender();
+        }).catch(()=>{});
+      }catch{}
+    }
+
+    // =========================
+    // LOCAL STORAGE (Güncel için ayrı namespace)
     // =========================
     const LS = {
       favs:  "fsp1.favs.v1",
@@ -856,78 +943,8 @@
     let playSortDir = (localStorage.getItem(LS.sortDirPlay) === "asc") ? "asc" : "desc";
     let dlSortDir   = (localStorage.getItem(LS.sortDirDl) === "asc") ? "asc" : "desc";
 
-    // =========================
-    // GLOBAL COUNTS (KV)
-    // =========================
-    let playCounts = {};
-    let dlCounts = {};
-
-    function hasCounterBase(){
-      return typeof COUNTER_BASE === "string" && COUNTER_BASE.startsWith("http");
-    }
-
-    async function fetchCounts(type, ids) {
-      if (!hasCounterBase()) return {};
-      if (!ids.length) return {};
-      const url = new URL(COUNTER_BASE.replace(/\/$/, "") + "/counts");
-      url.searchParams.set("type", type);
-      url.searchParams.set("ids", ids.join(","));
-      try{
-        const res = await fetch(url.toString(), { cache: "no-store" });
-        if (!res.ok) return {};
-        const j = await res.json();
-        return (j && j.counts) ? j.counts : {};
-      }catch{
-        return {};
-      }
-    }
-
-    async function refreshAllCounts(){
-      const ids = items.map(x => x.id);
-      const chunkSize = 180;
-
-      const playAgg = {};
-      const dlAgg = {};
-
-      for (let i = 0; i < ids.length; i += chunkSize){
-        const chunk = ids.slice(i, i + chunkSize);
-        const [p, d] = await Promise.all([
-          fetchCounts("play", chunk),
-          fetchCounts("download", chunk),
-        ]);
-        Object.assign(playAgg, p || {});
-        Object.assign(dlAgg, d || {});
-      }
-
-      playCounts = playAgg;
-      dlCounts = dlAgg;
-      render();
-    }
-
-    function getCount(mapObj, id){
-      const v = mapObj && mapObj[id];
-      return Number.isFinite(v) ? v : 0;
-    }
-
-    async function hitCounter(type, it, filename){
-      if (!hasCounterBase()) return;
-      const url = new URL(COUNTER_BASE.replace(/\/$/, "") + "/hit");
-      url.searchParams.set("type", type);
-      url.searchParams.set("id", it.id);
-      url.searchParams.set("t", it.title || "");
-      url.searchParams.set("f", filename || (it.name || "").split("/").pop() || "");
-      try{
-        const res = await fetch(url.toString(), { cache: "no-store" });
-        if (!res.ok) return;
-        const j = await res.json();
-        const count = (j && typeof j.count === "number") ? j.count : null;
-        if (count == null) return;
-
-        if (type === "play") playCounts[it.id] = count;
-        if (type === "download") dlCounts[it.id] = count;
-        render();
-      }catch{}
-    }
+    if (!localStorage.getItem(LS.sortMode)) localStorage.setItem(LS.sortMode, sortMode);
+    if (!localStorage.getItem(LS.sortDirDate)) localStorage.setItem(LS.sortDirDate, dateSortDir);
 
     // =========================
     // SPEED
@@ -971,7 +988,7 @@
     fastBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex + 1); });
 
     // =========================
-    // ZOOM
+    // ZOOM (% görünüm)
     // =========================
     const ZOOMS = [0.85, 0.9, 0.95, 1, 1.05, 1.1, 1.15, 1.2];
     let zoomIndex = ZOOMS.indexOf(1);
@@ -1185,7 +1202,7 @@
       render();
     });
 
-    // ✅ play sort (hoparlör)
+    // ✅ Hoparlör: play sıralama (default desc)
     sortPlayBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       if (sortMode !== "play") sortMode = "play";
@@ -1196,7 +1213,7 @@
       render();
     });
 
-    // ✅ download sort (disk)
+    // ✅ Disk: download sıralama (default desc)
     sortDlBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       if (sortMode !== "download") sortMode = "download";
@@ -1362,9 +1379,6 @@
         items = list;
         statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
         render();
-
-        // ✅ global counts çek
-        refreshAllCounts();
       }catch(err){
         console.error(err);
         statusEl.textContent = "Liste yüklenemedi.";
@@ -1411,16 +1425,16 @@
       } else if (sortMode === "play"){
         const dir = (playSortDir === "asc") ? 1 : -1;
         arr.sort((a,b) => {
-          const ca = getCount(playCounts, a.id);
-          const cb = getCount(playCounts, b.id);
+          const ca = playCountsRemote[a.id] ?? -1;
+          const cb = playCountsRemote[b.id] ?? -1;
           if (ca !== cb) return (ca - cb) * dir;
           return a.title.localeCompare(b.title, "tr");
         });
       } else if (sortMode === "download"){
         const dir = (dlSortDir === "asc") ? 1 : -1;
         arr.sort((a,b) => {
-          const ca = getCount(dlCounts, a.id);
-          const cb = getCount(dlCounts, b.id);
+          const ca = dlCountsRemote[a.id] ?? -1;
+          const cb = dlCountsRemote[b.id] ?? -1;
           if (ca !== cb) return (ca - cb) * dir;
           return a.title.localeCompare(b.title, "tr");
         });
@@ -1441,7 +1455,9 @@
       filterFavBtn.setAttribute("aria-pressed",  String(filterFav));
       filterSelBtn.setAttribute("aria-pressed",  String(filterSel));
 
-      setSortIcons();
+      // ✅ sayaçları görünür liste için çek
+      ensureCountsLoaded(visible);
+
       listEl.innerHTML = "";
 
       const toMeasure = (sortMode === "dur") ? items : visible;
@@ -1461,17 +1477,17 @@
         dur.className = "dur";
         dur.textContent = (durs[it.id] > 0) ? fmtDur(durs[it.id]) : "…";
 
-        const playCountEl = document.createElement("div");
-        playCountEl.className = "countCell";
-        playCountEl.textContent = String(getCount(playCounts, it.id) || 0);
+        const playCnt = document.createElement("div");
+        playCnt.className = "cnt";
+        playCnt.textContent = (it.id in playCountsRemote) ? String(playCountsRemote[it.id] || 0) : "…";
 
         const favBtn = iconButton("star", !!favs[it.id], "Favori");
         const selBtn = iconButton("check", !!sels[it.id], "Seç");
         const dlBtn  = iconButton("download", false, "İndir");
 
-        const dlCountEl = document.createElement("div");
-        dlCountEl.className = "countCell";
-        dlCountEl.textContent = String(getCount(dlCounts, it.id) || 0);
+        const dlCnt = document.createElement("div");
+        dlCnt.className = "cnt";
+        dlCnt.textContent = (it.id in dlCountsRemote) ? String(dlCountsRemote[it.id] || 0) : "…";
 
         favBtn.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -1493,7 +1509,10 @@
             (it.name || it.file || "").split("/").pop() ||
             (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
 
+          // ✅ GA: download tıklandı
           trackAudioDownload(it, filename);
+
+          // ✅ Global sayaç: download anında
           hitCounter("download", it, filename);
 
           forceDownload(it.url, filename);
@@ -1506,11 +1525,11 @@
 
         row.appendChild(title);
         row.appendChild(dur);
-        row.appendChild(playCountEl);
+        row.appendChild(playCnt);
         row.appendChild(favBtn);
         row.appendChild(selBtn);
         row.appendChild(dlBtn);
-        row.appendChild(dlCountEl);
+        row.appendChild(dlCnt);
 
         row.addEventListener("click", () => playById(it.id));
         listEl.appendChild(row);
@@ -1547,9 +1566,66 @@
     }
 
     // =========================
-    // PLAYBACK (+ 30sn dinleme sayacı)
+    // PLAYBACK + ✅ 30sn qualify
     // =========================
-    let playCountedForActive = false;
+    let listenSession = {
+      trackId: null,
+      qualified: false,
+      accMs: 0,
+      playingSince: null
+    };
+
+    function resetListenSession(newId){
+      listenSession.trackId = newId;
+      listenSession.qualified = false;
+      listenSession.accMs = 0;
+      listenSession.playingSince = null;
+    }
+
+    function accrueListening(){
+      if (!listenSession.trackId) return;
+      if (listenSession.playingSince == null) return;
+      const now = Date.now();
+      const d = Math.max(0, now - listenSession.playingSince);
+      listenSession.accMs += d;
+      listenSession.playingSince = now;
+    }
+
+    function maybeQualifyPlayHit(){
+      if (!listenSession.trackId) return;
+      if (listenSession.qualified) return;
+      if (listenSession.accMs >= PLAY_QUALIFY_MS){
+        listenSession.qualified = true;
+        const it = items.find(x => x.id === listenSession.trackId);
+        if (it) hitCounter("play", it, "");
+      }
+    }
+
+    plyr.on("playing", () => {
+      if (!listenSession.trackId) return;
+      if (listenSession.playingSince == null) listenSession.playingSince = Date.now();
+    });
+
+    plyr.on("pause", () => {
+      accrueListening();
+      maybeQualifyPlayHit();
+      listenSession.playingSince = null;
+    });
+
+    plyr.on("ended", () => {
+      accrueListening();
+      maybeQualifyPlayHit();
+      listenSession.playingSince = null;
+      setTimeout(() => playNext(), 0);
+    });
+
+    // timeupdate: uzun süre çalarken de biriksin
+    playerEl.addEventListener("timeupdate", () => {
+      // sadece çalarken biriktir
+      if (playerEl.paused) return;
+      accrueListening();
+      maybeQualifyPlayHit();
+    });
 
     function playById(id){
       const visible = getVisibleItems();
@@ -1563,12 +1639,16 @@
       const it = visible[idx];
       if (!it) return;
 
+      // ✅ GA: play seçildi (GA tarafı aynı kalsın)
       trackAudioPlay(it);
 
       statusEl.textContent = "";
       activeId = it.id;
       fpTitle.textContent = it.title;
-      playCountedForActive = false;
+
+      // ✅ 30sn dinleme sayacı: track değişince reset
+      resetListenSession(it.id);
+
       render();
 
       const url = it.url;
@@ -1601,21 +1681,6 @@
       setTimeout(() => { if (playerEl.paused) tryPlay(); }, 600);
     }
 
-    // ✅ 30sn: currentTime >= 30 olunca 1 kez say
-    playerEl.addEventListener("timeupdate", () => {
-      if (!activeId) return;
-      if (playCountedForActive) return;
-      if (!Number.isFinite(playerEl.currentTime)) return;
-      if (playerEl.currentTime < 30) return;
-      if (playerEl.paused) return;
-
-      const it = items.find(x => x.id === activeId);
-      if (!it) return;
-
-      playCountedForActive = true;
-      hitCounter("play", it, (it.name || "").split("/").pop() || "");
-    });
-
     function playPrev(){
       const visible = getVisibleItems();
       if (!visible.length) return;
@@ -1636,7 +1701,6 @@
 
     prevBtn.addEventListener("click", playPrev);
     nextBtn.addEventListener("click", playNext);
-    plyr.on("ended", () => { setTimeout(() => playNext(), 0); });
 
     document.addEventListener("keydown", (e) => {
       const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
@@ -1671,6 +1735,7 @@
       localStorage.setItem(LS.sortMode, sortMode);
       localStorage.setItem(LS.sortDirDate, dateSortDir);
 
+      setSortIcons();
       render();
     });
 
@@ -1681,7 +1746,7 @@
     });
 
     // =========================
-    // DRAGGABLE PLAYER
+    // DRAGGABLE PLAYER (transform-scale koordinat fix)
     // =========================
     function restorePlayerPos(){
       try{
@@ -1885,6 +1950,7 @@
     // =========================
     // INIT
     // =========================
+    setSortIcons();
     restorePlayerPos();
     restoreSpeed();
     restoreZoom();
