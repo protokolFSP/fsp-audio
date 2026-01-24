@@ -23,7 +23,8 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    gtag('config', 'G-TNRQ49C157');
+    // send_page_view default true; istersen açıkça da yazabilirsin:
+    gtag('config', 'G-TNRQ49C157', { send_page_view: true });
   </script>
 
   <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
@@ -728,46 +729,17 @@
     });
 
     // =========================
-    // ✅ ANALYTICS (GA4 + local counts) - TEK YER
+    // ✅ ANALYTICS (tek yerde, tek fonksiyon)
     // =========================
-    const GA_DEBUG = new URLSearchParams(location.search).has("ga_debug");
-
-    function gaEvent(name, params = {}){
-      if (typeof gtag !== "function"){
-        if (GA_DEBUG) console.log("[GA missing]", name, params);
-        return;
-      }
-      try{
+    function gaEvent(name, params = {}) {
+      // AdGuard/ITP vs. yüzünden gtag bazen bloklanabilir -> sessizce geç
+      try {
+        if (typeof gtag !== "function") return;
         gtag("event", name, {
           ...params,
           page_path: location.pathname,
-          transport_type: "beacon"
         });
-        if (GA_DEBUG) console.log("[GA sent]", name, params);
-      }catch(err){
-        if (GA_DEBUG) console.warn("[GA error]", err);
-      }
-    }
-
-    function gaEventAwait(name, params = {}, timeoutMs = 900){
-      return new Promise((resolve) => {
-        if (typeof gtag !== "function"){
-          if (GA_DEBUG) console.log("[GA missing]", name, params);
-          return resolve(false);
-        }
-        let done = false;
-        const finish = () => { if (!done){ done = true; resolve(true); } };
-
-        try{
-          gtag("event", name, {
-            ...params,
-            page_path: location.pathname,
-            transport_type: "beacon",
-            event_callback: finish
-          });
-        }catch{}
-        setTimeout(finish, timeoutMs);
-      });
+      } catch {}
     }
 
     function safeFileExt(filename) {
@@ -796,44 +768,42 @@
     const downloadCounts = loadCounts(LS_COUNTS.downloads);
 
     function trackAudioPlay(it){
-      const playN = bumpCount(playCounts, it.id);
+      const fileName = (it.name || it.file || "").split("/").pop() || "";
+      const n = bumpCount(playCounts, it.id);
       saveCounts(LS_COUNTS.plays, playCounts);
 
       gaEvent("audio_play", {
         audio_id: it.id,
         audio_title: it.title,
-        file_name: (it.name || "").split("/").pop() || "",
-        link_url: it.url,
+        file_name: fileName,
         source: it.src || "S1",
-        play_count_local: playN
+        play_count_local: n
       });
     }
 
-    async function trackAudioDownload(it, filename){
-      const dlN = bumpCount(downloadCounts, it.id);
+    function trackAudioDownload(it, filename){
+      const n = bumpCount(downloadCounts, it.id);
       saveCounts(LS_COUNTS.downloads, downloadCounts);
 
-      // GA recommended event (istersen kalsın)
+      // İstersen GA4’te rapor kolay olsun diye sadece audio_download yeter.
+      // İkinci event (file_download) şart değil; ama bırakıyorum.
+      gaEvent("audio_download", {
+        audio_id: it.id,
+        audio_title: it.title,
+        file_name: filename || "",
+        file_extension: safeFileExt(filename),
+        source: it.src || "S1",
+        download_count_local: n
+      });
+
       gaEvent("file_download", {
         link_url: it.url,
         link_text: it.title,
-        file_name: filename,
+        file_name: filename || "",
         file_extension: safeFileExt(filename),
         audio_id: it.id,
         audio_title: it.title,
-        source: it.src || "S1",
-        download_count_local: dlN
-      });
-
-      // Bizim ana event: download
-      return gaEventAwait("audio_download", {
-        audio_id: it.id,
-        audio_title: it.title,
-        link_url: it.url,
-        file_name: filename,
-        file_extension: safeFileExt(filename),
-        source: it.src || "S1",
-        download_count_local: dlN
+        source: it.src || "S1"
       });
     }
 
@@ -1376,15 +1346,15 @@
           render();
         });
 
-        // ✅ Download: await ile garantiye al
-        dlBtn.addEventListener("click", async (e) => {
+        dlBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-
           const filename =
             (it.name || it.file || "").split("/").pop() ||
             (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
 
-          await trackAudioDownload(it, filename);
+          // ✅ tek yerden event bas
+          trackAudioDownload(it, filename);
+
           forceDownload(it.url, filename);
         });
 
@@ -1448,7 +1418,7 @@
       const it = visible[idx];
       if (!it) return;
 
-      // ✅ GA + local play count
+      // ✅ tek yerden event bas
       trackAudioPlay(it);
 
       statusEl.textContent = "";
