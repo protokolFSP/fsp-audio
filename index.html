@@ -728,9 +728,10 @@
     });
 
     // =========================
-    // ✅ ANALYTICS (TEK SÜRÜM)
+    // ✅ GA4 EVENT HELPERS (TEK KOPYA)
     // =========================
     function gaEvent(name, params = {}) {
+      // AdGuard/ITP vs. yüzünden gtag bazen bloklanabilir -> sessizce geç
       try {
         if (typeof gtag !== "function") return;
         gtag("event", name, {
@@ -744,7 +745,7 @@
       gaEvent("audio_play", {
         audio_id: it.id,
         audio_title: it.title,
-        file_name: (it.name || "").split("/").pop() || "",
+        file_name: (it.name || it.file || "").split("/").pop() || "",
         src: it.src || "S1"
       });
     }
@@ -753,7 +754,7 @@
       gaEvent("audio_download", {
         audio_id: it.id,
         audio_title: it.title,
-        file_name: filename || (it.name || "").split("/").pop() || "",
+        file_name: filename || (it.name || it.file || "").split("/").pop() || "",
         src: it.src || "S1"
       });
     }
@@ -1299,11 +1300,14 @@
 
         dlBtn.addEventListener("click", (e) => {
           e.stopPropagation();
+
           const filename =
             (it.name || it.file || "").split("/").pop() ||
             (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
 
+          // ✅ Event: download tıklandı
           trackAudioDownload(it, filename);
+
           forceDownload(it.url, filename);
         });
 
@@ -1367,7 +1371,7 @@
       const it = visible[idx];
       if (!it) return;
 
-      // ✅ GA4 event
+      // ✅ Event: play seçildi
       trackAudioPlay(it);
 
       statusEl.textContent = "";
