@@ -23,8 +23,7 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    // send_page_view default true; istersen açıkça da yazabilirsin:
-    gtag('config', 'G-TNRQ49C157', { send_page_view: true });
+    gtag('config', 'G-TNRQ49C157');
   </script>
 
   <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
@@ -729,10 +728,9 @@
     });
 
     // =========================
-    // ✅ ANALYTICS (tek yerde, tek fonksiyon)
+    // ✅ ANALYTICS (TEK SÜRÜM)
     // =========================
     function gaEvent(name, params = {}) {
-      // AdGuard/ITP vs. yüzünden gtag bazen bloklanabilir -> sessizce geç
       try {
         if (typeof gtag !== "function") return;
         gtag("event", name, {
@@ -742,68 +740,21 @@
       } catch {}
     }
 
-    function safeFileExt(filename) {
-      const m = String(filename || "").match(/\.([a-z0-9]+)$/i);
-      return m ? m[1].toLowerCase() : "";
-    }
-
-    // Local sayaçlar (opsiyonel): sadece cihaz bazlı
-    const LS_COUNTS = {
-      plays: "fsp1.counts.plays.v1",
-      downloads: "fsp1.counts.downloads.v1",
-    };
-
-    function loadCounts(k) {
-      try { return JSON.parse(localStorage.getItem(k) || "{}"); } catch { return {}; }
-    }
-    function saveCounts(k, v) {
-      localStorage.setItem(k, JSON.stringify(v));
-    }
-    function bumpCount(mapObj, key) {
-      mapObj[key] = (mapObj[key] || 0) + 1;
-      return mapObj[key];
-    }
-
-    const playCounts = loadCounts(LS_COUNTS.plays);
-    const downloadCounts = loadCounts(LS_COUNTS.downloads);
-
-    function trackAudioPlay(it){
-      const fileName = (it.name || it.file || "").split("/").pop() || "";
-      const n = bumpCount(playCounts, it.id);
-      saveCounts(LS_COUNTS.plays, playCounts);
-
+    function trackAudioPlay(it) {
       gaEvent("audio_play", {
         audio_id: it.id,
         audio_title: it.title,
-        file_name: fileName,
-        source: it.src || "S1",
-        play_count_local: n
+        file_name: (it.name || "").split("/").pop() || "",
+        src: it.src || "S1"
       });
     }
 
-    function trackAudioDownload(it, filename){
-      const n = bumpCount(downloadCounts, it.id);
-      saveCounts(LS_COUNTS.downloads, downloadCounts);
-
-      // İstersen GA4’te rapor kolay olsun diye sadece audio_download yeter.
-      // İkinci event (file_download) şart değil; ama bırakıyorum.
+    function trackAudioDownload(it, filename) {
       gaEvent("audio_download", {
         audio_id: it.id,
         audio_title: it.title,
-        file_name: filename || "",
-        file_extension: safeFileExt(filename),
-        source: it.src || "S1",
-        download_count_local: n
-      });
-
-      gaEvent("file_download", {
-        link_url: it.url,
-        link_text: it.title,
-        file_name: filename || "",
-        file_extension: safeFileExt(filename),
-        audio_id: it.id,
-        audio_title: it.title,
-        source: it.src || "S1"
+        file_name: filename || (it.name || "").split("/").pop() || "",
+        src: it.src || "S1"
       });
     }
 
@@ -1352,9 +1303,7 @@
             (it.name || it.file || "").split("/").pop() ||
             (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
 
-          // ✅ tek yerden event bas
           trackAudioDownload(it, filename);
-
           forceDownload(it.url, filename);
         });
 
@@ -1418,7 +1367,7 @@
       const it = visible[idx];
       if (!it) return;
 
-      // ✅ tek yerden event bas
+      // ✅ GA4 event
       trackAudioPlay(it);
 
       statusEl.textContent = "";
