@@ -883,44 +883,60 @@
       }
     }
 
-    // ✅ /hit: POST + sendBeacon + fetch keepalive (Image GET yok)
-    async function sendHit(type, it){
-      try{
-        const payload = {
-          type,
-          id: it?.id || "",
-          title: it?.title || "",
-          file_name: (it?.name || "").split("/").pop() || "",
-        };
-        const hitUrl = COUNTER_API + "/hit";
+   /**
+ * ✅ Aggressive hit sender:
+ * 1) fetch POST (JSON + keepalive) first
+ * 2) if fails/timeouts -> sendBeacon fallback
+ *
+ * @param {"play"|"download"} type
+ * @param {{id?:string,title?:string,name?:string}} it
+ * @returns {Promise<boolean>}
+ */
+async function sendHit(type, it) {
+  try {
+    const payload = {
+      type,
+      id: it?.id || "",
+      title: it?.title || "",
+      file_name: (it?.name || "").split("/").pop() || "",
+    };
 
-        try{
-          if (navigator && typeof navigator.sendBeacon === "function"){
-            const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
-            const ok = navigator.sendBeacon(hitUrl, blob);
-            if (ok) return true;
-          }
-        }catch{}
+    const hitUrl = COUNTER_API + "/hit";
 
-        try{
-          await fetch(hitUrl, {
-            method: "POST",
-            mode: "cors",
-            cache: "no-store",
-            keepalive: true,
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-          return true;
-        }catch{
-          return false;
-        }
-      }catch{
-        return false;
+    // 1) fetch first (more reliable JSON content-type)
+    try {
+      const ac = new AbortController();
+      const t = setTimeout(() => ac.abort(), 1200);
+
+      const res = await fetch(hitUrl, {
+        method: "POST",
+        mode: "cors",
+        cache: "no-store",
+        keepalive: true,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: ac.signal,
+      });
+
+      clearTimeout(t);
+
+      if (res && res.ok) return true;
+    } catch {}
+
+    // 2) fallback: sendBeacon (best for unload/background)
+    try {
+      if (navigator && typeof navigator.sendBeacon === "function") {
+        const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+        const ok = navigator.sendBeacon(hitUrl, blob);
+        if (ok) return true;
       }
-    }
+    } catch {}
 
-    function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+    return false;
+  } catch {
+    return false;
+  }
+}
 
     // =========================
     // PLAY QUALIFY (10sn)
