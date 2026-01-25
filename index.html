@@ -23,14 +23,8 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-
-    // DebugView için: siteyi ?debug=1 ile aç
     const __isDebug = new URLSearchParams(location.search).has('debug');
-
-    gtag('config', 'G-TNRQ49C157', {
-      debug_mode: __isDebug,
-      send_page_view: true
-    });
+    gtag('config', 'G-TNRQ49C157', { debug_mode: __isDebug, send_page_view: true });
   </script>
 
   <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
@@ -151,7 +145,6 @@
     }
     #resetBtn:hover{ background: var(--hover); }
 
-    /* Zoom (SVG) */
     .zoomWrap{
       display:flex;
       align-items:center;
@@ -224,7 +217,6 @@
       line-height: 1.05;
     }
 
-    /* Grid: title | dur | playCount | fav | sel | downloadBtn | dlCount */
     .headerRow, .itemRow{
       display: grid;
       grid-template-columns: minmax(0, 1fr) 8ch 54px 36px 36px 36px 54px;
@@ -278,10 +270,7 @@
       box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
     }
 
-    .sortBtn .mainIcon{
-      width: 16px;
-      height: 16px;
-    }
+    .sortBtn .mainIcon{ width: 16px; height: 16px; }
     .sortBtn .dirIcon{
       position: absolute;
       right: 5px;
@@ -417,7 +406,7 @@
     }
     .filterBtn svg{ width:14px; height:14px; }
 
-    /* ✅ Floating player */
+    /* Floating player */
     #floatingPlayer{
       position: fixed;
       left: max(18px, env(safe-area-inset-left));
@@ -665,10 +654,8 @@
           </div>
         </div>
 
-        <!-- ✅ Play count sort -->
         <div class="headIconCell">
           <button id="sortPlayBtn" class="sortBtn" type="button" title="Dinlenme sayısına göre sırala">
-            <!-- Speaker (orange + blue) -->
             <svg class="mainIcon" viewBox="0 0 24 24" aria-hidden="true">
               <path class="iconBlue" d="M3 10v4c0 .55.45 1 1 1h3l5 4V5L7 9H4c-.55 0-1 .45-1 1z"/>
               <path class="iconOrange" d="M16.5 8.5a1 1 0 0 1 1.4.1c1 1.2 1.6 2.7 1.6 4.4s-.6 3.2-1.6 4.4a1 1 0 1 1-1.5-1.3c.7-.9 1.1-2 1.1-3.1s-.4-2.2-1.1-3.1a1 1 0 0 1 .1-1.4z"/>
@@ -695,10 +682,8 @@
 
         <div class="headIconCell" aria-hidden="true"></div>
 
-        <!-- ✅ Download count sort -->
         <div class="headIconCell">
           <button id="sortDlCountBtn" class="sortBtn" type="button" title="İndirme sayısına göre sırala">
-            <!-- Disk (orange + blue) -->
             <svg class="mainIcon" viewBox="0 0 24 24" aria-hidden="true">
               <path class="iconBlue" d="M4 3h12l4 4v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
               <path class="iconOrange" d="M7 3h8v6H7V3zm4 10.2a3.3 3.3 0 1 0 0 6.6 3.3 3.3 0 0 0 0-6.6z"/>
@@ -744,16 +729,16 @@
 
   <script>
     // =========================
-    // GÜNCEL KAYNAK (IA metadata)
+    // SOURCE / PROXY / COUNTER
     // =========================
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
 
-    // =========================
-    // GLOBAL COUNTER API (Cloudflare Worker)
-    // =========================
+    // IMPORTANT: This HTML expects Worker endpoints:
+    // POST  /counts  {type:"play|download|both", ids:[...]}
+    // POST  /hit     {type:"play|download", id, title, file_name}
     const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
-    const PLAY_QUALIFY_MS = 10_000; // ✅ 10 sn dinleme sonrası say
+    const PLAY_QUALIFY_MS = 10_000;
 
     // =========================
     // DOM
@@ -801,7 +786,7 @@
     });
 
     // =========================
-    // GA4 HELPERS (kalsın)
+    // GA HELPERS
     // =========================
     function gaEvent(name, params = {}) {
       try {
@@ -827,10 +812,10 @@
     }
 
     // =========================
-    // COUNTERS (Global KV)
+    // COUNTERS
     // =========================
-    let globalPlayCounts = {};     // id -> number
-    let globalDownloadCounts = {}; // id -> number
+    let globalPlayCounts = {};
+    let globalDownloadCounts = {};
 
     function chunk(arr, size){
       const out = [];
@@ -838,9 +823,8 @@
       return out;
     }
 
-    // ✅ /counts artık POST (Worker POST-only)
     async function fetchCounts(type, ids){
-      if (!ids.length) return {};
+      if (!ids.length) return (type === "both") ? { play: {}, download: {} } : {};
       try{
         const res = await fetch(COUNTER_API + "/counts", {
           method: "POST",
@@ -851,97 +835,73 @@
         });
         if (!res.ok) throw new Error("counts failed");
         const j = await res.json();
-        return (j && j.counts) ? j.counts : {};
+        return (j && j.counts) ? j.counts : ((type === "both") ? { play: {}, download: {} } : {});
       }catch{
-        return {};
+        return (type === "both") ? { play: {}, download: {} } : {};
       }
     }
 
     let refreshCountsTimer = null;
-    function scheduleRefreshCounts(ms = 800){
+    function scheduleRefreshCounts(ms = 900){
       clearTimeout(refreshCountsTimer);
-      refreshCountsTimer = setTimeout(() => refreshAllCounts().catch(()=>{}), ms);
+      refreshCountsTimer = setTimeout(() => refreshAllCounts(false).catch(()=>{}), ms);
     }
 
-    async function refreshAllCounts(){
+    const COUNTS_THROTTLE_MS = 30_000;
+    let __lastCountsAt = 0;
+
+    async function refreshAllCounts(forceFull = false){
       if (!items.length) return;
 
-      const ids = items.map(it => it.id);
+      const now = Date.now();
+      if (!forceFull && now - __lastCountsAt < COUNTS_THROTTLE_MS) return;
+      __lastCountsAt = now;
+
+      const ids = forceFull
+        ? items.map(it => it.id)
+        : getVisibleItems().slice(0, 120).map(it => it.id);
+
       const parts = chunk(ids, 200);
 
       const playAll = {};
       const dlAll = {};
 
       for (const part of parts){
-        const [p, d] = await Promise.all([
-          fetchCounts("play", part),
-          fetchCounts("download", part),
-        ]);
-        Object.assign(playAll, p);
-        Object.assign(dlAll, d);
+        const both = await fetchCounts("both", part);
+        Object.assign(playAll, both.play || {});
+        Object.assign(dlAll, both.download || {});
       }
 
-      globalPlayCounts = playAll;
-      globalDownloadCounts = dlAll;
+      Object.assign(globalPlayCounts, playAll);
+      Object.assign(globalDownloadCounts, dlAll);
+
       render();
     }
 
-    function cssEsc(s){
-      try { return CSS.escape(String(s)); } catch { return String(s).replace(/["\\]/g, "\\$&"); }
-    }
-
-    function updateVisibleCountCell(id){
-      const row = listEl.querySelector(`.itemRow[data-id="${cssEsc(id)}"]`);
-      if (!row) return;
-      const playEl = row.querySelector('[data-role="playCount"]');
-      const dlEl   = row.querySelector('[data-role="dlCount"]');
-      if (playEl) playEl.textContent = String(Number(globalPlayCounts[id]) || 0);
-      if (dlEl)   dlEl.textContent   = String(Number(globalDownloadCounts[id]) || 0);
-    }
-
-    // ✅ HIT: fetch-first POST + beacon fallback (Worker POST-only)
-    async function sendHit(type, it){
+    function sendHit(type, it){
       try{
         const payload = {
           type,
           id: it?.id || "",
           title: it?.title || "",
-          file_name: (it?.name || "").split("/").pop() || ""
+          file_name: (it?.name || "").split("/").pop() || "",
+          _: Date.now()
         };
 
-        const hitUrl = COUNTER_API + "/hit";
-
-        // 1) fetch (JSON) first
         try{
-          const ac = new AbortController();
-          const t = setTimeout(() => ac.abort(), 1200);
-
-          const res = await fetch(hitUrl, {
-            method: "POST",
-            mode: "cors",
-            cache: "no-store",
-            keepalive: true,
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify(payload),
-            signal: ac.signal,
-          });
-
-          clearTimeout(t);
-          if (res && res.ok) return true;
+          const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+          if (navigator.sendBeacon) navigator.sendBeacon(COUNTER_API + "/hit", blob);
         }catch{}
 
-        // 2) beacon fallback
-        try{
-          if (navigator && typeof navigator.sendBeacon === "function"){
-            const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
-            return navigator.sendBeacon(hitUrl, blob);
-          }
-        }catch{}
-
-        return false;
-      }catch{
-        return false;
-      }
+        fetch(COUNTER_API + "/hit", {
+          method: "POST",
+          mode: "cors",
+          cache: "no-store",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+          keepalive: true
+        }).catch(()=>{});
+      }catch{}
     }
 
     function bumpLocalGlobalCount(type, id){
@@ -951,11 +911,10 @@
       } else {
         globalDownloadCounts[id] = (Number(globalDownloadCounts[id]) || 0) + 1;
       }
-      updateVisibleCountCell(id); // ✅ sayfada anında görünsün
     }
 
     // =========================
-    // PLAY QUALIFY (10sn gerçek dinleme) — Safari sağlam
+    // PLAY QUALIFY (10s)
     // =========================
     let playGate = {
       id: null,
@@ -1006,11 +965,13 @@
           if (playGate.listenedMs >= PLAY_QUALIFY_MS){
             playGate.sent = true;
             clearPlayGateTimer();
-            const it = items.find(x => x.id === playGate.id) || { id: playGate.id, title:"", name:"" };
 
+            const it = items.find(x => x.id === playGate.id) || { id: playGate.id, title:"", name:"" };
             bumpLocalGlobalCount("play", it.id);
-            sendHit("play", it);          // fire-and-forget
-            scheduleRefreshCounts(1200);  // doğrulama
+            sendHit("play", it);
+
+            scheduleRefreshCounts(1400);
+            render();
           }
         }catch{}
       }, 250);
@@ -1027,7 +988,7 @@
     }catch{}
 
     // =========================
-    // LOCAL STORAGE (Güncel için ayrı namespace)
+    // LOCAL STORAGE
     // =========================
     const LS = {
       favs:  "fsp1.favs.v1",
@@ -1056,7 +1017,6 @@
     let items = [];
     let activeId = null;
 
-    // ✅ Varsayılan: date + desc
     let sortMode = localStorage.getItem(LS.sortMode) || "date";
     let durSortDir  = (localStorage.getItem(LS.sortDirDur) === "desc") ? "desc" : "asc";
     let dateSortDir = (localStorage.getItem(LS.sortDirDate) === "asc") ? "asc" : "desc";
@@ -1110,7 +1070,7 @@
     fastBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex + 1); });
 
     // =========================
-    // ZOOM (% görünüm)
+    // ZOOM
     // =========================
     const ZOOMS = [0.85, 0.9, 0.95, 1, 1.05, 1.1, 1.15, 1.2];
     let zoomIndex = ZOOMS.indexOf(1);
@@ -1326,23 +1286,27 @@
       render();
     });
 
-    sortPlayBtn.addEventListener("click", (e) => {
+    sortPlayBtn.addEventListener("click", async (e) => {
       e.stopPropagation();
       if (sortMode !== "play") sortMode = "play";
       else playSortDir = (playSortDir === "asc") ? "desc" : "asc";
       localStorage.setItem(LS.sortMode, sortMode);
       localStorage.setItem(LS.sortDirPlay, playSortDir);
       setSortIcons();
+
+      await refreshAllCounts(true);
       render();
     });
 
-    sortDlCountBtn.addEventListener("click", (e) => {
+    sortDlCountBtn.addEventListener("click", async (e) => {
       e.stopPropagation();
       if (sortMode !== "download") sortMode = "download";
       else dlSortDir = (dlSortDir === "asc") ? "desc" : "asc";
       localStorage.setItem(LS.sortMode, sortMode);
       localStorage.setItem(LS.sortDirDl, dlSortDir);
       setSortIcons();
+
+      await refreshAllCounts(true);
       render();
     });
 
@@ -1427,7 +1391,7 @@
     }
 
     // =========================
-    // DOWNLOAD (worker)
+    // DOWNLOAD (proxy worker)
     // =========================
     function makeProxyUrl(fileUrl, filename){
       const u = DL_PROXY + "?u=" + encodeURIComponent(fileUrl);
@@ -1502,7 +1466,8 @@
         statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
         setSortIcons();
         render();
-        scheduleRefreshCounts(120);
+
+        scheduleRefreshCounts(250);
       }catch(err){
         console.error(err);
         statusEl.textContent = "Liste yüklenemedi.";
@@ -1589,7 +1554,6 @@
       for (const it of visible){
         const row = document.createElement("div");
         row.className = "itemRow" + (it.id === activeId ? " active" : "");
-        row.dataset.id = it.id; // ✅ dom update için
 
         const title = document.createElement("div");
         title.className = "title";
@@ -1601,7 +1565,6 @@
 
         const playCount = document.createElement("div");
         playCount.className = "countCell";
-        playCount.dataset.role = "playCount";
         playCount.textContent = String(Number(globalPlayCounts[it.id]) || 0);
 
         const favBtn = iconButton("star", !!favs[it.id], "Favori");
@@ -1610,7 +1573,6 @@
 
         const dlCount = document.createElement("div");
         dlCount.className = "countCell";
-        dlCount.dataset.role = "dlCount";
         dlCount.textContent = String(Number(globalDownloadCounts[it.id]) || 0);
 
         favBtn.addEventListener("click", (e) => {
@@ -1627,22 +1589,23 @@
           render();
         });
 
-        // ✅ Download: önce indir, sonra sayaç/hit
         dlBtn.addEventListener("click", (e) => {
           e.stopPropagation();
+
           const filename =
             (it.name || it.file || "").split("/").pop() ||
             (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
 
-          // 1) download hemen başlasın (gesture içinde)
-          forceDownload(it.url, filename); // await yok
+          // Start download first (keeps user gesture)
+          forceDownload(it.url, filename);
 
-          // 2) sayaç + hit
+          // Then count + analytics + UI
           bumpLocalGlobalCount("download", it.id);
           sendHit("download", it);
-          scheduleRefreshCounts(1200);
-
           trackAudioDownload(it, filename);
+
+          scheduleRefreshCounts(1400);
+          render();
         });
 
         for (const b of [favBtn, selBtn, dlBtn]){
@@ -1802,16 +1765,20 @@
 
       setSortIcons();
       render();
+      scheduleRefreshCounts(200);
     });
 
     let searchTimer = null;
     searchEl.addEventListener("input", () => {
       clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => render(), 90);
+      searchTimer = setTimeout(() => {
+        render();
+        scheduleRefreshCounts(250);
+      }, 90);
     });
 
     // =========================
-    // DRAGGABLE PLAYER (transform-scale koordinat fix)
+    // DRAGGABLE PLAYER (transform-scale fix)
     // =========================
     function restorePlayerPos(){
       try{
@@ -2019,7 +1986,7 @@
     restorePlayerPos();
     restoreSpeed();
     restoreZoom();
-    setTimeout(() => clampPlayerToViewport(), 0);
+    setTimeout(clampPlayerToViewport, 0);
     loadItems();
   </script>
 </body>
