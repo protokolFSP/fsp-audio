@@ -833,25 +833,36 @@
     let globalPlayCounts = {};     // id -> number
     let globalDownloadCounts = {}; // id -> number
 
+    // ---- small helpers ----
     function chunk(arr, size){
       const out = [];
       for (let i=0; i<arr.length; i+=size) out.push(arr.slice(i, i+size));
       return out;
     }
 
+    // ✅ /counts artık POST JSON
+    const COUNTS_POST_MAX = 600; // worker MAX_IDS_POST ile uyumlu
     async function fetchCounts(type, ids){
       if (!ids.length) return {};
-      try{
-        const u = new URL(COUNTER_API + "/counts");
-        u.searchParams.set("type", type);
-        u.searchParams.set("ids", ids.join(","));
-        const res = await fetch(u.toString(), { mode:"cors", cache:"no-store" });
-        if (!res.ok) throw new Error("counts failed");
-        const j = await res.json();
-        return (j && j.counts) ? j.counts : {};
-      }catch{
-        return {};
+      const parts = chunk(ids, COUNTS_POST_MAX);
+      const all = {};
+      for (const part of parts){
+        try{
+          const res = await fetch(COUNTER_API + "/counts", {
+            method: "POST",
+            mode: "cors",
+            cache: "no-store",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ type, ids: part }),
+          });
+          if (!res.ok) throw new Error("counts failed");
+          const j = await res.json();
+          if (j && j.counts) Object.assign(all, j.counts);
+        }catch{
+          // sessiz geç
+        }
       }
+      return all;
     }
 
     let refreshCountsTimer = null;
@@ -864,41 +875,63 @@
       if (!items.length) return;
 
       const ids = items.map(it => it.id);
-      const parts = chunk(ids, 200);
-
-      const playAll = {};
-      const dlAll = {};
-
-      for (const part of parts){
-        const [p, d] = await Promise.all([
-          fetchCounts("play", part),
-          fetchCounts("download", part),
-        ]);
-        Object.assign(playAll, p);
-        Object.assign(dlAll, d);
-      }
+      const [playAll, dlAll] = await Promise.all([
+        fetchCounts("play", ids),
+        fetchCounts("download", ids),
+      ]);
 
       globalPlayCounts = playAll;
       globalDownloadCounts = dlAll;
       render();
     }
 
+    // ✅ /hit artık POST + sendBeacon (Safari/unload sağlam) + fallback
     function sendHit(type, it){
       try{
-        const u = new URL(COUNTER_API + "/hit");
-        u.searchParams.set("type", type);
-        u.searchParams.set("id", it?.id || "");
-        u.searchParams.set("t", it?.title || "");
-        u.searchParams.set("f", (it?.name || "").split("/").pop() || "");
-        u.searchParams.set("_", String(Date.now()));
+        const payload = {
+          type,
+          id: it?.id || "",
+          title: it?.title || "",
+          file_name: (it?.name || "").split("/").pop() || "",
+        };
 
-        // ✅ Safari/unload dayanıklı: image beacon
-        const img = new Image();
-        img.referrerPolicy = "no-referrer";
-        img.src = u.toString();
+        const hitUrl = COUNTER_API + "/hit";
 
-        // best-effort fetch (bazı ortamlar image bloklarsa)
-        try { fetch(u.toString(), { method:"GET", mode:"cors", cache:"no-store", keepalive:true }); } catch {}
+        // 1) sendBeacon (best)
+        try{
+          if (navigator && typeof navigator.sendBeacon === "function"){
+            const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+            const ok = navigator.sendBeacon(hitUrl, blob);
+            if (ok) return; // queued
+          }
+        }catch{}
+
+        // 2) fetch keepalive (good)
+        try{
+          fetch(hitUrl, {
+            method: "POST",
+            mode: "cors",
+            cache: "no-store",
+            keepalive: true,
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          return;
+        }catch{}
+
+        // 3) last resort: GET image beacon (worker GET /hit destekliyorsa)
+        try{
+          const u = new URL(hitUrl);
+          u.searchParams.set("type", payload.type);
+          u.searchParams.set("id", payload.id);
+          u.searchParams.set("t", payload.title);
+          u.searchParams.set("f", payload.file_name);
+          u.searchParams.set("_", String(Date.now()));
+
+          const img = new Image();
+          img.referrerPolicy = "no-referrer";
+          img.src = u.toString();
+        }catch{}
       }catch{}
     }
 
@@ -1395,7 +1428,7 @@
       const a = document.createElement("a");
       a.href = href;
       a.rel = "noopener";
-      a.target = "_blank"; // ✅ _self değil -> sayfa unload olmaz, hit kaçmaz
+      a.target = "_blank";
       if (filename) a.download = filename;
       document.body.appendChild(a);
       a.click();
@@ -1459,7 +1492,7 @@
         statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
         setSortIcons();
         render();
-        scheduleRefreshCounts(100); // ✅ counts çek
+        scheduleRefreshCounts(100);
       }catch(err){
         console.error(err);
         statusEl.textContent = "Liste yüklenemedi.";
@@ -1587,12 +1620,10 @@
             (it.name || it.file || "").split("/").pop() ||
             (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
 
-          // ✅ Global download +1 (safari dayanıklı)
           bumpLocalGlobalCount("download", it.id);
           sendHit("download", it);
           scheduleRefreshCounts(1200);
 
-          // GA kalsın
           trackAudioDownload(it, filename);
 
           render();
@@ -1661,10 +1692,7 @@
       const it = visible[idx];
       if (!it) return;
 
-      // ✅ 10sn gate'i hazırla
       armPlayGate(it);
-
-      // GA kalsın
       trackAudioPlay(it);
 
       statusEl.textContent = "";
