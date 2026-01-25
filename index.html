@@ -665,8 +665,10 @@
           </div>
         </div>
 
+        <!-- ✅ Play count sort -->
         <div class="headIconCell">
           <button id="sortPlayBtn" class="sortBtn" type="button" title="Dinlenme sayısına göre sırala">
+            <!-- Speaker (orange + blue) -->
             <svg class="mainIcon" viewBox="0 0 24 24" aria-hidden="true">
               <path class="iconBlue" d="M3 10v4c0 .55.45 1 1 1h3l5 4V5L7 9H4c-.55 0-1 .45-1 1z"/>
               <path class="iconOrange" d="M16.5 8.5a1 1 0 0 1 1.4.1c1 1.2 1.6 2.7 1.6 4.4s-.6 3.2-1.6 4.4a1 1 0 1 1-1.5-1.3c.7-.9 1.1-2 1.1-3.1s-.4-2.2-1.1-3.1a1 1 0 0 1 .1-1.4z"/>
@@ -693,8 +695,10 @@
 
         <div class="headIconCell" aria-hidden="true"></div>
 
+        <!-- ✅ Download count sort -->
         <div class="headIconCell">
           <button id="sortDlCountBtn" class="sortBtn" type="button" title="İndirme sayısına göre sırala">
+            <!-- Disk (orange + blue) -->
             <svg class="mainIcon" viewBox="0 0 24 24" aria-hidden="true">
               <path class="iconBlue" d="M4 3h12l4 4v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
               <path class="iconOrange" d="M7 3h8v6H7V3zm4 10.2a3.3 3.3 0 1 0 0 6.6 3.3 3.3 0 0 0 0-6.6z"/>
@@ -749,12 +753,13 @@
     // GLOBAL COUNTER API (Cloudflare Worker)
     // =========================
     const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
-    const PLAY_QUALIFY_MS = 10_000;
+    const PLAY_QUALIFY_MS = 10_000; // ✅ 10 sn dinleme sonrası say
 
     // =========================
     // DOM
     // =========================
     const scrollArea = document.getElementById("scrollArea");
+
     const listEl   = document.getElementById("list");
     const searchEl = document.getElementById("search");
     const metaEl   = document.getElementById("meta");
@@ -796,7 +801,7 @@
     });
 
     // =========================
-    // GA4 HELPERS
+    // GA4 HELPERS (kalsın)
     // =========================
     function gaEvent(name, params = {}) {
       try {
@@ -822,10 +827,10 @@
     }
 
     // =========================
-    // COUNTERS
+    // COUNTERS (Global KV)
     // =========================
-    let globalPlayCounts = {};
-    let globalDownloadCounts = {};
+    let globalPlayCounts = {};     // id -> number
+    let globalDownloadCounts = {}; // id -> number
 
     function chunk(arr, size){
       const out = [];
@@ -833,27 +838,23 @@
       return out;
     }
 
-    // ✅ /counts POST JSON
-    const COUNTS_POST_MAX = 600;
+    // ✅ /counts artık POST (Worker POST-only)
     async function fetchCounts(type, ids){
       if (!ids.length) return {};
-      const parts = chunk(ids, COUNTS_POST_MAX);
-      const all = {};
-      for (const part of parts){
-        try{
-          const res = await fetch(COUNTER_API + "/counts", {
-            method: "POST",
-            mode: "cors",
-            cache: "no-store",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ type, ids: part }),
-          });
-          if (!res.ok) throw new Error("counts failed");
-          const j = await res.json();
-          if (j && j.counts) Object.assign(all, j.counts);
-        }catch{}
+      try{
+        const res = await fetch(COUNTER_API + "/counts", {
+          method: "POST",
+          mode: "cors",
+          cache: "no-store",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ type, ids: ids.slice(0, 600) })
+        });
+        if (!res.ok) throw new Error("counts failed");
+        const j = await res.json();
+        return (j && j.counts) ? j.counts : {};
+      }catch{
+        return {};
       }
-      return all;
     }
 
     let refreshCountsTimer = null;
@@ -864,14 +865,83 @@
 
     async function refreshAllCounts(){
       if (!items.length) return;
+
       const ids = items.map(it => it.id);
-      const [playAll, dlAll] = await Promise.all([
-        fetchCounts("play", ids),
-        fetchCounts("download", ids),
-      ]);
+      const parts = chunk(ids, 200);
+
+      const playAll = {};
+      const dlAll = {};
+
+      for (const part of parts){
+        const [p, d] = await Promise.all([
+          fetchCounts("play", part),
+          fetchCounts("download", part),
+        ]);
+        Object.assign(playAll, p);
+        Object.assign(dlAll, d);
+      }
+
       globalPlayCounts = playAll;
       globalDownloadCounts = dlAll;
       render();
+    }
+
+    function cssEsc(s){
+      try { return CSS.escape(String(s)); } catch { return String(s).replace(/["\\]/g, "\\$&"); }
+    }
+
+    function updateVisibleCountCell(id){
+      const row = listEl.querySelector(`.itemRow[data-id="${cssEsc(id)}"]`);
+      if (!row) return;
+      const playEl = row.querySelector('[data-role="playCount"]');
+      const dlEl   = row.querySelector('[data-role="dlCount"]');
+      if (playEl) playEl.textContent = String(Number(globalPlayCounts[id]) || 0);
+      if (dlEl)   dlEl.textContent   = String(Number(globalDownloadCounts[id]) || 0);
+    }
+
+    // ✅ HIT: fetch-first POST + beacon fallback (Worker POST-only)
+    async function sendHit(type, it){
+      try{
+        const payload = {
+          type,
+          id: it?.id || "",
+          title: it?.title || "",
+          file_name: (it?.name || "").split("/").pop() || ""
+        };
+
+        const hitUrl = COUNTER_API + "/hit";
+
+        // 1) fetch (JSON) first
+        try{
+          const ac = new AbortController();
+          const t = setTimeout(() => ac.abort(), 1200);
+
+          const res = await fetch(hitUrl, {
+            method: "POST",
+            mode: "cors",
+            cache: "no-store",
+            keepalive: true,
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: ac.signal,
+          });
+
+          clearTimeout(t);
+          if (res && res.ok) return true;
+        }catch{}
+
+        // 2) beacon fallback
+        try{
+          if (navigator && typeof navigator.sendBeacon === "function"){
+            const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+            return navigator.sendBeacon(hitUrl, blob);
+          }
+        }catch{}
+
+        return false;
+      }catch{
+        return false;
+      }
     }
 
     function bumpLocalGlobalCount(type, id){
@@ -881,67 +951,20 @@
       } else {
         globalDownloadCounts[id] = (Number(globalDownloadCounts[id]) || 0) + 1;
       }
+      updateVisibleCountCell(id); // ✅ sayfada anında görünsün
     }
 
-   /**
- * ✅ Aggressive hit sender:
- * 1) fetch POST (JSON + keepalive) first
- * 2) if fails/timeouts -> sendBeacon fallback
- *
- * @param {"play"|"download"} type
- * @param {{id?:string,title?:string,name?:string}} it
- * @returns {Promise<boolean>}
- */
-async function sendHit(type, it) {
-  try {
-    const payload = {
-      type,
-      id: it?.id || "",
-      title: it?.title || "",
-      file_name: (it?.name || "").split("/").pop() || "",
+    // =========================
+    // PLAY QUALIFY (10sn gerçek dinleme) — Safari sağlam
+    // =========================
+    let playGate = {
+      id: null,
+      armed: false,
+      sent: false,
+      listenedMs: 0,
+      lastNow: 0,
+      timer: null,
     };
-
-    const hitUrl = COUNTER_API + "/hit";
-
-    // 1) fetch first (more reliable JSON content-type)
-    try {
-      const ac = new AbortController();
-      const t = setTimeout(() => ac.abort(), 1200);
-
-      const res = await fetch(hitUrl, {
-        method: "POST",
-        mode: "cors",
-        cache: "no-store",
-        keepalive: true,
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload),
-        signal: ac.signal,
-      });
-
-      clearTimeout(t);
-
-      if (res && res.ok) return true;
-    } catch {}
-
-    // 2) fallback: sendBeacon (best for unload/background)
-    try {
-      if (navigator && typeof navigator.sendBeacon === "function") {
-        const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
-        const ok = navigator.sendBeacon(hitUrl, blob);
-        if (ok) return true;
-      }
-    } catch {}
-
-    return false;
-  } catch {
-    return false;
-  }
-}
-
-    // =========================
-    // PLAY QUALIFY (10sn)
-    // =========================
-    let playGate = { id:null, armed:false, sent:false, listenedMs:0, lastNow:0, timer:null };
 
     function clearPlayGateTimer(){
       if (playGate.timer){
@@ -952,7 +975,14 @@ async function sendHit(type, it) {
 
     function armPlayGate(it){
       clearPlayGateTimer();
-      playGate = { id: it?.id || null, armed:true, sent:false, listenedMs:0, lastNow:0, timer:null };
+      playGate = {
+        id: it?.id || null,
+        armed: true,
+        sent: false,
+        listenedMs: 0,
+        lastNow: 0,
+        timer: null,
+      };
     }
 
     function startPlayGateTimer(){
@@ -977,16 +1007,18 @@ async function sendHit(type, it) {
             playGate.sent = true;
             clearPlayGateTimer();
             const it = items.find(x => x.id === playGate.id) || { id: playGate.id, title:"", name:"" };
+
             bumpLocalGlobalCount("play", it.id);
-            sendHit("play", it);
-            scheduleRefreshCounts(1200);
-            render();
+            sendHit("play", it);          // fire-and-forget
+            scheduleRefreshCounts(1200);  // doğrulama
           }
         }catch{}
       }, 250);
     }
 
-    function stopPlayGateTimer(){ clearPlayGateTimer(); }
+    function stopPlayGateTimer(){
+      clearPlayGateTimer();
+    }
 
     try{
       plyr.on("playing", () => startPlayGateTimer());
@@ -995,7 +1027,7 @@ async function sendHit(type, it) {
     }catch{}
 
     // =========================
-    // LOCAL STORAGE
+    // LOCAL STORAGE (Güncel için ayrı namespace)
     // =========================
     const LS = {
       favs:  "fsp1.favs.v1",
@@ -1024,6 +1056,7 @@ async function sendHit(type, it) {
     let items = [];
     let activeId = null;
 
+    // ✅ Varsayılan: date + desc
     let sortMode = localStorage.getItem(LS.sortMode) || "date";
     let durSortDir  = (localStorage.getItem(LS.sortDirDur) === "desc") ? "desc" : "asc";
     let dateSortDir = (localStorage.getItem(LS.sortDirDate) === "asc") ? "asc" : "desc";
@@ -1077,7 +1110,7 @@ async function sendHit(type, it) {
     fastBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex + 1); });
 
     // =========================
-    // ZOOM
+    // ZOOM (% görünüm)
     // =========================
     const ZOOMS = [0.85, 0.9, 0.95, 1, 1.05, 1.1, 1.15, 1.2];
     let zoomIndex = ZOOMS.indexOf(1);
@@ -1130,7 +1163,9 @@ async function sendHit(type, it) {
       }
     }
 
-    function resetZoom100(){ applyZoomByIndex(ZOOMS.indexOf(1)); }
+    function resetZoom100(){
+      applyZoomByIndex(ZOOMS.indexOf(1));
+    }
 
     function attachDoubleTapReset(el){
       el.addEventListener("dblclick", (e) => { e.preventDefault(); resetZoom100(); });
@@ -1156,7 +1191,9 @@ async function sendHit(type, it) {
     // =========================
     // SEARCH: player sakla
     // =========================
-    function setTypingMode(on){ fp.classList.toggle("hiddenWhileTyping", !!on); }
+    function setTypingMode(on){
+      fp.classList.toggle("hiddenWhileTyping", !!on);
+    }
     searchEl.addEventListener("focus", () => setTypingMode(true));
     searchEl.addEventListener("blur",  () => setTypingMode(false));
 
@@ -1465,7 +1502,7 @@ async function sendHit(type, it) {
         statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
         setSortIcons();
         render();
-        scheduleRefreshCounts(100);
+        scheduleRefreshCounts(120);
       }catch(err){
         console.error(err);
         statusEl.textContent = "Liste yüklenemedi.";
@@ -1552,6 +1589,7 @@ async function sendHit(type, it) {
       for (const it of visible){
         const row = document.createElement("div");
         row.className = "itemRow" + (it.id === activeId ? " active" : "");
+        row.dataset.id = it.id; // ✅ dom update için
 
         const title = document.createElement("div");
         title.className = "title";
@@ -1563,6 +1601,7 @@ async function sendHit(type, it) {
 
         const playCount = document.createElement("div");
         playCount.className = "countCell";
+        playCount.dataset.role = "playCount";
         playCount.textContent = String(Number(globalPlayCounts[it.id]) || 0);
 
         const favBtn = iconButton("star", !!favs[it.id], "Favori");
@@ -1571,6 +1610,7 @@ async function sendHit(type, it) {
 
         const dlCount = document.createElement("div");
         dlCount.className = "countCell";
+        dlCount.dataset.role = "dlCount";
         dlCount.textContent = String(Number(globalDownloadCounts[it.id]) || 0);
 
         favBtn.addEventListener("click", (e) => {
@@ -1587,22 +1627,22 @@ async function sendHit(type, it) {
           render();
         });
 
-        // ✅ Download click: hit'i başlat -> kısa bekle -> download aç
-        dlBtn.addEventListener("click", async (e) => {
+        // ✅ Download: önce indir, sonra sayaç/hit
+        dlBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           const filename =
             (it.name || it.file || "").split("/").pop() ||
             (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
 
+          // 1) download hemen başlasın (gesture içinde)
+          forceDownload(it.url, filename); // await yok
+
+          // 2) sayaç + hit
           bumpLocalGlobalCount("download", it.id);
           sendHit("download", it);
           scheduleRefreshCounts(1200);
 
           trackAudioDownload(it, filename);
-          render();
-
-          await sleep(30);
-          forceDownload(it.url, filename);
         });
 
         for (const b of [favBtn, selBtn, dlBtn]){
@@ -1771,7 +1811,7 @@ async function sendHit(type, it) {
     });
 
     // =========================
-    // DRAGGABLE PLAYER
+    // DRAGGABLE PLAYER (transform-scale koordinat fix)
     // =========================
     function restorePlayerPos(){
       try{
@@ -1979,7 +2019,7 @@ async function sendHit(type, it) {
     restorePlayerPos();
     restoreSpeed();
     restoreZoom();
-    setTimeout(clampPlayerToViewport, 0);
+    setTimeout(() => clampPlayerToViewport(), 0);
     loadItems();
   </script>
 </body>
