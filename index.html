@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>FSP Audio — Güncel</title>
 
-  <!-- WhatsApp / OG Preview -->
   <meta name="description" content="FSP Audio — Güncel kayıt listesi ve oynatıcı." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="FSP Audio — Güncel" />
@@ -17,7 +16,6 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://protokolfsp.github.io/fsp-audio/og-home.png" />
 
-  <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-TNRQ49C157"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -270,7 +268,10 @@
       box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
     }
 
-    .sortBtn .mainIcon{ width: 16px; height: 16px; }
+    .sortBtn .mainIcon{
+      width: 16px;
+      height: 16px;
+    }
     .sortBtn .dirIcon{
       position: absolute;
       right: 5px;
@@ -406,7 +407,6 @@
     }
     .filterBtn svg{ width:14px; height:14px; }
 
-    /* Floating player */
     #floatingPlayer{
       position: fixed;
       left: max(18px, env(safe-area-inset-left));
@@ -636,9 +636,7 @@
           <div class="titleHead">
             <span>Kayıt</span>
             <button id="sortDateBtn" class="sortBtn" type="button" title="Tarihe göre sırala (dosya sonu)">
-              <svg id="sortDateIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14"/><path d="M7 14l5 5 5-5"/>
-              </svg>
+              <svg id="sortDateIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"></svg>
             </button>
           </div>
         </div>
@@ -647,9 +645,7 @@
           <div class="durHead">
             <span>Süre</span>
             <button id="sortDurBtn" class="sortBtn" type="button" title="Süreye göre sırala">
-              <svg id="sortDurIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14"/><path d="M7 14l5 5 5-5"/>
-              </svg>
+              <svg id="sortDurIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"></svg>
             </button>
           </div>
         </div>
@@ -728,21 +724,12 @@
   <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
   <script>
-    // =========================
-    // SOURCE / PROXY / COUNTER
-    // =========================
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
 
-    // IMPORTANT: This HTML expects Worker endpoints:
-    // POST  /counts  {type:"play|download|both", ids:[...]}
-    // POST  /hit     {type:"play|download", id, title, file_name}
     const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
     const PLAY_QUALIFY_MS = 10_000;
 
-    // =========================
-    // DOM
-    // =========================
     const scrollArea = document.getElementById("scrollArea");
 
     const listEl   = document.getElementById("list");
@@ -785,9 +772,6 @@
       controls: ["rewind","play","fast-forward","progress","current-time","duration","mute","volume"]
     });
 
-    // =========================
-    // GA HELPERS
-    // =========================
     function gaEvent(name, params = {}) {
       try {
         if (typeof gtag !== "function") return;
@@ -811,9 +795,6 @@
       });
     }
 
-    // =========================
-    // COUNTERS
-    // =========================
     let globalPlayCounts = {};
     let globalDownloadCounts = {};
 
@@ -824,83 +805,63 @@
     }
 
     async function fetchCounts(type, ids){
-      if (!ids.length) return (type === "both") ? { play: {}, download: {} } : {};
+      if (!ids.length) return {};
       try{
-        const res = await fetch(COUNTER_API + "/counts", {
-          method: "POST",
-          mode: "cors",
-          cache: "no-store",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ type, ids: ids.slice(0, 600) })
-        });
+        const u = new URL(COUNTER_API + "/counts");
+        u.searchParams.set("type", type);
+        u.searchParams.set("ids", ids.join(","));
+        const res = await fetch(u.toString(), { mode:"cors", cache:"no-store" });
         if (!res.ok) throw new Error("counts failed");
         const j = await res.json();
-        return (j && j.counts) ? j.counts : ((type === "both") ? { play: {}, download: {} } : {});
+        return (j && j.counts) ? j.counts : {};
       }catch{
-        return (type === "both") ? { play: {}, download: {} } : {};
+        return {};
       }
     }
 
     let refreshCountsTimer = null;
-    function scheduleRefreshCounts(ms = 900){
+    function scheduleRefreshCounts(ms = 800){
       clearTimeout(refreshCountsTimer);
-      refreshCountsTimer = setTimeout(() => refreshAllCounts(false).catch(()=>{}), ms);
+      refreshCountsTimer = setTimeout(() => refreshAllCounts().catch(()=>{}), ms);
     }
 
-    const COUNTS_THROTTLE_MS = 30_000;
-    let __lastCountsAt = 0;
-
-    async function refreshAllCounts(forceFull = false){
+    async function refreshAllCounts(){
       if (!items.length) return;
 
-      const now = Date.now();
-      if (!forceFull && now - __lastCountsAt < COUNTS_THROTTLE_MS) return;
-      __lastCountsAt = now;
-
-      const ids = forceFull
-        ? items.map(it => it.id)
-        : getVisibleItems().slice(0, 120).map(it => it.id);
-
+      const ids = items.map(it => it.id);
       const parts = chunk(ids, 200);
 
       const playAll = {};
       const dlAll = {};
 
       for (const part of parts){
-        const both = await fetchCounts("both", part);
-        Object.assign(playAll, both.play || {});
-        Object.assign(dlAll, both.download || {});
+        const [p, d] = await Promise.all([
+          fetchCounts("play", part),
+          fetchCounts("download", part),
+        ]);
+        Object.assign(playAll, p);
+        Object.assign(dlAll, d);
       }
 
-      Object.assign(globalPlayCounts, playAll);
-      Object.assign(globalDownloadCounts, dlAll);
-
+      globalPlayCounts = playAll;
+      globalDownloadCounts = dlAll;
       render();
     }
 
     function sendHit(type, it){
       try{
-        const payload = {
-          type,
-          id: it?.id || "",
-          title: it?.title || "",
-          file_name: (it?.name || "").split("/").pop() || "",
-          _: Date.now()
-        };
+        const u = new URL(COUNTER_API + "/hit");
+        u.searchParams.set("type", type);
+        u.searchParams.set("id", it?.id || "");
+        u.searchParams.set("t", it?.title || "");
+        u.searchParams.set("f", (it?.name || "").split("/").pop() || "");
+        u.searchParams.set("_", String(Date.now()));
 
-        try{
-          const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
-          if (navigator.sendBeacon) navigator.sendBeacon(COUNTER_API + "/hit", blob);
-        }catch{}
+        const img = new Image();
+        img.referrerPolicy = "no-referrer";
+        img.src = u.toString();
 
-        fetch(COUNTER_API + "/hit", {
-          method: "POST",
-          mode: "cors",
-          cache: "no-store",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(payload),
-          keepalive: true
-        }).catch(()=>{});
+        try { fetch(u.toString(), { method:"GET", mode:"cors", cache:"no-store", keepalive:true }); } catch {}
       }catch{}
     }
 
@@ -913,9 +874,6 @@
       }
     }
 
-    // =========================
-    // PLAY QUALIFY (10s)
-    // =========================
     let playGate = {
       id: null,
       armed: false,
@@ -965,12 +923,10 @@
           if (playGate.listenedMs >= PLAY_QUALIFY_MS){
             playGate.sent = true;
             clearPlayGateTimer();
-
             const it = items.find(x => x.id === playGate.id) || { id: playGate.id, title:"", name:"" };
             bumpLocalGlobalCount("play", it.id);
             sendHit("play", it);
-
-            scheduleRefreshCounts(1400);
+            scheduleRefreshCounts(1200);
             render();
           }
         }catch{}
@@ -987,9 +943,6 @@
       plyr.on("ended",   () => stopPlayGateTimer());
     }catch{}
 
-    // =========================
-    // LOCAL STORAGE
-    // =========================
     const LS = {
       favs:  "fsp1.favs.v1",
       sels:  "fsp1.sels.v1",
@@ -1028,9 +981,6 @@
     if (!localStorage.getItem(LS.sortDirPlay)) localStorage.setItem(LS.sortDirPlay, playSortDir);
     if (!localStorage.getItem(LS.sortDirDl)) localStorage.setItem(LS.sortDirDl, dlSortDir);
 
-    // =========================
-    // SPEED
-    // =========================
     const SPEEDS = [0.5, 0.75, 0.9, 1, 1.25, 1.5, 1.75, 2.0, 2.25];
     let speedIndex = SPEEDS.indexOf(1);
 
@@ -1069,9 +1019,6 @@
     slowBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex - 1); });
     fastBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex + 1); });
 
-    // =========================
-    // ZOOM
-    // =========================
     const ZOOMS = [0.85, 0.9, 0.95, 1, 1.05, 1.1, 1.15, 1.2];
     let zoomIndex = ZOOMS.indexOf(1);
     let uiScale = 1;
@@ -1148,18 +1095,12 @@
     attachDoubleTapReset(zoomOutBtn);
     attachDoubleTapReset(zoomInBtn);
 
-    // =========================
-    // SEARCH: player sakla
-    // =========================
     function setTypingMode(on){
       fp.classList.toggle("hiddenWhileTyping", !!on);
     }
     searchEl.addEventListener("focus", () => setTypingMode(true));
     searchEl.addEventListener("blur",  () => setTypingMode(false));
 
-    // =========================
-    // HELPERS
-    // =========================
     function escHtml(s){
       return (s ?? "").toString()
         .replace(/&/g,"&amp;")
@@ -1243,10 +1184,21 @@
       return t;
     }
 
-    function arrowSvg(isAsc){
-      return isAsc
-        ? `<path d="M12 19V5"/><path d="M7 10l5-5 5 5"/>`
-        : `<path d="M12 5v14"/><path d="M7 14l5 5 5-5"/>`;
+    // ✅ Safari FIX: SVG innerHTML yerine DOM path üret
+    function setArrowIcon(svgEl, isAsc) {
+      if (!svgEl) return;
+      while (svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
+
+      const ns = "http://www.w3.org/2000/svg";
+
+      const p1 = document.createElementNS(ns, "path");
+      p1.setAttribute("d", isAsc ? "M12 19V5" : "M12 5v14");
+
+      const p2 = document.createElementNS(ns, "path");
+      p2.setAttribute("d", isAsc ? "M7 10l5-5 5 5" : "M7 14l5 5 5-5");
+
+      svgEl.appendChild(p1);
+      svgEl.appendChild(p2);
     }
 
     function setSortIcons(){
@@ -1255,10 +1207,10 @@
       sortPlayBtn.classList.remove("on");
       sortDlCountBtn.classList.remove("on");
 
-      sortDurIcon.innerHTML = arrowSvg(durSortDir === "asc");
-      sortDateIcon.innerHTML = arrowSvg(dateSortDir === "asc");
-      sortPlayIcon.innerHTML = arrowSvg(playSortDir === "asc");
-      sortDlCountIcon.innerHTML = arrowSvg(dlSortDir === "asc");
+      setArrowIcon(sortDurIcon, durSortDir === "asc");
+      setArrowIcon(sortDateIcon, dateSortDir === "asc");
+      setArrowIcon(sortPlayIcon, playSortDir === "asc");
+      setArrowIcon(sortDlCountIcon, dlSortDir === "asc");
 
       if (sortMode === "dur") sortDurBtn.classList.add("on");
       if (sortMode === "date") sortDateBtn.classList.add("on");
@@ -1286,33 +1238,26 @@
       render();
     });
 
-    sortPlayBtn.addEventListener("click", async (e) => {
+    sortPlayBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       if (sortMode !== "play") sortMode = "play";
       else playSortDir = (playSortDir === "asc") ? "desc" : "asc";
       localStorage.setItem(LS.sortMode, sortMode);
       localStorage.setItem(LS.sortDirPlay, playSortDir);
       setSortIcons();
-
-      await refreshAllCounts(true);
       render();
     });
 
-    sortDlCountBtn.addEventListener("click", async (e) => {
+    sortDlCountBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       if (sortMode !== "download") sortMode = "download";
       else dlSortDir = (dlSortDir === "asc") ? "desc" : "asc";
       localStorage.setItem(LS.sortMode, sortMode);
       localStorage.setItem(LS.sortDirDl, dlSortDir);
       setSortIcons();
-
-      await refreshAllCounts(true);
       render();
     });
 
-    // =========================
-    // DURATION LOADER
-    // =========================
     const durQueue = [];
     const durLoading = new Set();
     let durActive = 0;
@@ -1390,9 +1335,6 @@
       });
     }
 
-    // =========================
-    // DOWNLOAD (proxy worker)
-    // =========================
     function makeProxyUrl(fileUrl, filename){
       const u = DL_PROXY + "?u=" + encodeURIComponent(fileUrl);
       return filename ? (u + "&f=" + encodeURIComponent(filename)) : u;
@@ -1428,9 +1370,6 @@
       }
     }
 
-    // =========================
-    // LOAD (IA metadata)
-    // =========================
     function buildDownloadUrl(identifier, name){
       const parts = (name || "").split("/").map(p => encodeURIComponent(p));
       return `https://archive.org/download/${identifier}/${parts.join("/")}`;
@@ -1466,17 +1405,13 @@
         statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
         setSortIcons();
         render();
-
-        scheduleRefreshCounts(250);
+        scheduleRefreshCounts(100);
       }catch(err){
         console.error(err);
         statusEl.textContent = "Liste yüklenemedi.";
       }
     }
 
-    // =========================
-    // FILTER + SORT + RENDER
-    // =========================
     function getVisibleItems(){
       const q = foldTR((searchEl.value || "").trim());
 
@@ -1589,23 +1524,22 @@
           render();
         });
 
+        // ✅ Download: önce indirimi başlat, sonra hit/count/render (Safari user-gesture fix)
         dlBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-
           const filename =
             (it.name || it.file || "").split("/").pop() ||
             (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
 
-          // Start download first (keeps user gesture)
           forceDownload(it.url, filename);
 
-          // Then count + analytics + UI
-          bumpLocalGlobalCount("download", it.id);
-          sendHit("download", it);
-          trackAudioDownload(it, filename);
-
-          scheduleRefreshCounts(1400);
-          render();
+          setTimeout(() => {
+            bumpLocalGlobalCount("download", it.id);
+            sendHit("download", it);
+            scheduleRefreshCounts(1200);
+            trackAudioDownload(it, filename);
+            render();
+          }, 0);
         });
 
         for (const b of [favBtn, selBtn, dlBtn]){
@@ -1655,9 +1589,6 @@
       return btn;
     }
 
-    // =========================
-    // PLAYBACK
-    // =========================
     function playById(id){
       const visible = getVisibleItems();
       const idx = visible.findIndex(x => x.id === id);
@@ -1747,9 +1678,6 @@
       }
     });
 
-    // =========================
-    // FILTERS
-    // =========================
     filterFavBtn.addEventListener("click", () => { filterFav = !filterFav; render(); });
     filterSelBtn.addEventListener("click", () => { filterSel = !filterSel; render(); });
 
@@ -1765,21 +1693,14 @@
 
       setSortIcons();
       render();
-      scheduleRefreshCounts(200);
     });
 
     let searchTimer = null;
     searchEl.addEventListener("input", () => {
       clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => {
-        render();
-        scheduleRefreshCounts(250);
-      }, 90);
+      searchTimer = setTimeout(() => render(), 90);
     });
 
-    // =========================
-    // DRAGGABLE PLAYER (transform-scale fix)
-    // =========================
     function restorePlayerPos(){
       try{
         const s = JSON.parse(localStorage.getItem(LS.pos) || "null");
@@ -1946,9 +1867,6 @@
       window.visualViewport.addEventListener("resize", () => clampPlayerToViewport());
     }
 
-    // =========================
-    // Pull-to-refresh guard
-    // =========================
     (function disablePullToRefresh(){
       let startY = 0;
       scrollArea.addEventListener("touchstart", (e) => {
@@ -1966,9 +1884,6 @@
       }, { passive: false });
     })();
 
-    // =========================
-    // NAV ACTIVE
-    // =========================
     (function setActiveNav(){
       const here = location.href.replace(/\/$/, "");
       document.querySelectorAll(".navRow .navLink").forEach(a => {
@@ -1979,9 +1894,7 @@
       });
     })();
 
-    // =========================
-    // INIT
-    // =========================
+    // ✅ INIT
     setSortIcons();
     restorePlayerPos();
     restoreSpeed();
