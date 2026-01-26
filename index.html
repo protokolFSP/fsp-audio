@@ -941,7 +941,8 @@
     let dlSortDir   = (localStorage.getItem(LS.sortDirDl) === "asc") ? "asc" : "desc";
 
     if (!localStorage.getItem(LS.sortMode)) localStorage.setItem(LS.sortMode, sortMode);
-    if (!localStorage.getItem(LS.sortDirDate)) localStorage.setItem(LS.sortDirDate) localStorage.setItem(LS.sortDirDate, dateSortDir);
+    if (!localStorage.getItem(LS.sortDirDate)) localStorage.setItem(LS.sortDirDate, dateSortDir);
+
     if (!localStorage.getItem(LS.sortDirPlay)) localStorage.setItem(LS.sortDirPlay, playSortDir);
     if (!localStorage.getItem(LS.sortDirDl)) localStorage.setItem(LS.sortDirDl, dlSortDir);
 
