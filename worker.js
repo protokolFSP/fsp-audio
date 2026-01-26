@@ -1,52 +1,5 @@
-# File: wrangler.toml (repo root)
-name = "fspdlcounter"
-main = "worker.js"
-compatibility_date = "2026-01-26"
+// File: worker.js
 
-[durable_objects]
-bindings = [
-  { name = "COUNTERS_DO", class_name = "CountersDO" }
-]
-
-[[migrations]]
-tag = "v1"
-new_sqlite_classes = ["CountersDO"]
-
-
-# File: .github/workflows/deploy.yml   (DİKKAT: bu yol şart)
-name: Deploy Worker
-
-on:
-  push:
-    branches: [ "main" ]
-  workflow_dispatch: {}
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install wrangler
-        run: npm i -g wrangler
-
-      - name: Deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
-        run: |
-          if [ -n "$ADMIN_TOKEN" ]; then
-            wrangler secret put ADMIN_TOKEN <<< "$ADMIN_TOKEN"
-          fi
-          wrangler deploy
-
-
-# File: worker.js (repo root)  --- Durable Object (SQLite) sürümü
 const MAX_ID_LEN = 300;
 const MAX_TITLE_LEN = 300;
 const MAX_FILE_LEN = 260;
