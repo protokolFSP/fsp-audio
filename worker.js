@@ -1,15 +1,10 @@
 // File: worker.js  (Cloudflare Workers + Durable Object + SQLite storage)
-//
-// ✅ Counters + PUBLIC notes (single note per audio id)
-// ✅ Uses ONLY state.storage.sql.exec()  (no prepare())
-// ✅ CORS-safe JSON errors (even on exceptions)
+// ✅ COUNTERS ONLY (play/download) + CORS-safe
 //
 // Endpoints (public):
 //  - GET  /health
 //  - POST /counts  body: { type: "play"|"download"|"both", ids: string[] }
 //  - POST /hit     body: { type: "play"|"download", id: string, title?: string, file_name?: string }
-//  - POST /notes   body: { ids: string[] }                      -> sparse response (only ids that have notes)
-//  - POST /note    body: { id: string, note: string }           -> empty note = delete
 //  - GET  /top?type=play|download&limit=10&cursor=0
 //
 // Admin:
@@ -17,19 +12,18 @@
 //      body: { mode: "all" } OR { mode: "id", id: "<id>" }
 //
 // Bindings required:
-//  - Durable Object binding name: COUNTERS_DO   (class: CountersDO)
-//  - Enable SQLite storage for this DO class in your migrations/settings
+//  - Durable Object binding name: COUNTERS_DO (class: CountersDO)
+//  - Durable Object must be SQLite-backed (migrations new_sqlite_classes includes "CountersDO")
 //  - Secret (optional): ADMIN_TOKEN
 
 const MAX_ID_LEN = 300;
 const MAX_TITLE_LEN = 300;
 const MAX_FILE_LEN = 260;
-const MAX_NOTE_LEN = 2000;
 
 const MAX_IDS_POST = 600;
 const TOP_LIMIT_MAX = 50;
 
-// sqlite param limiti vs. için güvenli parça
+// sqlite IN() için güvenli parça boyutu
 const SQL_IN_CHUNK = 400;
 
 function corsHeaders() {
@@ -120,6 +114,12 @@ function getGlobalStub(env) {
   return env.COUNTERS_DO.get(id);
 }
 
+function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
 function errToString(e) {
   try {
     if (!e) return "Unknown error";
@@ -130,20 +130,6 @@ function errToString(e) {
   }
 }
 
-async function safeHandle(fn) {
-  try {
-    return await fn();
-  } catch (e) {
-    return json({ ok: false, error: "Internal error", detail: errToString(e) }, 500);
-  }
-}
-
-function chunk(arr, size) {
-  const out = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-}
-
 /**
  * Durable Object: single global instance ("global")
  * Stores everything in sqlite via state.storage.sql (exec + toArray)
@@ -152,7 +138,7 @@ export class CountersDO {
   constructor(state, env) {
     this.state = state;
     this.env = env;
-    this.sql = state?.storage?.sql;
+    this.sql = state.storage.sql;
     this._init = null;
   }
 
@@ -161,10 +147,9 @@ export class CountersDO {
 
     this._init = this.state.blockConcurrencyWhile(async () => {
       if (!this.sql || typeof this.sql.exec !== "function") {
-        throw new Error("SQLite API missing: state.storage.sql.exec not available");
+        throw new Error("SQLite missing: state.storage.sql.exec not available (SQLite-backed DO değil)");
       }
 
-      // Base table (notes kolonları sonradan eklenebilir)
       this.sql.exec(`
         CREATE TABLE IF NOT EXISTS counters (
           id TEXT PRIMARY KEY,
@@ -176,32 +161,16 @@ export class CountersDO {
         );
       `);
 
-      // Kolon var mı kontrol -> yoksa ALTER
-      const cols = this.sql
-        .exec(`PRAGMA table_info(counters);`)
-        .toArray()
-        .map((r) => String(r.name));
-
-      const has = (c) => cols.includes(c);
-
-      if (!has("note")) {
-        this.sql.exec(`ALTER TABLE counters ADD COLUMN note TEXT NOT NULL DEFAULT '';`);
-      }
-      if (!has("noteUpdatedAt")) {
-        this.sql.exec(`ALTER TABLE counters ADD COLUMN noteUpdatedAt INTEGER NOT NULL DEFAULT 0;`);
-      }
-
       this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_pl ON counters(pl DESC);`);
       this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_dl ON counters(dl DESC);`);
       this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_updated ON counters(updatedAt DESC);`);
-      this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_note_updated ON counters(noteUpdatedAt DESC);`);
     });
 
     return this._init;
   }
 
   async fetch(request) {
-    return safeHandle(async () => {
+    try {
       const url = new URL(request.url);
 
       if (request.method === "OPTIONS") {
@@ -225,16 +194,6 @@ export class CountersDO {
         return this.routeHit(request);
       }
 
-      if (url.pathname === "/notes") {
-        if (request.method !== "POST") return text("Method not allowed", 405);
-        return this.routeNotes(request);
-      }
-
-      if (url.pathname === "/note") {
-        if (request.method !== "POST") return text("Method not allowed", 405);
-        return this.routeNote(request);
-      }
-
       if (url.pathname === "/top") {
         if (request.method !== "GET") return text("Method not allowed", 405);
         return this.routeTop(url);
@@ -246,7 +205,9 @@ export class CountersDO {
       }
 
       return text("Not found", 404);
-    });
+    } catch (e) {
+      return json({ ok: false, error: "DO exception", detail: errToString(e) }, 500);
+    }
   }
 
   async routeCounts(request) {
@@ -341,80 +302,6 @@ export class CountersDO {
     }, 200);
   }
 
-  async routeNotes(request) {
-    const body = await readJsonBody(request);
-    if (!body) return badRequest("JSON body bekleniyor");
-
-    const ids = sanitizeIds(Array.isArray(body.ids) ? body.ids : [], MAX_IDS_POST);
-    if (!ids.length) return json({ ok: true, notes: {} }, 200);
-
-    const notes = {};
-
-    for (const part of chunk(ids, SQL_IN_CHUNK)) {
-      const placeholders = part.map(() => "?").join(",");
-      const rows = this.sql
-        .exec(
-          `SELECT id, note, noteUpdatedAt FROM counters WHERE id IN (${placeholders}) AND note != '';`,
-          ...part
-        )
-        .toArray();
-
-      for (const r of rows) {
-        const id = String(r.id);
-        notes[id] = {
-          note: String(r.note || ""),
-          updatedAt: Number(r.noteUpdatedAt) || 0,
-        };
-      }
-    }
-
-    return json({ ok: true, notes }, 200);
-  }
-
-  async routeNote(request) {
-    const body = await readJsonBody(request);
-    if (!body) return badRequest("JSON body bekleniyor");
-
-    const id = sanitizeId(typeof body.id === "string" ? body.id : "");
-    if (!id) return badRequest("id gerekli");
-
-    const rawNote = typeof body.note === "string" ? body.note : "";
-    const note = clampStr(rawNote, MAX_NOTE_LEN);
-    const noteTrimmed = note.trim();
-    const now = Date.now();
-
-    if (!noteTrimmed) {
-      // delete (empty note)
-      this.sql.exec(
-        `
-        INSERT INTO counters (id, note, noteUpdatedAt)
-        VALUES (?, '', ?)
-        ON CONFLICT(id) DO UPDATE SET
-          note = '',
-          noteUpdatedAt = ?
-        ;
-      `,
-        id, now, now
-      );
-
-      return json({ ok: true, id, deleted: true, note: "", updatedAt: now }, 200);
-    }
-
-    this.sql.exec(
-      `
-      INSERT INTO counters (id, note, noteUpdatedAt)
-      VALUES (?, ?, ?)
-      ON CONFLICT(id) DO UPDATE SET
-        note = excluded.note,
-        noteUpdatedAt = excluded.noteUpdatedAt
-      ;
-    `,
-      id, noteTrimmed, now
-    );
-
-    return json({ ok: true, id, deleted: false, note: noteTrimmed, updatedAt: now }, 200);
-  }
-
   async routeTop(url) {
     const type = normalizeTopType(url.searchParams.get("type")) || "download";
     const limit = Math.min(TOP_LIMIT_MAX, Math.max(1, Number(url.searchParams.get("limit") || "10")));
@@ -431,8 +318,8 @@ export class CountersDO {
       FROM counters
       WHERE ${whereCount}
       ORDER BY ${orderCol} DESC, updatedAt DESC, id ASC
-      LIMIT ? OFFSET ?
-    `,
+      LIMIT ? OFFSET ?;
+      `,
       limit + 1, offset
     ).toArray();
 
@@ -481,7 +368,7 @@ export class CountersDO {
 
 export default {
   async fetch(request, env) {
-    return safeHandle(async () => {
+    try {
       const url = new URL(request.url);
 
       if (request.method === "OPTIONS") {
@@ -494,20 +381,17 @@ export default {
       }
 
       const stub = getGlobalStub(env);
-      if (!stub) return json({ ok: false, error: "COUNTERS_DO binding missing (Cloudflare DO binding kontrol et)" }, 500);
+      if (!stub) {
+        return json({ ok: false, error: "COUNTERS_DO binding missing (DO binding + SQLite migration kontrol et)" }, 500);
+      }
 
-      if (
-        url.pathname === "/counts" ||
-        url.pathname === "/hit" ||
-        url.pathname === "/notes" ||
-        url.pathname === "/note" ||
-        url.pathname === "/top" ||
-        url.pathname === "/reset"
-      ) {
+      if (url.pathname === "/counts" || url.pathname === "/hit" || url.pathname === "/top" || url.pathname === "/reset") {
         return stub.fetch(request);
       }
 
       return text("Not found", 404);
-    });
+    } catch (e) {
+      return json({ ok: false, error: "Worker exception", detail: errToString(e) }, 500);
+    }
   },
 };
