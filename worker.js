@@ -1,14 +1,26 @@
-// worker.js (NO SQLITE) — Durable Object Storage ile sayaç
+// File: worker.js  (Cloudflare Workers + Durable Object + SQLite storage)
+//
+// ✅ Includes counters + PUBLIC notes
 // Endpoints:
-//  GET  /health
-//  POST /hit        { type:"play"|"download", id, title?, file_name? }
-//  POST /counts      { type:"play"|"download"|"both", ids:[...] }
-//  GET  /top?type=play|download&limit=10&cursor=0
-//  POST /reset       (x-admin-token gerekli) { mode:"all" } veya { mode:"id", id:"..." }
+//  - GET  /health
+//  - POST /counts  body: { type: "play"|"download"|"both", ids: string[] }
+//  - POST /hit     body: { type: "play"|"download", id: string, title?: string, file_name?: string }
+//
+//  - POST /notes   body: { ids: string[] }                      -> sparse response (only ids that have notes)
+//  - POST /note    body: { id: string, note: string }           -> empty note = delete
+//
+//  - GET  /top?type=play|download&limit=10&cursor=0
+//  - POST /reset   header: x-admin-token: <ADMIN_TOKEN>
+//      body: { mode: "all" } OR { mode: "id", id: "<id>" }
+//
+// Bindings required:
+//  - Durable Object binding name: COUNTERS_DO
+//  - Secret (optional): ADMIN_TOKEN
 
 const MAX_ID_LEN = 300;
 const MAX_TITLE_LEN = 300;
 const MAX_FILE_LEN = 260;
+const MAX_NOTE_LEN = 2000;
 
 const MAX_IDS_POST = 600;
 const TOP_LIMIT_MAX = 50;
@@ -42,7 +54,7 @@ function badRequest(message) {
 }
 
 function normalizeType(v) {
-  const t = (v || "").toString().toLowerCase();
+  const t = (v || "").toLowerCase();
   return t === "play" || t === "download" || t === "both" ? t : null;
 }
 
@@ -52,7 +64,7 @@ function clampStr(s, maxLen) {
 }
 
 function sanitizeId(id) {
-  const v = (id || "").toString().trim();
+  const v = (id || "").trim();
   if (!v || v.length > MAX_ID_LEN) return "";
   return v;
 }
@@ -93,11 +105,41 @@ function getGlobalStub(env) {
   return env.COUNTERS_DO.get(id);
 }
 
+/**
+ * Durable Object: single global instance ("global")
+ * Stores everything in sqlite via state.storage.sql
+ */
 export class CountersDO {
   constructor(state, env) {
     this.state = state;
     this.env = env;
-    // NOTE: SQLite yok — sadece state.storage kullanıyoruz
+    this.sql = state.storage.sql;
+    this._init = null;
+  }
+
+  async init() {
+    if (this._init) return this._init;
+    this._init = (async () => {
+      this.sql.exec(`
+        CREATE TABLE IF NOT EXISTS counters (
+          id TEXT PRIMARY KEY,
+          pl INTEGER NOT NULL DEFAULT 0,
+          dl INTEGER NOT NULL DEFAULT 0,
+          title TEXT NOT NULL DEFAULT '',
+          file_name TEXT NOT NULL DEFAULT '',
+          updatedAt INTEGER NOT NULL DEFAULT 0,
+
+          note TEXT NOT NULL DEFAULT '',
+          noteUpdatedAt INTEGER NOT NULL DEFAULT 0
+        );
+      `);
+
+      this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_pl ON counters(pl DESC);`);
+      this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_dl ON counters(dl DESC);`);
+      this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_updated ON counters(updatedAt DESC);`);
+      this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_note_updated ON counters(noteUpdatedAt DESC);`);
+    })();
+    return this._init;
   }
 
   async fetch(request) {
@@ -112,6 +154,8 @@ export class CountersDO {
       return text("OK", 200);
     }
 
+    await this.init();
+
     if (url.pathname === "/counts") {
       if (request.method !== "POST") return text("Method not allowed", 405);
       return this.routeCounts(request);
@@ -120,6 +164,16 @@ export class CountersDO {
     if (url.pathname === "/hit") {
       if (request.method !== "POST") return text("Method not allowed", 405);
       return this.routeHit(request);
+    }
+
+    if (url.pathname === "/notes") {
+      if (request.method !== "POST") return text("Method not allowed", 405);
+      return this.routeNotes(request);
+    }
+
+    if (url.pathname === "/note") {
+      if (request.method !== "POST") return text("Method not allowed", 405);
+      return this.routeNote(request);
     }
 
     if (url.pathname === "/top") {
@@ -140,47 +194,37 @@ export class CountersDO {
     if (!body) return badRequest("JSON body bekleniyor");
 
     const type = normalizeType(body.type || "");
-    if (!type) return badRequest('type "play" / "download" / "both" olmalı');
+    if (!type) return badRequest("type play/download/both olmalı");
 
     const ids = sanitizeIds(Array.isArray(body.ids) ? body.ids : [], MAX_IDS_POST);
-
     if (!ids.length) {
-      return json(
-        {
-          ok: true,
-          type,
-          counts: type === "both" ? { play: {}, download: {} } : {},
-        },
-        200
-      );
-    }
-
-    // storage.get([keys]) -> Map
-    let map;
-    try {
-      map = await this.state.storage.get(ids);
-    } catch {
-      // çok nadir: bazı runtime’larda array get farklı davranır
-      map = new Map();
-      for (const id of ids) {
-        const v = await this.state.storage.get(id);
-        if (v != null) map.set(id, v);
-      }
+      return json({ ok: true, type, counts: type === "both" ? { play: {}, download: {} } : {} }, 200);
     }
 
     const play = {};
     const download = {};
 
-    for (const id of ids) {
-      const rec = map instanceof Map ? map.get(id) : map?.[id];
-      const pl = Number(rec?.pl) || 0;
-      const dl = Number(rec?.dl) || 0;
+    const chunkSize = 500; // keep under sqlite parameter limit
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const chunk = ids.slice(i, i + chunkSize);
+      const placeholders = chunk.map(() => "?").join(",");
+      const rows = this.sql
+        .prepare(`SELECT id, pl, dl FROM counters WHERE id IN (${placeholders})`)
+        .all(...chunk);
 
-      if (type === "play") play[id] = pl;
-      else if (type === "download") download[id] = dl;
-      else {
-        play[id] = pl;
-        download[id] = dl;
+      const found = new Map();
+      for (const r of rows) {
+        found.set(String(r.id), { pl: Number(r.pl) || 0, dl: Number(r.dl) || 0 });
+      }
+
+      for (const id of chunk) {
+        const v = found.get(id) || { pl: 0, dl: 0 };
+        if (type === "play") play[id] = v.pl;
+        else if (type === "download") download[id] = v.dl;
+        else {
+          play[id] = v.pl;
+          download[id] = v.dl;
+        }
       }
     }
 
@@ -194,7 +238,7 @@ export class CountersDO {
     if (!body) return badRequest("JSON body bekleniyor");
 
     const type = normalizeType(body.type || "");
-    if (type !== "play" && type !== "download") return badRequest('type "play" / "download" olmalı');
+    if (type !== "play" && type !== "download") return badRequest("type play/download olmalı");
 
     const id = sanitizeId(typeof body.id === "string" ? body.id : "");
     if (!id) return badRequest("id gerekli");
@@ -202,37 +246,112 @@ export class CountersDO {
     const title = clampStr(typeof body.title === "string" ? body.title : "", MAX_TITLE_LEN);
     const fileName = clampStr(typeof body.file_name === "string" ? body.file_name : "", MAX_FILE_LEN);
 
+    const dPl = type === "play" ? 1 : 0;
+    const dDl = type === "download" ? 1 : 0;
     const now = Date.now();
 
-    const prev = (await this.state.storage.get(id)) || {};
-    const pl0 = Number(prev.pl) || 0;
-    const dl0 = Number(prev.dl) || 0;
+    this.sql
+      .prepare(`
+        INSERT INTO counters (id, pl, dl, title, file_name, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          pl = pl + excluded.pl,
+          dl = dl + excluded.dl,
+          title = CASE WHEN excluded.title != '' THEN excluded.title ELSE title END,
+          file_name = CASE WHEN excluded.file_name != '' THEN excluded.file_name ELSE file_name END,
+          updatedAt = excluded.updatedAt
+      `)
+      .run(id, dPl, dDl, title, fileName, now);
 
-    const pl = pl0 + (type === "play" ? 1 : 0);
-    const dl = dl0 + (type === "download" ? 1 : 0);
+    const row = this.sql
+      .prepare(`SELECT pl, dl, title, file_name, updatedAt FROM counters WHERE id = ?`)
+      .get(id);
 
-    const next = {
-      pl,
-      dl,
-      title: title || (prev.title || ""),
-      file_name: fileName || (prev.file_name || ""),
-      updatedAt: now,
-    };
-
-    await this.state.storage.put(id, next);
+    const pl = Number(row?.pl) || 0;
+    const dl = Number(row?.dl) || 0;
 
     return json(
       {
         ok: true,
         id,
-        title: next.title || "",
-        file_name: next.file_name || "",
+        title: row?.title || "",
+        file_name: row?.file_name || "",
         type,
         count: type === "play" ? pl : dl,
-        updatedAt: now,
+        updatedAt: Number(row?.updatedAt) || now,
       },
-      200
+      200,
     );
+  }
+
+  async routeNotes(request) {
+    const body = await readJsonBody(request);
+    if (!body) return badRequest("JSON body bekleniyor");
+
+    const ids = sanitizeIds(Array.isArray(body.ids) ? body.ids : [], MAX_IDS_POST);
+    if (!ids.length) return json({ ok: true, notes: {} }, 200);
+
+    const notes = {};
+    const chunkSize = 500;
+
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const chunk = ids.slice(i, i + chunkSize);
+      const placeholders = chunk.map(() => "?").join(",");
+      const rows = this.sql
+        .prepare(`SELECT id, note, noteUpdatedAt FROM counters WHERE id IN (${placeholders}) AND note != ''`)
+        .all(...chunk);
+
+      for (const r of rows) {
+        const id = String(r.id);
+        notes[id] = {
+          note: r.note || "",
+          updatedAt: Number(r.noteUpdatedAt) || 0,
+        };
+      }
+    }
+
+    return json({ ok: true, notes }, 200);
+  }
+
+  async routeNote(request) {
+    const body = await readJsonBody(request);
+    if (!body) return badRequest("JSON body bekleniyor");
+
+    const id = sanitizeId(typeof body.id === "string" ? body.id : "");
+    if (!id) return badRequest("id gerekli");
+
+    const rawNote = typeof body.note === "string" ? body.note : "";
+    const note = clampStr(rawNote, MAX_NOTE_LEN);
+    const noteTrimmed = note.trim();
+    const now = Date.now();
+
+    // Ensure row exists even if note is first data ever (sparse for counts, but notes need storage)
+    if (!noteTrimmed) {
+      // delete note (keep row if it exists; if not, we can no-op)
+      this.sql
+        .prepare(`
+          INSERT INTO counters (id, note, noteUpdatedAt)
+          VALUES (?, '', ?)
+          ON CONFLICT(id) DO UPDATE SET
+            note = '',
+            noteUpdatedAt = ?
+        `)
+        .run(id, now, now);
+
+      return json({ ok: true, id, deleted: true, note: "", updatedAt: now }, 200);
+    }
+
+    this.sql
+      .prepare(`
+        INSERT INTO counters (id, note, noteUpdatedAt)
+        VALUES (?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          note = excluded.note,
+          noteUpdatedAt = excluded.noteUpdatedAt
+      `)
+      .run(id, noteTrimmed, now);
+
+    return json({ ok: true, id, deleted: false, note: noteTrimmed, updatedAt: now }, 200);
   }
 
   async routeTop(url) {
@@ -242,53 +361,28 @@ export class CountersDO {
     const cursorRaw = (url.searchParams.get("cursor") || "").trim();
     const offset = Number.isFinite(Number(cursorRaw)) ? Math.max(0, Number(cursorRaw)) : 0;
 
-    // 255 kayıt gibi küçük listeler için bu yeterli (hepsini çekip sort)
-    const all = await this.state.storage.list();
-    const rows = [];
+    const orderCol = type === "play" ? "pl" : "dl";
 
-    for (const [id, rec] of all.entries()) {
-      const pl = Number(rec?.pl) || 0;
-      const dl = Number(rec?.dl) || 0;
-      const updatedAt = Number(rec?.updatedAt) || 0;
-      rows.push({
-        id: String(id),
-        pl,
-        dl,
-        title: rec?.title || "",
-        file_name: rec?.file_name || "",
-        updatedAt,
-      });
-    }
+    const rows = this.sql
+      .prepare(`
+        SELECT id, pl, dl, title, file_name, updatedAt
+        FROM counters
+        ORDER BY ${orderCol} DESC, updatedAt DESC, id ASC
+        LIMIT ? OFFSET ?
+      `)
+      .all(limit + 1, offset);
 
-    rows.sort((a, b) => {
-      const ca = type === "play" ? a.pl : a.dl;
-      const cb = type === "play" ? b.pl : b.dl;
-      if (cb !== ca) return cb - ca;
-      if (b.updatedAt !== a.updatedAt) return b.updatedAt - a.updatedAt;
-      return a.id.localeCompare(b.id);
-    });
-
-    const page = rows.slice(offset, offset + limit).map((r) => ({
-      id: r.id,
-      title: r.title,
-      file_name: r.file_name,
+    const page = rows.slice(0, limit).map((r) => ({
+      id: String(r.id),
+      title: r.title || "",
+      file_name: r.file_name || "",
       type: type === "play" ? "play" : "download",
-      count: type === "play" ? r.pl : r.dl,
-      updatedAt: r.updatedAt,
+      count: type === "play" ? Number(r.pl) || 0 : Number(r.dl) || 0,
+      updatedAt: Number(r.updatedAt) || 0,
     }));
 
-    const nextCursor = offset + limit < rows.length ? String(offset + limit) : null;
-
-    return json(
-      {
-        ok: true,
-        type: type === "play" ? "play" : "download",
-        limit,
-        cursor: nextCursor,
-        rows: page,
-      },
-      200
-    );
+    const nextCursor = rows.length > limit ? String(offset + limit) : null;
+    return json({ ok: true, type: type === "play" ? "play" : "download", limit, cursor: nextCursor, rows: page }, 200);
   }
 
   async routeReset(request) {
@@ -305,13 +399,16 @@ export class CountersDO {
     if (mode === "id") {
       const id = sanitizeId(typeof body.id === "string" ? body.id : "");
       if (!id) return badRequest("id gerekli");
-      await this.state.storage.delete(id);
-      return json({ ok: true, mode: "id", id }, 200);
+
+      this.sql.prepare(`DELETE FROM counters WHERE id = ?`).run(id);
+      return json({ ok: true, mode: "id", deleted: 1, id }, 200);
     }
 
     if (mode === "all") {
-      await this.state.storage.deleteAll();
-      return json({ ok: true, mode: "all" }, 200);
+      const before = this.sql.prepare(`SELECT COUNT(*) AS n FROM counters`).get();
+      const n = Number(before?.n) || 0;
+      this.sql.exec(`DELETE FROM counters;`);
+      return json({ ok: true, mode: "all", deleted: n }, 200);
     }
 
     return badRequest('mode "all" veya "id" olmalı');
@@ -332,9 +429,17 @@ export default {
     }
 
     const stub = getGlobalStub(env);
-    if (!stub) return json({ ok: false, error: "COUNTERS_DO binding missing (wrangler.toml / dashboard binding kontrol et)" }, 500);
+    if (!stub) return json({ ok: false, error: "COUNTERS_DO binding missing (Cloudflare DO binding / wrangler.toml kontrol et)" }, 500);
 
-    if (url.pathname === "/counts" || url.pathname === "/hit" || url.pathname === "/top" || url.pathname === "/reset") {
+    // Forward API routes to DO
+    if (
+      url.pathname === "/counts" ||
+      url.pathname === "/hit" ||
+      url.pathname === "/notes" ||
+      url.pathname === "/note" ||
+      url.pathname === "/top" ||
+      url.pathname === "/reset"
+    ) {
       return stub.fetch(request);
     }
 
