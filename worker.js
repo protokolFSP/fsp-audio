@@ -1,22 +1,24 @@
 // File: worker.js  (Cloudflare Workers + Durable Object + SQLite storage)
 //
 // ✅ Counters + PUBLIC notes (single note per audio id)
+// ✅ Uses ONLY state.storage.sql.exec()  (no prepare())
+// ✅ CORS-safe JSON errors (even on exceptions)
 //
-// Endpoints:
+// Endpoints (public):
 //  - GET  /health
 //  - POST /counts  body: { type: "play"|"download"|"both", ids: string[] }
 //  - POST /hit     body: { type: "play"|"download", id: string, title?: string, file_name?: string }
-//
 //  - POST /notes   body: { ids: string[] }                      -> sparse response (only ids that have notes)
 //  - POST /note    body: { id: string, note: string }           -> empty note = delete
-//
 //  - GET  /top?type=play|download&limit=10&cursor=0
+//
+// Admin:
 //  - POST /reset   header: x-admin-token: <ADMIN_TOKEN>
 //      body: { mode: "all" } OR { mode: "id", id: "<id>" }
 //
 // Bindings required:
-//  - Durable Object binding name: COUNTERS_DO  (class: CountersDO)
-//  - Durable Object uses SQLite storage backend (migrations new_sqlite_classes must include "CountersDO")
+//  - Durable Object binding name: COUNTERS_DO   (class: CountersDO)
+//  - Enable SQLite storage for this DO class in your migrations/settings
 //  - Secret (optional): ADMIN_TOKEN
 
 const MAX_ID_LEN = 300;
@@ -27,6 +29,7 @@ const MAX_NOTE_LEN = 2000;
 const MAX_IDS_POST = 600;
 const TOP_LIMIT_MAX = 50;
 
+// sqlite param limiti vs. için güvenli parça
 const SQL_IN_CHUNK = 400;
 
 function corsHeaders() {
@@ -117,6 +120,24 @@ function getGlobalStub(env) {
   return env.COUNTERS_DO.get(id);
 }
 
+function errToString(e) {
+  try {
+    if (!e) return "Unknown error";
+    if (typeof e === "string") return e;
+    return e.message ? String(e.message) : JSON.stringify(e);
+  } catch {
+    return "Unknown error";
+  }
+}
+
+async function safeHandle(fn) {
+  try {
+    return await fn();
+  } catch (e) {
+    return json({ ok: false, error: "Internal error", detail: errToString(e) }, 500);
+  }
+}
+
 function chunk(arr, size) {
   const out = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
@@ -125,13 +146,13 @@ function chunk(arr, size) {
 
 /**
  * Durable Object: single global instance ("global")
- * Stores everything in sqlite via state.storage.sql
+ * Stores everything in sqlite via state.storage.sql (exec + toArray)
  */
 export class CountersDO {
   constructor(state, env) {
     this.state = state;
     this.env = env;
-    this.sql = state.storage.sql; // ✅ DO SQLite API: use sql.exec(), NOT prepare()
+    this.sql = state?.storage?.sql;
     this._init = null;
   }
 
@@ -139,6 +160,11 @@ export class CountersDO {
     if (this._init) return this._init;
 
     this._init = this.state.blockConcurrencyWhile(async () => {
+      if (!this.sql || typeof this.sql.exec !== "function") {
+        throw new Error("SQLite API missing: state.storage.sql.exec not available");
+      }
+
+      // Base table (notes kolonları sonradan eklenebilir)
       this.sql.exec(`
         CREATE TABLE IF NOT EXISTS counters (
           id TEXT PRIMARY KEY,
@@ -150,6 +176,7 @@ export class CountersDO {
         );
       `);
 
+      // Kolon var mı kontrol -> yoksa ALTER
       const cols = this.sql
         .exec(`PRAGMA table_info(counters);`)
         .toArray()
@@ -174,7 +201,7 @@ export class CountersDO {
   }
 
   async fetch(request) {
-    try {
+    return safeHandle(async () => {
       const url = new URL(request.url);
 
       if (request.method === "OPTIONS") {
@@ -219,9 +246,7 @@ export class CountersDO {
       }
 
       return text("Not found", 404);
-    } catch (err) {
-      return json({ ok: false, error: "DO exception", detail: String(err?.message || err) }, 500);
-    }
+    });
   }
 
   async routeCounts(request) {
@@ -295,12 +320,7 @@ export class CountersDO {
         updatedAt = excluded.updatedAt
       ;
     `,
-      id,
-      dPl,
-      dDl,
-      title,
-      fileName,
-      now
+      id, dPl, dDl, title, fileName, now
     );
 
     const row = this.sql
@@ -310,18 +330,15 @@ export class CountersDO {
     const pl = Number(row?.pl) || 0;
     const dl = Number(row?.dl) || 0;
 
-    return json(
-      {
-        ok: true,
-        id,
-        title: row?.title || "",
-        file_name: row?.file_name || "",
-        type,
-        count: type === "play" ? pl : dl,
-        updatedAt: Number(row?.updatedAt) || now,
-      },
-      200
-    );
+    return json({
+      ok: true,
+      id,
+      title: row?.title || "",
+      file_name: row?.file_name || "",
+      type,
+      count: type === "play" ? pl : dl,
+      updatedAt: Number(row?.updatedAt) || now,
+    }, 200);
   }
 
   async routeNotes(request) {
@@ -367,6 +384,7 @@ export class CountersDO {
     const now = Date.now();
 
     if (!noteTrimmed) {
+      // delete (empty note)
       this.sql.exec(
         `
         INSERT INTO counters (id, note, noteUpdatedAt)
@@ -376,9 +394,7 @@ export class CountersDO {
           noteUpdatedAt = ?
         ;
       `,
-        id,
-        now,
-        now
+        id, now, now
       );
 
       return json({ ok: true, id, deleted: true, note: "", updatedAt: now }, 200);
@@ -393,9 +409,7 @@ export class CountersDO {
         noteUpdatedAt = excluded.noteUpdatedAt
       ;
     `,
-      id,
-      noteTrimmed,
-      now
+      id, noteTrimmed, now
     );
 
     return json({ ok: true, id, deleted: false, note: noteTrimmed, updatedAt: now }, 200);
@@ -411,19 +425,16 @@ export class CountersDO {
     const orderCol = type === "play" ? "pl" : "dl";
     const whereCount = type === "play" ? "pl > 0" : "dl > 0";
 
-    const rows = this.sql
-      .exec(
-        `
+    const rows = this.sql.exec(
+      `
       SELECT id, pl, dl, title, file_name, updatedAt
       FROM counters
       WHERE ${whereCount}
       ORDER BY ${orderCol} DESC, updatedAt DESC, id ASC
       LIMIT ? OFFSET ?
     `,
-        limit + 1,
-        offset
-      )
-      .toArray();
+      limit + 1, offset
+    ).toArray();
 
     const page = rows.slice(0, limit).map((r) => ({
       id: String(r.id),
@@ -470,7 +481,7 @@ export class CountersDO {
 
 export default {
   async fetch(request, env) {
-    try {
+    return safeHandle(async () => {
       const url = new URL(request.url);
 
       if (request.method === "OPTIONS") {
@@ -483,9 +494,7 @@ export default {
       }
 
       const stub = getGlobalStub(env);
-      if (!stub) {
-        return json({ ok: false, error: "COUNTERS_DO binding missing (Cloudflare DO binding kontrol et)" }, 500);
-      }
+      if (!stub) return json({ ok: false, error: "COUNTERS_DO binding missing (Cloudflare DO binding kontrol et)" }, 500);
 
       if (
         url.pathname === "/counts" ||
@@ -499,8 +508,6 @@ export default {
       }
 
       return text("Not found", 404);
-    } catch (err) {
-      return json({ ok: false, error: "Worker exception", detail: String(err?.message || err) }, 500);
-    }
+    });
   },
 };
