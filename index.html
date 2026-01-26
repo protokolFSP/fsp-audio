@@ -44,9 +44,6 @@
       --greenGlow: 0 0 0 4px rgba(22,163,74,.22), 0 10px 22px rgba(22,163,74,.10);
 
       --orange:#f59e0b;
-
-      --note:#8b5cf6;
-      --noteGlow: 0 0 0 4px rgba(139,92,246,.18), 0 10px 22px rgba(139,92,246,.10);
     }
 
     html, body{
@@ -135,7 +132,7 @@
       outline: none;
     }
 
-    #resetBtn, #notesBtn{
+    #resetBtn{
       padding: 10px 16px;
       border: 1px solid #d8d8d8;
       border-radius: 14px;
@@ -144,12 +141,7 @@
       font-size: 1rem;
       flex: 0 0 auto;
     }
-    #resetBtn:hover, #notesBtn:hover{ background: var(--hover); }
-    #notesBtn.on{
-      border-color: var(--note);
-      box-shadow: 0 0 0 3px rgba(139,92,246,.14) inset;
-      background: rgba(139,92,246,.08);
-    }
+    #resetBtn:hover{ background: var(--hover); }
 
     .zoomWrap{
       display:flex;
@@ -223,7 +215,7 @@
       line-height: 1.05;
     }
 
-    /* ✅ NOT KOLONU EKLENDİ (8 kolon) */
+    /* ✅ NOTE kolon eklendi (toplam 8 kolon) */
     .headerRow, .itemRow{
       display: grid;
       grid-template-columns: minmax(0, 1fr) 8ch 54px 36px 36px 36px 36px 54px;
@@ -361,6 +353,7 @@
 
     @media (max-width: 680px){
       #scrollArea{ padding: 14px; }
+      /* ✅ NOTE kolon eklendi */
       .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 46px 34px 34px 34px 34px 46px; }
       .title{
         white-space: nowrap;
@@ -384,7 +377,6 @@
       user-select:none;
       transition: box-shadow .15s ease, border-color .15s ease, background .15s ease;
       justify-self: center;
-      position: relative;
     }
     .iconBtn:hover{ background: var(--hover); }
 
@@ -402,25 +394,6 @@
       stroke: var(--green);
       stroke-width: 2.6;
     }
-
-    /* ✅ Not var göstergesi */
-    .iconBtn[data-kind="note"].on{
-      border-color: var(--note);
-      background: rgba(139,92,246,.10);
-      box-shadow: var(--noteGlow);
-    }
-    .iconBtn[data-kind="note"].on::after{
-      content:"";
-      position:absolute;
-      top: 4px;
-      right: 4px;
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: var(--note);
-      box-shadow: 0 0 0 2px rgba(255,255,255,.9);
-    }
-
     .iconBtn svg{ width: 14px; height: 14px; opacity: .9; }
 
     .filterBtn{
@@ -624,133 +597,6 @@
       color: #c2410c;
       font-weight: 650;
     }
-
-    /* ✅ MODALS */
-    .modalOverlay{
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.36);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-      padding: 18px;
-    }
-    .modalOverlay.on{ display:flex; }
-
-    .modalCard{
-      width: min(760px, calc(100vw - 36px));
-      background: white;
-      border: 1px solid #d8d8d8;
-      border-radius: 18px;
-      box-shadow: 0 30px 90px rgba(0,0,0,.25);
-      overflow: hidden;
-    }
-    .modalHead{
-      display:flex;
-      align-items:flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 14px;
-      background: #fbfbfb;
-      border-bottom: 1px solid #ececec;
-    }
-    .modalTitle{
-      font-weight: 750;
-      line-height: 1.15;
-      font-size: 1.02rem;
-      max-width: 78%;
-    }
-    .modalSub{
-      color: var(--muted);
-      font-size: .92rem;
-      margin-top: 6px;
-      line-height: 1.15;
-    }
-    .modalClose{
-      width: 38px;
-      height: 38px;
-      border-radius: 12px;
-      border: 1px solid #d8d8d8;
-      background: white;
-      cursor:pointer;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      flex: 0 0 auto;
-    }
-    .modalClose:hover{ background: var(--hover); }
-
-    .modalBody{
-      padding: 12px 14px 14px 14px;
-    }
-    .noteArea{
-      width: 100%;
-      min-height: 120px;
-      resize: vertical;
-      border-radius: 14px;
-      border: 1px solid #d8d8d8;
-      padding: 10px 12px;
-      font-size: 1rem;
-      outline: none;
-      line-height: 1.25;
-    }
-    .noteMetaRow{
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-top: 10px;
-      flex-wrap: wrap;
-    }
-    .noteHint{
-      color: var(--muted);
-      font-size: .92rem;
-      line-height: 1.15;
-    }
-    .noteBtns{
-      display:flex;
-      gap: 10px;
-      align-items:center;
-      justify-content: flex-end;
-    }
-    .btn{
-      padding: 10px 14px;
-      border-radius: 14px;
-      border: 1px solid #d8d8d8;
-      background: white;
-      cursor:pointer;
-      font-size: 1rem;
-    }
-    .btn:hover{ background: var(--hover); }
-    .btn.primary{
-      border-color: var(--note);
-      box-shadow: 0 0 0 3px rgba(139,92,246,.14) inset;
-      background: rgba(139,92,246,.08);
-    }
-
-    .reportList{
-      margin-top: 10px;
-      border-top: 1px solid #eee;
-    }
-    .reportRow{
-      padding: 10px 0;
-      border-bottom: 1px solid #eee;
-    }
-    .reportRowTitle{
-      font-weight: 700;
-      line-height: 1.15;
-    }
-    .reportRowNote{
-      margin-top: 6px;
-      white-space: pre-wrap;
-      line-height: 1.25;
-    }
-    .reportRowMeta{
-      margin-top: 6px;
-      color: var(--muted);
-      font-size: .9rem;
-    }
   </style>
 </head>
 
@@ -770,7 +616,6 @@
       <div class="topbar">
         <input id="search" type="text" placeholder="Arama (ör. ACS, DM, PAVK)..." />
         <button id="resetBtn" type="button">Hepsi</button>
-        <button id="notesBtn" type="button" title="Public not raporu">Notlar</button>
 
         <div class="zoomWrap" aria-label="Görünüm">
           <button id="zoomOutBtn" class="zoomBtn zoomOut" type="button" aria-label="Küçült">
@@ -839,11 +684,9 @@
           </button>
         </div>
 
-        <!-- ✅ Not sütunu başlığı (ikon) -->
-        <div class="headIconCell" title="Public not">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="opacity:.75;width:18px;height:18px">
-            <path d="M21 15a4 4 0 0 1-4 4H7l-4 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
-          </svg>
+        <!-- ✅ NOTE header -->
+        <div class="headIconCell" title="Not">
+          📝
         </div>
 
         <div class="headIconCell" aria-hidden="true"></div>
@@ -891,89 +734,19 @@
     </div>
   </div>
 
-  <!-- ✅ Note modal -->
-  <div id="noteModal" class="modalOverlay" role="dialog" aria-modal="true" aria-label="Not">
-    <div class="modalCard">
-      <div class="modalHead">
-        <div>
-          <div id="noteModalTitle" class="modalTitle">Not</div>
-          <div class="modalSub">Public: Bu notu herkes görebilir. Boş bırakırsan silinir.</div>
-        </div>
-        <button id="noteModalClose" class="modalClose" type="button" title="Kapat">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="width:18px;height:18px">
-            <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-      <div class="modalBody">
-        <textarea id="noteText" class="noteArea" maxlength="2000" placeholder="Not yaz..."></textarea>
-        <div class="noteMetaRow">
-          <div id="noteCounter" class="noteHint">0 / 2000</div>
-          <div class="noteBtns">
-            <button id="noteDelete" class="btn" type="button" title="Notu sil (boş kaydet)">Sil</button>
-            <button id="noteSave" class="btn primary" type="button">Kaydet</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ✅ Report modal -->
-  <div id="reportModal" class="modalOverlay" role="dialog" aria-modal="true" aria-label="Notlar raporu">
-    <div class="modalCard">
-      <div class="modalHead">
-        <div>
-          <div class="modalTitle">Notlar (Public)</div>
-          <div class="modalSub">Not yazılan kayıtlar listelenir. CSV indirip rapor alabilirsin.</div>
-        </div>
-        <button id="reportClose" class="modalClose" type="button" title="Kapat">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="width:18px;height:18px">
-            <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-      <div class="modalBody">
-        <div class="noteMetaRow" style="margin-top:0">
-          <div id="reportMeta" class="noteHint">Yükleniyor...</div>
-          <div class="noteBtns">
-            <button id="reportRefresh" class="btn" type="button">Yenile</button>
-            <button id="reportCsv" class="btn primary" type="button">CSV indir</button>
-          </div>
-        </div>
-        <div id="reportList" class="reportList"></div>
-      </div>
-    </div>
-  </div>
-
   <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
   <script>
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
     const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
+    const NOTE_API = COUNTER_API;
 
     const scrollArea = document.getElementById("scrollArea");
     const listEl   = document.getElementById("list");
     const searchEl = document.getElementById("search");
     const metaEl   = document.getElementById("meta");
     const statusEl = document.getElementById("status");
-
-    const notesBtn = document.getElementById("notesBtn");
-
-    const noteModal = document.getElementById("noteModal");
-    const noteModalTitle = document.getElementById("noteModalTitle");
-    const noteModalClose = document.getElementById("noteModalClose");
-    const noteText = document.getElementById("noteText");
-    const noteCounter = document.getElementById("noteCounter");
-    const noteSave = document.getElementById("noteSave");
-    const noteDelete = document.getElementById("noteDelete");
-
-    const reportModal = document.getElementById("reportModal");
-    const reportClose = document.getElementById("reportClose");
-    const reportRefresh = document.getElementById("reportRefresh");
-    const reportCsv = document.getElementById("reportCsv");
-    const reportMeta = document.getElementById("reportMeta");
-    const reportList = document.getElementById("reportList");
 
     const appScaleEl = document.getElementById("appScale");
     const zoomOutBtn = document.getElementById("zoomOutBtn");
@@ -1035,7 +808,7 @@
 
     let globalPlayCounts = {};
     let globalDownloadCounts = {};
-    let globalNotes = {}; // { [id]: { note, updatedAt } }
+    let globalNotes = {}; // { [id]: { note:"...", updatedAt:123 } }
 
     function chunk(arr, size){
       const out = [];
@@ -1064,7 +837,7 @@
     async function fetchNotes(ids){
       if (!ids.length) return {};
       try{
-        const res = await fetch(COUNTER_API + "/notes", {
+        const res = await fetch(NOTE_API + "/notes", {
           method: "POST",
           mode: "cors",
           cache: "no-store",
@@ -1077,6 +850,18 @@
       }catch{
         return {};
       }
+    }
+
+    async function saveNote(id, note){
+      const res = await fetch(NOTE_API + "/note", {
+        method: "POST",
+        mode: "cors",
+        cache: "no-store",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id, note })
+      });
+      if (!res.ok) throw new Error("note save failed");
+      return res.json();
     }
 
     let refreshCountsTimer = null;
@@ -1108,12 +893,6 @@
       render();
     }
 
-    let refreshNotesTimer = null;
-    function scheduleRefreshNotes(ms = 900){
-      clearTimeout(refreshNotesTimer);
-      refreshNotesTimer = setTimeout(() => refreshAllNotes().catch(()=>{}), ms);
-    }
-
     async function refreshAllNotes(){
       if (!items.length) return;
 
@@ -1126,10 +905,7 @@
         Object.assign(all, n);
       }
       globalNotes = all;
-
-      notesBtn.classList.toggle("on", Object.keys(globalNotes).length > 0);
       render();
-      if (reportModal.classList.contains("on")) renderReport();
     }
 
     function sendHit(type, it){
@@ -1219,6 +995,7 @@
 
     if (!localStorage.getItem(LS.sortMode)) localStorage.setItem(LS.sortMode, sortMode);
     if (!localStorage.getItem(LS.sortDirDate)) localStorage.setItem(LS.sortDirDate, dateSortDir);
+
     if (!localStorage.getItem(LS.sortDirPlay)) localStorage.setItem(LS.sortDirPlay, playSortDir);
     if (!localStorage.getItem(LS.sortDirDl)) localStorage.setItem(LS.sortDirDl, dlSortDir);
 
@@ -1649,9 +1426,8 @@
         statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
         setSortIcons();
         render();
-
         scheduleRefreshCounts(100);
-        scheduleRefreshNotes(220);
+        setTimeout(() => refreshAllNotes().catch(()=>{}), 250);
       }catch(err){
         console.error(err);
         statusEl.textContent = "Liste yüklenemedi.";
@@ -1752,7 +1528,7 @@
         const selBtn = iconButton("check", !!sels[it.id], "Seç");
 
         const hasNote = !!(globalNotes[it.id] && (globalNotes[it.id].note || "").trim());
-        const noteBtn = iconButton("note", hasNote, hasNote ? "Not var" : "Not yok");
+        const noteBtn = iconButton("note", hasNote, hasNote ? "Not var" : "Not yaz");
 
         const dlBtn  = iconButton("download", false, "İndir");
 
@@ -1774,9 +1550,24 @@
           render();
         });
 
-        noteBtn.addEventListener("click", (e) => {
+        noteBtn.addEventListener("click", async (e) => {
           e.stopPropagation();
-          openNoteModal(it);
+          const current = (globalNotes[it.id]?.note || "");
+          const next = prompt("Bu kayıt için not (boş bırakırsan silinir):", current);
+          if (next === null) return;
+
+          try{
+            await saveNote(it.id, next);
+            if ((next || "").trim()){
+              globalNotes[it.id] = { note: next.trim(), updatedAt: Date.now() };
+            } else {
+              delete globalNotes[it.id];
+            }
+            render();
+            setTimeout(() => refreshAllNotes().catch(()=>{}), 400);
+          }catch{
+            alert("Not kaydedilemedi.");
+          }
         });
 
         dlBtn.addEventListener("click", (e) => {
@@ -1832,18 +1623,18 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path d="M20 6L9 17l-5-5"/>
           </svg>`;
+      } else if (kind === "note"){
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 20h9"/>
+            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z"/>
+          </svg>`;
       } else if (kind === "download"){
         btn.innerHTML = `
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path d="M12 3v12"/>
             <path d="M7 10l5 5 5-5"/>
             <path d="M5 21h14"/>
-          </svg>`;
-      } else if (kind === "note"){
-        btn.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M21 15a4 4 0 0 1-4 4H7l-4 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
-            <path d="M7 8h10"/><path d="M7 12h7"/>
           </svg>`;
       }
 
@@ -1938,9 +1729,6 @@
       } else if (e.code === "ArrowRight"){
         e.preventDefault();
         playNext();
-      } else if (e.key === "Escape"){
-        closeNoteModal();
-        closeReport();
       }
     });
 
@@ -2008,165 +1796,6 @@
       renderAndTrackSearch();
     });
 
-    /* ✅ Notes UI */
-    let noteActiveId = null;
-
-    function setNoteCounter(){
-      const len = (noteText.value || "").length;
-      noteCounter.textContent = `${len} / 2000`;
-    }
-
-    function openNoteModal(it){
-      noteActiveId = it.id;
-      noteModalTitle.textContent = it.title || "Not";
-      noteText.value = (globalNotes[it.id]?.note || "");
-      setNoteCounter();
-      noteModal.classList.add("on");
-      setTimeout(() => noteText.focus(), 0);
-    }
-
-    function closeNoteModal(){
-      noteModal.classList.remove("on");
-      noteActiveId = null;
-    }
-
-    async function saveNote(noteValue){
-      const id = noteActiveId;
-      if (!id) return;
-
-      const note = (noteValue ?? noteText.value ?? "").toString();
-      const noteTrim = note.trim();
-      const now = Date.now();
-
-      // optimistic
-      if (noteTrim){
-        globalNotes[id] = { note: noteTrim, updatedAt: now };
-      } else {
-        delete globalNotes[id];
-      }
-      notesBtn.classList.toggle("on", Object.keys(globalNotes).length > 0);
-      render();
-      if (reportModal.classList.contains("on")) renderReport();
-
-      try{
-        const res = await fetch(COUNTER_API + "/note", {
-          method: "POST",
-          mode: "cors",
-          cache: "no-store",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ id, note })
-        });
-        if (!res.ok) throw new Error("note save failed");
-        await res.json().catch(()=>{});
-        scheduleRefreshNotes(800);
-      }catch{
-        statusEl.textContent = "Not kaydedilemedi (server hata).";
-        scheduleRefreshNotes(1200);
-      }
-    }
-
-    function openReport(){
-      reportModal.classList.add("on");
-      renderReport();
-    }
-    function closeReport(){
-      reportModal.classList.remove("on");
-    }
-
-    function fmtDateTR(ms){
-      if (!ms || !Number.isFinite(ms)) return "";
-      try{
-        const d = new Date(ms);
-        return d.toLocaleString("tr-TR", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
-      }catch{
-        return "";
-      }
-    }
-
-    function renderReport(){
-      const entries = Object.entries(globalNotes)
-        .map(([id, v]) => ({ id, note: (v?.note || ""), updatedAt: Number(v?.updatedAt) || 0 }))
-        .filter(x => x.note.trim().length > 0)
-        .sort((a,b) => (b.updatedAt - a.updatedAt));
-
-      reportMeta.textContent = `Not sayısı: ${entries.length}`;
-
-      reportList.innerHTML = "";
-      if (!entries.length){
-        reportList.innerHTML = `<div class="reportRow"><div class="reportRowMeta">Henüz not yok.</div></div>`;
-        return;
-      }
-
-      for (const r of entries){
-        const it = items.find(x => x.id === r.id);
-        const title = it ? it.title : r.id;
-
-        const row = document.createElement("div");
-        row.className = "reportRow";
-
-        row.innerHTML = `
-          <div class="reportRowTitle">${escHtml(title)}</div>
-          <div class="reportRowNote">${escHtml(r.note)}</div>
-          <div class="reportRowMeta">${escHtml(r.id)} • ${escHtml(fmtDateTR(r.updatedAt) || "")}</div>
-        `;
-        reportList.appendChild(row);
-      }
-    }
-
-    function downloadCsvReport(){
-      const entries = Object.entries(globalNotes)
-        .map(([id, v]) => ({ id, note: (v?.note || ""), updatedAt: Number(v?.updatedAt) || 0 }))
-        .filter(x => x.note.trim().length > 0)
-        .sort((a,b) => (b.updatedAt - a.updatedAt));
-
-      const header = ["updatedAt","updatedAtTR","id","title","note"];
-      const lines = [header.join(",")];
-
-      for (const r of entries){
-        const it = items.find(x => x.id === r.id);
-        const title = it ? it.title : "";
-        const row = [
-          String(r.updatedAt),
-          `"${(fmtDateTR(r.updatedAt) || "").replace(/"/g,'""')}"`,
-          `"${r.id.replace(/"/g,'""')}"`,
-          `"${(title || "").replace(/"/g,'""')}"`,
-          `"${(r.note || "").replace(/\r?\n/g, "\\n").replace(/"/g,'""')}"`
-        ];
-        lines.push(row.join(","));
-      }
-
-      const csv = lines.join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "fsp-notlar.csv";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    }
-
-    notesBtn.addEventListener("click", () => {
-      openReport();
-      scheduleRefreshNotes(0);
-    });
-
-    reportRefresh.addEventListener("click", () => scheduleRefreshNotes(0));
-    reportCsv.addEventListener("click", downloadCsvReport);
-
-    noteText.addEventListener("input", setNoteCounter);
-
-    noteSave.addEventListener("click", () => saveNote(noteText.value));
-    noteDelete.addEventListener("click", () => saveNote(""));
-
-    noteModalClose.addEventListener("click", closeNoteModal);
-    reportClose.addEventListener("click", closeReport);
-
-    noteModal.addEventListener("click", (e) => { if (e.target === noteModal) closeNoteModal(); });
-    reportModal.addEventListener("click", (e) => { if (e.target === reportModal) closeReport(); });
-
     function restorePlayerPos(){
       try{
         const s = JSON.parse(localStorage.getItem(LS.pos) || "null");
@@ -2227,8 +1856,7 @@
     const DRAG_IGNORE_SELECTOR =
       "button, a, input, textarea, select, option, " +
       ".speedWrap, .speedCtlBtn, .miniBtn, " +
-      ".plyr__controls, .plyr__control, .plyr__progress, .plyr__seek, .plyr__volume, .plyr__time, .plyr__menu," +
-      ".modalOverlay, .modalCard, .noteArea";
+      ".plyr__controls, .plyr__control, .plyr__progress, .plyr__seek, .plyr__volume, .plyr__time, .plyr__menu";
 
     function shouldStartDrag(target){
       return !(target && target.closest && target.closest(DRAG_IGNORE_SELECTOR));
@@ -2365,7 +1993,7 @@
     restorePlayerPos();
     restoreSpeed();
     restoreZoom();
-    setTimeout(() => clampPlayerToViewport(), 0);
+    setTimeout(clampPlayerToViewport, 0);
     loadItems();
   </script>
 </body>
