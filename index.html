@@ -941,7 +941,7 @@
     let dlSortDir   = (localStorage.getItem(LS.sortDirDl) === "asc") ? "asc" : "desc";
 
     if (!localStorage.getItem(LS.sortMode)) localStorage.setItem(LS.sortMode, sortMode);
-    if (!localStorage.getItem(LS.sortDirDate)) localStorage.setItem(LS.sortDirDate, dateSortDir);
+    if (!localStorage.getItem(LS.sortDirDate)) localStorage.setItem(LS.sortDirDate) localStorage.setItem(LS.sortDirDate, dateSortDir);
     if (!localStorage.getItem(LS.sortDirPlay)) localStorage.setItem(LS.sortDirPlay, playSortDir);
     if (!localStorage.getItem(LS.sortDirDl)) localStorage.setItem(LS.sortDirDl, dlSortDir);
 
@@ -1664,36 +1664,56 @@
       render();
     });
 
+    // --- Search analytics (debounced + normalized; raw only in ?debug) ---
+    const SEARCH_DEBOUNCE_MS = 900;
+
     let searchTimer = null;
-let lastSentTerm = "";
+    let lastSentTermNorm = "";
 
-searchEl.addEventListener("input", () => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    render();
+    function sendSearchEvent(termRawInput) {
+      const termRaw = (termRawInput || "").trim();
+      const termNorm = foldTR(termRaw);
+      const visibleCount = getVisibleItems().length;
 
-    const term = (searchEl.value || "").trim();
-    const visibleCount = getVisibleItems().length;
+      // Arama temizlenince bir kez gönder
+      if (termRaw.length === 0) {
+        if (lastSentTermNorm !== "") {
+          lastSentTermNorm = "";
+          gaEvent("search", { search_term: "", results_count: visibleCount });
+        }
+        return;
+      }
 
-    // Spam olmasın: min 2 karakter + değiştiyse gönder
-    if (term.length >= 2 && term !== lastSentTerm) {
-      lastSentTerm = term;
-      gaEvent("search", {
-        search_term: term,
-        results_count: visibleCount
-      });
+      // Çok kısa terimleri spam'leme (normalize bazlı)
+      if (termNorm.length < 2) return;
+
+      // Aynı normalize terimi tekrar tekrar gönderme
+      if (termNorm === lastSentTermNorm) return;
+
+      lastSentTermNorm = termNorm;
+
+      const params = { search_term: termNorm, results_count: visibleCount };
+      if (__isDebug) params.search_term_raw = termRaw;
+
+      gaEvent("search", params);
     }
 
-    // Arama temizlenince bir kez gönder (opsiyonel ama faydalı)
-    if (term.length === 0 && lastSentTerm !== "") {
-      lastSentTerm = "";
-      gaEvent("search", {
-        search_term: "",
-        results_count: visibleCount
-      });
+    function renderAndTrackSearch() {
+      render();
+      sendSearchEvent(searchEl.value);
     }
-  }, 150);
-});
+
+    searchEl.addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(renderAndTrackSearch, SEARCH_DEBOUNCE_MS);
+    });
+
+    searchEl.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      clearTimeout(searchTimer);
+      renderAndTrackSearch();
+    });
 
     function restorePlayerPos(){
       try{
