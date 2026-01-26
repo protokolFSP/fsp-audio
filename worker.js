@@ -1,14 +1,12 @@
 // File: worker.js  (Cloudflare Workers + Durable Object + SQLite storage)
 //
-// ✅ Includes counters + PUBLIC notes
+// ✅ Counters + PUBLIC notes + SAFE MIGRATIONS
 // Endpoints:
 //  - GET  /health
 //  - POST /counts  body: { type: "play"|"download"|"both", ids: string[] }
 //  - POST /hit     body: { type: "play"|"download", id: string, title?: string, file_name?: string }
-//
 //  - POST /notes   body: { ids: string[] }                      -> sparse response (only ids that have notes)
 //  - POST /note    body: { id: string, note: string }           -> empty note = delete
-//
 //  - GET  /top?type=play|download&limit=10&cursor=0
 //  - POST /reset   header: x-admin-token: <ADMIN_TOKEN>
 //      body: { mode: "all" } OR { mode: "id", id: "<id>" }
@@ -105,10 +103,14 @@ function getGlobalStub(env) {
   return env.COUNTERS_DO.get(id);
 }
 
-/**
- * Durable Object: single global instance ("global")
- * Stores everything in sqlite via state.storage.sql
- */
+function columnSetFromTableInfo(rows) {
+  const set = new Set();
+  for (const r of rows || []) {
+    if (r && r.name != null) set.add(String(r.name));
+  }
+  return set;
+}
+
 export class CountersDO {
   constructor(state, env) {
     this.state = state;
@@ -119,7 +121,9 @@ export class CountersDO {
 
   async init() {
     if (this._init) return this._init;
+
     this._init = (async () => {
+      // Base table (old schema compatible)
       this.sql.exec(`
         CREATE TABLE IF NOT EXISTS counters (
           id TEXT PRIMARY KEY,
@@ -127,18 +131,27 @@ export class CountersDO {
           dl INTEGER NOT NULL DEFAULT 0,
           title TEXT NOT NULL DEFAULT '',
           file_name TEXT NOT NULL DEFAULT '',
-          updatedAt INTEGER NOT NULL DEFAULT 0,
-
-          note TEXT NOT NULL DEFAULT '',
-          noteUpdatedAt INTEGER NOT NULL DEFAULT 0
+          updatedAt INTEGER NOT NULL DEFAULT 0
         );
       `);
 
+      // ✅ SAFE MIGRATIONS (no data loss)
+      const cols = columnSetFromTableInfo(this.sql.prepare(`PRAGMA table_info(counters)`).all());
+
+      if (!cols.has("note")) {
+        this.sql.exec(`ALTER TABLE counters ADD COLUMN note TEXT NOT NULL DEFAULT '';`);
+      }
+      if (!cols.has("noteUpdatedAt")) {
+        this.sql.exec(`ALTER TABLE counters ADD COLUMN noteUpdatedAt INTEGER NOT NULL DEFAULT 0;`);
+      }
+
+      // Indexes
       this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_pl ON counters(pl DESC);`);
       this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_dl ON counters(dl DESC);`);
       this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_updated ON counters(updatedAt DESC);`);
       this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_note_updated ON counters(noteUpdatedAt DESC);`);
     })();
+
     return this._init;
   }
 
@@ -204,7 +217,7 @@ export class CountersDO {
     const play = {};
     const download = {};
 
-    const chunkSize = 500; // keep under sqlite parameter limit
+    const chunkSize = 500;
     for (let i = 0; i < ids.length; i += chunkSize) {
       const chunk = ids.slice(i, i + chunkSize);
       const placeholders = chunk.map(() => "?").join(",");
@@ -325,9 +338,7 @@ export class CountersDO {
     const noteTrimmed = note.trim();
     const now = Date.now();
 
-    // Ensure row exists even if note is first data ever (sparse for counts, but notes need storage)
     if (!noteTrimmed) {
-      // delete note (keep row if it exists; if not, we can no-op)
       this.sql
         .prepare(`
           INSERT INTO counters (id, note, noteUpdatedAt)
@@ -431,7 +442,6 @@ export default {
     const stub = getGlobalStub(env);
     if (!stub) return json({ ok: false, error: "COUNTERS_DO binding missing (Cloudflare DO binding / wrangler.toml kontrol et)" }, 500);
 
-    // Forward API routes to DO
     if (
       url.pathname === "/counts" ||
       url.pathname === "/hit" ||
