@@ -1,18 +1,22 @@
 // File: worker.js  (Cloudflare Workers + Durable Object + SQLite storage)
 //
-// ✅ Counters + PUBLIC notes + SAFE MIGRATIONS
+// ✅ Counters + PUBLIC notes (single note per audio id)
+//
 // Endpoints:
 //  - GET  /health
 //  - POST /counts  body: { type: "play"|"download"|"both", ids: string[] }
 //  - POST /hit     body: { type: "play"|"download", id: string, title?: string, file_name?: string }
+//
 //  - POST /notes   body: { ids: string[] }                      -> sparse response (only ids that have notes)
 //  - POST /note    body: { id: string, note: string }           -> empty note = delete
+//
 //  - GET  /top?type=play|download&limit=10&cursor=0
 //  - POST /reset   header: x-admin-token: <ADMIN_TOKEN>
 //      body: { mode: "all" } OR { mode: "id", id: "<id>" }
 //
 // Bindings required:
-//  - Durable Object binding name: COUNTERS_DO
+//  - Durable Object binding name: COUNTERS_DO  (class: CountersDO)
+//  - Durable Object uses SQLite storage backend (migrations new_sqlite_classes must include "CountersDO")
 //  - Secret (optional): ADMIN_TOKEN
 
 const MAX_ID_LEN = 300;
@@ -103,19 +107,21 @@ function getGlobalStub(env) {
   return env.COUNTERS_DO.get(id);
 }
 
-function columnSetFromTableInfo(rows) {
-  const set = new Set();
-  for (const r of rows || []) {
-    if (r && r.name != null) set.add(String(r.name));
-  }
-  return set;
+function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
 }
 
+/**
+ * Durable Object: single global instance ("global")
+ * Stores everything in sqlite via state.storage.sql
+ */
 export class CountersDO {
   constructor(state, env) {
     this.state = state;
     this.env = env;
-    this.sql = state.storage.sql;
+    this.sql = state.storage.sql; // ✅ DO SQLite API: use sql.exec(), NOT prepare()
     this._init = null;
   }
 
@@ -123,7 +129,7 @@ export class CountersDO {
     if (this._init) return this._init;
 
     this._init = (async () => {
-      // Base table (old schema compatible)
+      // Base table (older versions may exist without note columns)
       this.sql.exec(`
         CREATE TABLE IF NOT EXISTS counters (
           id TEXT PRIMARY KEY,
@@ -135,13 +141,14 @@ export class CountersDO {
         );
       `);
 
-      // ✅ SAFE MIGRATIONS (no data loss)
-      const cols = columnSetFromTableInfo(this.sql.prepare(`PRAGMA table_info(counters)`).all());
+      // --- Migrate: add note columns if missing ---
+      const cols = this.sql.exec(`PRAGMA table_info(counters);`).toArray().map(r => String(r.name));
+      const has = (c) => cols.includes(c);
 
-      if (!cols.has("note")) {
+      if (!has("note")) {
         this.sql.exec(`ALTER TABLE counters ADD COLUMN note TEXT NOT NULL DEFAULT '';`);
       }
-      if (!cols.has("noteUpdatedAt")) {
+      if (!has("noteUpdatedAt")) {
         this.sql.exec(`ALTER TABLE counters ADD COLUMN noteUpdatedAt INTEGER NOT NULL DEFAULT 0;`);
       }
 
@@ -156,50 +163,55 @@ export class CountersDO {
   }
 
   async fetch(request) {
-    const url = new URL(request.url);
+    try {
+      const url = new URL(request.url);
 
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders() });
+      if (request.method === "OPTIONS") {
+        return new Response(null, { headers: corsHeaders() });
+      }
+
+      if (url.pathname === "/" || url.pathname === "/health") {
+        if (request.method !== "GET") return text("Method not allowed", 405);
+        return text("OK", 200);
+      }
+
+      await this.init();
+
+      if (url.pathname === "/counts") {
+        if (request.method !== "POST") return text("Method not allowed", 405);
+        return this.routeCounts(request);
+      }
+
+      if (url.pathname === "/hit") {
+        if (request.method !== "POST") return text("Method not allowed", 405);
+        return this.routeHit(request);
+      }
+
+      if (url.pathname === "/notes") {
+        if (request.method !== "POST") return text("Method not allowed", 405);
+        return this.routeNotes(request);
+      }
+
+      if (url.pathname === "/note") {
+        if (request.method !== "POST") return text("Method not allowed", 405);
+        return this.routeNote(request);
+      }
+
+      if (url.pathname === "/top") {
+        if (request.method !== "GET") return text("Method not allowed", 405);
+        return this.routeTop(url);
+      }
+
+      if (url.pathname === "/reset") {
+        if (request.method !== "POST") return text("Method not allowed", 405);
+        return this.routeReset(request);
+      }
+
+      return text("Not found", 404);
+    } catch (err) {
+      // ✅ Always CORS-friendly error
+      return json({ ok: false, error: "DO exception", detail: String(err?.message || err) }, 500);
     }
-
-    if (url.pathname === "/" || url.pathname === "/health") {
-      if (request.method !== "GET") return text("Method not allowed", 405);
-      return text("OK", 200);
-    }
-
-    await this.init();
-
-    if (url.pathname === "/counts") {
-      if (request.method !== "POST") return text("Method not allowed", 405);
-      return this.routeCounts(request);
-    }
-
-    if (url.pathname === "/hit") {
-      if (request.method !== "POST") return text("Method not allowed", 405);
-      return this.routeHit(request);
-    }
-
-    if (url.pathname === "/notes") {
-      if (request.method !== "POST") return text("Method not allowed", 405);
-      return this.routeNotes(request);
-    }
-
-    if (url.pathname === "/note") {
-      if (request.method !== "POST") return text("Method not allowed", 405);
-      return this.routeNote(request);
-    }
-
-    if (url.pathname === "/top") {
-      if (request.method !== "GET") return text("Method not allowed", 405);
-      return this.routeTop(url);
-    }
-
-    if (url.pathname === "/reset") {
-      if (request.method !== "POST") return text("Method not allowed", 405);
-      return this.routeReset(request);
-    }
-
-    return text("Not found", 404);
   }
 
   async routeCounts(request) {
@@ -217,20 +229,18 @@ export class CountersDO {
     const play = {};
     const download = {};
 
-    const chunkSize = 500;
-    for (let i = 0; i < ids.length; i += chunkSize) {
-      const chunk = ids.slice(i, i + chunkSize);
-      const placeholders = chunk.map(() => "?").join(",");
+    for (const part of chunk(ids, 400)) {
+      const placeholders = part.map(() => "?").join(",");
       const rows = this.sql
-        .prepare(`SELECT id, pl, dl FROM counters WHERE id IN (${placeholders})`)
-        .all(...chunk);
+        .exec(`SELECT id, pl, dl FROM counters WHERE id IN (${placeholders});`, ...part)
+        .toArray();
 
       const found = new Map();
       for (const r of rows) {
         found.set(String(r.id), { pl: Number(r.pl) || 0, dl: Number(r.dl) || 0 });
       }
 
-      for (const id of chunk) {
+      for (const id of part) {
         const v = found.get(id) || { pl: 0, dl: 0 };
         if (type === "play") play[id] = v.pl;
         else if (type === "download") download[id] = v.dl;
@@ -263,38 +273,38 @@ export class CountersDO {
     const dDl = type === "download" ? 1 : 0;
     const now = Date.now();
 
-    this.sql
-      .prepare(`
-        INSERT INTO counters (id, pl, dl, title, file_name, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET
-          pl = pl + excluded.pl,
-          dl = dl + excluded.dl,
-          title = CASE WHEN excluded.title != '' THEN excluded.title ELSE title END,
-          file_name = CASE WHEN excluded.file_name != '' THEN excluded.file_name ELSE file_name END,
-          updatedAt = excluded.updatedAt
-      `)
-      .run(id, dPl, dDl, title, fileName, now);
+    this.sql.exec(
+      `
+      INSERT INTO counters (id, pl, dl, title, file_name, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        pl = pl + excluded.pl,
+        dl = dl + excluded.dl,
+        title = CASE WHEN excluded.title != '' THEN excluded.title ELSE title END,
+        file_name = CASE WHEN excluded.file_name != '' THEN excluded.file_name ELSE file_name END,
+        updatedAt = excluded.updatedAt
+      ;
+    `,
+      id, dPl, dDl, title, fileName, now
+    );
 
-    const row = this.sql
-      .prepare(`SELECT pl, dl, title, file_name, updatedAt FROM counters WHERE id = ?`)
-      .get(id);
+    const row = this.sql.exec(
+      `SELECT pl, dl, title, file_name, updatedAt FROM counters WHERE id = ?;`,
+      id
+    ).toArray()[0];
 
     const pl = Number(row?.pl) || 0;
     const dl = Number(row?.dl) || 0;
 
-    return json(
-      {
-        ok: true,
-        id,
-        title: row?.title || "",
-        file_name: row?.file_name || "",
-        type,
-        count: type === "play" ? pl : dl,
-        updatedAt: Number(row?.updatedAt) || now,
-      },
-      200,
-    );
+    return json({
+      ok: true,
+      id,
+      title: row?.title || "",
+      file_name: row?.file_name || "",
+      type,
+      count: type === "play" ? pl : dl,
+      updatedAt: Number(row?.updatedAt) || now,
+    }, 200);
   }
 
   async routeNotes(request) {
@@ -305,19 +315,20 @@ export class CountersDO {
     if (!ids.length) return json({ ok: true, notes: {} }, 200);
 
     const notes = {};
-    const chunkSize = 500;
 
-    for (let i = 0; i < ids.length; i += chunkSize) {
-      const chunk = ids.slice(i, i + chunkSize);
-      const placeholders = chunk.map(() => "?").join(",");
+    for (const part of chunk(ids, 400)) {
+      const placeholders = part.map(() => "?").join(",");
       const rows = this.sql
-        .prepare(`SELECT id, note, noteUpdatedAt FROM counters WHERE id IN (${placeholders}) AND note != ''`)
-        .all(...chunk);
+        .exec(
+          `SELECT id, note, noteUpdatedAt FROM counters WHERE id IN (${placeholders}) AND note != '';`,
+          ...part
+        )
+        .toArray();
 
       for (const r of rows) {
         const id = String(r.id);
         notes[id] = {
-          note: r.note || "",
+          note: String(r.note || ""),
           updatedAt: Number(r.noteUpdatedAt) || 0,
         };
       }
@@ -339,28 +350,32 @@ export class CountersDO {
     const now = Date.now();
 
     if (!noteTrimmed) {
-      this.sql
-        .prepare(`
-          INSERT INTO counters (id, note, noteUpdatedAt)
-          VALUES (?, '', ?)
-          ON CONFLICT(id) DO UPDATE SET
-            note = '',
-            noteUpdatedAt = ?
-        `)
-        .run(id, now, now);
-
+      // delete note
+      this.sql.exec(
+        `
+        INSERT INTO counters (id, note, noteUpdatedAt)
+        VALUES (?, '', ?)
+        ON CONFLICT(id) DO UPDATE SET
+          note = '',
+          noteUpdatedAt = ?
+        ;
+      `,
+        id, now, now
+      );
       return json({ ok: true, id, deleted: true, note: "", updatedAt: now }, 200);
     }
 
-    this.sql
-      .prepare(`
-        INSERT INTO counters (id, note, noteUpdatedAt)
-        VALUES (?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET
-          note = excluded.note,
-          noteUpdatedAt = excluded.noteUpdatedAt
-      `)
-      .run(id, noteTrimmed, now);
+    this.sql.exec(
+      `
+      INSERT INTO counters (id, note, noteUpdatedAt)
+      VALUES (?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        note = excluded.note,
+        noteUpdatedAt = excluded.noteUpdatedAt
+      ;
+    `,
+      id, noteTrimmed, now
+    );
 
     return json({ ok: true, id, deleted: false, note: noteTrimmed, updatedAt: now }, 200);
   }
@@ -374,14 +389,15 @@ export class CountersDO {
 
     const orderCol = type === "play" ? "pl" : "dl";
 
-    const rows = this.sql
-      .prepare(`
-        SELECT id, pl, dl, title, file_name, updatedAt
-        FROM counters
-        ORDER BY ${orderCol} DESC, updatedAt DESC, id ASC
-        LIMIT ? OFFSET ?
-      `)
-      .all(limit + 1, offset);
+    const rows = this.sql.exec(
+      `
+      SELECT id, pl, dl, title, file_name, updatedAt
+      FROM counters
+      ORDER BY ${orderCol} DESC, updatedAt DESC, id ASC
+      LIMIT ? OFFSET ?
+    `,
+      limit + 1, offset
+    ).toArray();
 
     const page = rows.slice(0, limit).map((r) => ({
       id: String(r.id),
@@ -411,13 +427,13 @@ export class CountersDO {
       const id = sanitizeId(typeof body.id === "string" ? body.id : "");
       if (!id) return badRequest("id gerekli");
 
-      this.sql.prepare(`DELETE FROM counters WHERE id = ?`).run(id);
+      this.sql.exec(`DELETE FROM counters WHERE id = ?;`, id);
       return json({ ok: true, mode: "id", deleted: 1, id }, 200);
     }
 
     if (mode === "all") {
-      const before = this.sql.prepare(`SELECT COUNT(*) AS n FROM counters`).get();
-      const n = Number(before?.n) || 0;
+      const row = this.sql.exec(`SELECT COUNT(*) AS n FROM counters;`).toArray()[0];
+      const n = Number(row?.n) || 0;
       this.sql.exec(`DELETE FROM counters;`);
       return json({ ok: true, mode: "all", deleted: n }, 200);
     }
@@ -428,31 +444,37 @@ export class CountersDO {
 
 export default {
   async fetch(request, env) {
-    const url = new URL(request.url);
+    try {
+      const url = new URL(request.url);
 
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders() });
+      if (request.method === "OPTIONS") {
+        return new Response(null, { headers: corsHeaders() });
+      }
+
+      if (url.pathname === "/" || url.pathname === "/health") {
+        if (request.method !== "GET") return text("Method not allowed", 405);
+        return text("OK", 200);
+      }
+
+      const stub = getGlobalStub(env);
+      if (!stub) {
+        return json({ ok: false, error: "COUNTERS_DO binding missing (Cloudflare DO binding kontrol et)" }, 500);
+      }
+
+      if (
+        url.pathname === "/counts" ||
+        url.pathname === "/hit" ||
+        url.pathname === "/notes" ||
+        url.pathname === "/note" ||
+        url.pathname === "/top" ||
+        url.pathname === "/reset"
+      ) {
+        return stub.fetch(request);
+      }
+
+      return text("Not found", 404);
+    } catch (err) {
+      return json({ ok: false, error: "Worker exception", detail: String(err?.message || err) }, 500);
     }
-
-    if (url.pathname === "/" || url.pathname === "/health") {
-      if (request.method !== "GET") return text("Method not allowed", 405);
-      return text("OK", 200);
-    }
-
-    const stub = getGlobalStub(env);
-    if (!stub) return json({ ok: false, error: "COUNTERS_DO binding missing (Cloudflare DO binding / wrangler.toml kontrol et)" }, 500);
-
-    if (
-      url.pathname === "/counts" ||
-      url.pathname === "/hit" ||
-      url.pathname === "/notes" ||
-      url.pathname === "/note" ||
-      url.pathname === "/top" ||
-      url.pathname === "/reset"
-    ) {
-      return stub.fetch(request);
-    }
-
-    return text("Not found", 404);
   },
 };
