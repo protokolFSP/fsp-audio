@@ -27,6 +27,8 @@ const MAX_NOTE_LEN = 2000;
 const MAX_IDS_POST = 600;
 const TOP_LIMIT_MAX = 50;
 
+const SQL_IN_CHUNK = 400;
+
 function corsHeaders() {
   return {
     "access-control-allow-origin": "*",
@@ -60,6 +62,13 @@ function normalizeType(v) {
   return t === "play" || t === "download" || t === "both" ? t : null;
 }
 
+function normalizeTopType(v) {
+  const t = (v || "").toLowerCase();
+  if (t === "play") return "play";
+  if (t === "download") return "download";
+  return null;
+}
+
 function clampStr(s, maxLen) {
   if (typeof s !== "string") return "";
   return s.length <= maxLen ? s : s.slice(0, maxLen);
@@ -89,7 +98,8 @@ async function readJsonBody(request) {
   try {
     const txt = await request.text();
     if (!txt) return null;
-    return JSON.parse(txt);
+    const parsed = JSON.parse(txt);
+    return parsed && typeof parsed === "object" ? parsed : null;
   } catch {
     return null;
   }
@@ -128,8 +138,7 @@ export class CountersDO {
   async init() {
     if (this._init) return this._init;
 
-    this._init = (async () => {
-      // Base table (older versions may exist without note columns)
+    this._init = this.state.blockConcurrencyWhile(async () => {
       this.sql.exec(`
         CREATE TABLE IF NOT EXISTS counters (
           id TEXT PRIMARY KEY,
@@ -141,8 +150,11 @@ export class CountersDO {
         );
       `);
 
-      // --- Migrate: add note columns if missing ---
-      const cols = this.sql.exec(`PRAGMA table_info(counters);`).toArray().map(r => String(r.name));
+      const cols = this.sql
+        .exec(`PRAGMA table_info(counters);`)
+        .toArray()
+        .map((r) => String(r.name));
+
       const has = (c) => cols.includes(c);
 
       if (!has("note")) {
@@ -152,12 +164,11 @@ export class CountersDO {
         this.sql.exec(`ALTER TABLE counters ADD COLUMN noteUpdatedAt INTEGER NOT NULL DEFAULT 0;`);
       }
 
-      // Indexes
       this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_pl ON counters(pl DESC);`);
       this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_dl ON counters(dl DESC);`);
       this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_updated ON counters(updatedAt DESC);`);
       this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_note_updated ON counters(noteUpdatedAt DESC);`);
-    })();
+    });
 
     return this._init;
   }
@@ -209,7 +220,6 @@ export class CountersDO {
 
       return text("Not found", 404);
     } catch (err) {
-      // ✅ Always CORS-friendly error
       return json({ ok: false, error: "DO exception", detail: String(err?.message || err) }, 500);
     }
   }
@@ -229,7 +239,7 @@ export class CountersDO {
     const play = {};
     const download = {};
 
-    for (const part of chunk(ids, 400)) {
+    for (const part of chunk(ids, SQL_IN_CHUNK)) {
       const placeholders = part.map(() => "?").join(",");
       const rows = this.sql
         .exec(`SELECT id, pl, dl FROM counters WHERE id IN (${placeholders});`, ...part)
@@ -285,26 +295,33 @@ export class CountersDO {
         updatedAt = excluded.updatedAt
       ;
     `,
-      id, dPl, dDl, title, fileName, now
+      id,
+      dPl,
+      dDl,
+      title,
+      fileName,
+      now
     );
 
-    const row = this.sql.exec(
-      `SELECT pl, dl, title, file_name, updatedAt FROM counters WHERE id = ?;`,
-      id
-    ).toArray()[0];
+    const row = this.sql
+      .exec(`SELECT pl, dl, title, file_name, updatedAt FROM counters WHERE id = ?;`, id)
+      .toArray()[0];
 
     const pl = Number(row?.pl) || 0;
     const dl = Number(row?.dl) || 0;
 
-    return json({
-      ok: true,
-      id,
-      title: row?.title || "",
-      file_name: row?.file_name || "",
-      type,
-      count: type === "play" ? pl : dl,
-      updatedAt: Number(row?.updatedAt) || now,
-    }, 200);
+    return json(
+      {
+        ok: true,
+        id,
+        title: row?.title || "",
+        file_name: row?.file_name || "",
+        type,
+        count: type === "play" ? pl : dl,
+        updatedAt: Number(row?.updatedAt) || now,
+      },
+      200
+    );
   }
 
   async routeNotes(request) {
@@ -316,7 +333,7 @@ export class CountersDO {
 
     const notes = {};
 
-    for (const part of chunk(ids, 400)) {
+    for (const part of chunk(ids, SQL_IN_CHUNK)) {
       const placeholders = part.map(() => "?").join(",");
       const rows = this.sql
         .exec(
@@ -350,7 +367,6 @@ export class CountersDO {
     const now = Date.now();
 
     if (!noteTrimmed) {
-      // delete note
       this.sql.exec(
         `
         INSERT INTO counters (id, note, noteUpdatedAt)
@@ -360,8 +376,11 @@ export class CountersDO {
           noteUpdatedAt = ?
         ;
       `,
-        id, now, now
+        id,
+        now,
+        now
       );
+
       return json({ ok: true, id, deleted: true, note: "", updatedAt: now }, 200);
     }
 
@@ -374,42 +393,49 @@ export class CountersDO {
         noteUpdatedAt = excluded.noteUpdatedAt
       ;
     `,
-      id, noteTrimmed, now
+      id,
+      noteTrimmed,
+      now
     );
 
     return json({ ok: true, id, deleted: false, note: noteTrimmed, updatedAt: now }, 200);
   }
 
   async routeTop(url) {
-    const type = normalizeType(url.searchParams.get("type") || "download") || "download";
+    const type = normalizeTopType(url.searchParams.get("type")) || "download";
     const limit = Math.min(TOP_LIMIT_MAX, Math.max(1, Number(url.searchParams.get("limit") || "10")));
 
     const cursorRaw = (url.searchParams.get("cursor") || "").trim();
     const offset = Number.isFinite(Number(cursorRaw)) ? Math.max(0, Number(cursorRaw)) : 0;
 
     const orderCol = type === "play" ? "pl" : "dl";
+    const whereCount = type === "play" ? "pl > 0" : "dl > 0";
 
-    const rows = this.sql.exec(
-      `
+    const rows = this.sql
+      .exec(
+        `
       SELECT id, pl, dl, title, file_name, updatedAt
       FROM counters
+      WHERE ${whereCount}
       ORDER BY ${orderCol} DESC, updatedAt DESC, id ASC
       LIMIT ? OFFSET ?
     `,
-      limit + 1, offset
-    ).toArray();
+        limit + 1,
+        offset
+      )
+      .toArray();
 
     const page = rows.slice(0, limit).map((r) => ({
       id: String(r.id),
       title: r.title || "",
       file_name: r.file_name || "",
-      type: type === "play" ? "play" : "download",
+      type,
       count: type === "play" ? Number(r.pl) || 0 : Number(r.dl) || 0,
       updatedAt: Number(r.updatedAt) || 0,
     }));
 
     const nextCursor = rows.length > limit ? String(offset + limit) : null;
-    return json({ ok: true, type: type === "play" ? "play" : "download", limit, cursor: nextCursor, rows: page }, 200);
+    return json({ ok: true, type, limit, cursor: nextCursor, rows: page }, 200);
   }
 
   async routeReset(request) {
