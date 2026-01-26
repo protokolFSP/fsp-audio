@@ -1665,10 +1665,35 @@
     });
 
     let searchTimer = null;
-    searchEl.addEventListener("input", () => {
-      clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => render(), 90);
-    });
+let lastSentTerm = "";
+
+searchEl.addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    render();
+
+    const term = (searchEl.value || "").trim();
+    const visibleCount = getVisibleItems().length;
+
+    // Spam olmasın: min 2 karakter + değiştiyse gönder
+    if (term.length >= 2 && term !== lastSentTerm) {
+      lastSentTerm = term;
+      gaEvent("search", {
+        search_term: term,
+        results_count: visibleCount
+      });
+    }
+
+    // Arama temizlenince bir kez gönder (opsiyonel ama faydalı)
+    if (term.length === 0 && lastSentTerm !== "") {
+      lastSentTerm = "";
+      gaEvent("search", {
+        search_term: "",
+        results_count: visibleCount
+      });
+    }
+  }, 150);
+});
 
     function restorePlayerPos(){
       try{
