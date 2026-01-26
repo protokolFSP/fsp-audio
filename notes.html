@@ -1,0 +1,511 @@
+<!-- File: notes.html  (Admin Notes Report - Public Viewer)
+     Put this next to index.html in the same GitHub Pages repo.
+-->
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FSP Audio — Not Raporu</title>
+  <meta name="description" content="FSP Audio — Public not raporu." />
+  <style>
+    :root{
+      --border:#e9e9e9;
+      --muted:#6b6b6b;
+      --bg:#ffffff;
+      --hover:#f7f7f7;
+      --blue:#2b7cff;
+      --green:#16a34a;
+      --red:#dc2626;
+      --pill:#f1f5ff;
+    }
+    html, body{ height:100%; background:var(--bg); }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color:#111;
+      line-height:1.15;
+    }
+    #wrap{
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+    .title{
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #0b5fff;
+      background: #f1f5ff;
+      padding: 12px 16px;
+      border-radius: 14px;
+      margin: 0 0 12px 0;
+    }
+    .toolbar{
+      display:flex;
+      gap:10px;
+      flex-wrap: wrap;
+      align-items:center;
+      margin-bottom: 10px;
+    }
+    input[type="text"]{
+      flex: 1 1 420px;
+      min-width: 220px;
+      padding: 10px 12px;
+      border: 1px solid #d8d8d8;
+      border-radius: 14px;
+      font-size: 1rem;
+      outline: none;
+    }
+    .btn{
+      padding: 10px 14px;
+      border: 1px solid #d8d8d8;
+      border-radius: 14px;
+      background: white;
+      cursor: pointer;
+      font-size: 0.95rem;
+      user-select:none;
+    }
+    .btn:hover{ background:var(--hover); }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid #d8d8d8;
+      background: white;
+      user-select:none;
+      font-size: 0.92rem;
+      color:#111;
+    }
+    .pill strong{ color:#111; }
+    .muted{ color: var(--muted); }
+    .meta{
+      margin: 6px 0 12px 2px;
+      color: var(--muted);
+      font-size: .95rem;
+      line-height: 1.05;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: .85rem;
+      border: 1px solid #d8d8d8;
+      background: #fff;
+    }
+    .badge.full{
+      border-color: rgba(22,163,74,.6);
+      background: rgba(22,163,74,.12);
+      color: #166534;
+    }
+    .badge.empty{
+      border-color: rgba(220,38,38,.45);
+      background: rgba(220,38,38,.08);
+      color: #991b1b;
+    }
+
+    .table{
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow:hidden;
+      background:white;
+    }
+    .row{
+      display:grid;
+      grid-template-columns: 130px minmax(0, 1.3fr) minmax(0, 2fr) 170px 110px;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      align-items: start;
+    }
+    .row.header{
+      background: #fbfbfb;
+      font-size: .9rem;
+      color: var(--muted);
+      font-weight: 650;
+      align-items:center;
+    }
+    .row.data:hover{ background:var(--hover); }
+    .cell{
+      min-width:0;
+      word-break: break-word;
+    }
+    .cell a{ color: var(--blue); text-decoration:none; }
+    .cell a:hover{ text-decoration:underline; }
+    .note{
+      white-space: pre-wrap;
+      line-height:1.2;
+    }
+    .small{ font-size: .9rem; }
+    .right{ text-align:right; }
+    .nowrap{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    @media (max-width: 920px){
+      .row{
+        grid-template-columns: 120px minmax(0, 1fr);
+        grid-auto-rows: auto;
+      }
+      .row.header{ display:none; }
+      .row.data{ gap:6px; }
+      .cell.span2{ grid-column: 1 / -1; }
+      .cell.meta2{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="wrap">
+    <div class="title">FSP Audio — Not Raporu</div>
+
+    <div class="toolbar">
+      <input id="q" type="text" placeholder="Ara (başlık / not / id)..." />
+      <button id="refresh" class="btn" type="button">Yenile</button>
+      <button id="csv" class="btn" type="button">CSV indir</button>
+
+      <label class="pill" title="Boş notları da göster">
+        <input id="showEmpty" type="checkbox" />
+        <span>Boşları göster</span>
+      </label>
+
+      <label class="pill" title="Sıralama">
+        <span class="muted">Sırala:</span>
+        <select id="sort" class="btn" style="padding:8px 10px;">
+          <option value="updated_desc">Tarih (yeni → eski)</option>
+          <option value="updated_asc">Tarih (eski → yeni)</option>
+          <option value="title_asc">Başlık (A → Z)</option>
+          <option value="title_desc">Başlık (Z → A)</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="meta">
+      <span id="status" class="muted">Hazır.</span>
+      <span class="badge full">DOLU: <strong id="fullCount">0</strong></span>
+      <span class="badge empty">BOŞ: <strong id="emptyCount">0</strong></span>
+      <span class="muted">Görünen: <strong id="visibleCount">0</strong></span>
+      <span class="muted">Son yenileme: <strong id="lastAt">—</strong></span>
+    </div>
+
+    <div class="table" id="table">
+      <div class="row header">
+        <div class="cell">Durum</div>
+        <div class="cell">Kayıt</div>
+        <div class="cell">Not</div>
+        <div class="cell">Güncelleme</div>
+        <div class="cell right">İşlem</div>
+      </div>
+      <div id="rows"></div>
+    </div>
+  </div>
+
+  <script>
+    // === CONFIG (same as your main page) ===
+    const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
+    const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
+
+    const qEl = document.getElementById("q");
+    const refreshBtn = document.getElementById("refresh");
+    const csvBtn = document.getElementById("csv");
+    const showEmptyEl = document.getElementById("showEmpty");
+    const sortEl = document.getElementById("sort");
+
+    const statusEl = document.getElementById("status");
+    const rowsEl = document.getElementById("rows");
+
+    const fullCountEl = document.getElementById("fullCount");
+    const emptyCountEl = document.getElementById("emptyCount");
+    const visibleCountEl = document.getElementById("visibleCount");
+    const lastAtEl = document.getElementById("lastAt");
+
+    function chunk(arr, size){
+      const out = [];
+      for (let i=0; i<arr.length; i+=size) out.push(arr.slice(i, i+size));
+      return out;
+    }
+
+    function esc(s){
+      return (s ?? "").toString()
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#39;");
+    }
+
+    function foldTR(s){
+      s = (s || "").toString();
+      s = s.toLocaleLowerCase("tr");
+      s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      s = s.replace(/ı/g, "i");
+      s = s.replace(/\s+/g, " ").trim();
+      return s;
+    }
+
+    function fmtTime(ts){
+      if (!Number.isFinite(ts) || ts <= 0) return "—";
+      const d = new Date(ts);
+      return d.toLocaleString("tr-TR", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+    }
+
+    function buildDownloadUrl(identifier, name){
+      const parts = (name || "").split("/").map(p => encodeURIComponent(p));
+      return `https://archive.org/download/${identifier}/${parts.join("/")}`;
+    }
+
+    async function loadItemsFromIA(){
+      const metaUrl = `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}?v=${Date.now()}`;
+      const res = await fetch(metaUrl, { cache: "no-store" });
+      if (!res.ok) throw new Error("IA metadata okunamadı");
+      const j = await res.json();
+
+      const files = Array.isArray(j.files) ? j.files : [];
+      const items = files
+        .filter(f => {
+          const name = (f.name || "").toLowerCase();
+          if (!(name.endsWith(".m4a") || name.endsWith(".mp3"))) return false;
+          if (!("source" in f)) return true;
+          return (String(f.source).toLowerCase() === "original");
+        })
+        .map((f, idx) => {
+          const name = f.name || "";
+          const title = (f.title || "").trim() || decodeURIComponent(name.split("/").pop() || name);
+          const url = buildDownloadUrl(IA_IDENTIFIER_1, name);
+          const localId = name || url || (title + "#" + idx);
+          const id = "S1|" + localId;
+          return { id, title, name, url };
+        });
+
+      return items;
+    }
+
+    async function fetchNotes(ids){
+      const res = await fetch(COUNTER_API + "/notes", {
+        method: "POST",
+        mode: "cors",
+        cache: "no-store",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ids })
+      });
+      if (!res.ok) throw new Error("notes failed");
+      const j = await res.json();
+      return (j && j.notes) ? j.notes : {};
+    }
+
+    async function setPublicNote(id, note){
+      const res = await fetch(COUNTER_API + "/note", {
+        method: "POST",
+        mode: "cors",
+        cache: "no-store",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id, note })
+      });
+      if (!res.ok) throw new Error("note set failed");
+      return await res.json();
+    }
+
+    let allItems = [];
+    let notesById = {}; // { [id]: { note, updatedAt } }
+
+    function buildRows(){
+      const q = foldTR(qEl.value);
+      const showEmpty = !!showEmptyEl.checked;
+      const sortMode = sortEl.value;
+
+      const rows = allItems.map(it => {
+        const n = notesById[it.id];
+        const note = (n && typeof n.note === "string") ? n.note : "";
+        const updatedAt = Number(n?.updatedAt) || 0;
+        return { ...it, note, updatedAt, hasNote: !!note.trim() };
+      });
+
+      const full = rows.filter(r => r.hasNote).length;
+      const empty = rows.length - full;
+      fullCountEl.textContent = String(full);
+      emptyCountEl.textContent = String(empty);
+
+      let visible = rows.filter(r => showEmpty ? true : r.hasNote);
+
+      if (q){
+        visible = visible.filter(r => {
+          const hay = foldTR(r.title + " " + r.note + " " + r.id);
+          return hay.includes(q);
+        });
+      }
+
+      if (sortMode === "updated_desc"){
+        visible.sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0) || a.title.localeCompare(b.title, "tr"));
+      } else if (sortMode === "updated_asc"){
+        visible.sort((a,b) => (a.updatedAt||0) - (b.updatedAt||0) || a.title.localeCompare(b.title, "tr"));
+      } else if (sortMode === "title_asc"){
+        visible.sort((a,b) => a.title.localeCompare(b.title, "tr"));
+      } else if (sortMode === "title_desc"){
+        visible.sort((a,b) => b.title.localeCompare(a.title, "tr"));
+      }
+
+      visibleCountEl.textContent = String(visible.length);
+      return visible;
+    }
+
+    function render(){
+      const visible = buildRows();
+      rowsEl.innerHTML = "";
+
+      for (const r of visible){
+        const row = document.createElement("div");
+        row.className = "row data";
+
+        const status = document.createElement("div");
+        status.className = "cell";
+        status.innerHTML = r.hasNote
+          ? `<span class="badge full">DOLU</span>`
+          : `<span class="badge empty">BOŞ</span>`;
+
+        const title = document.createElement("div");
+        title.className = "cell";
+        title.innerHTML = `
+          <div class="small nowrap" title="${esc(r.id)}"><span class="muted">ID:</span> ${esc(r.id)}</div>
+          <div style="margin-top:4px;font-weight:650;">
+            <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a>
+          </div>
+        `;
+
+        const note = document.createElement("div");
+        note.className = "cell note";
+        note.textContent = r.note || "";
+
+        const updated = document.createElement("div");
+        updated.className = "cell small";
+        updated.textContent = fmtTime(r.updatedAt);
+
+        const actions = document.createElement("div");
+        actions.className = "cell right meta2";
+        const editBtn = document.createElement("button");
+        editBtn.className = "btn";
+        editBtn.type = "button";
+        editBtn.textContent = "Düzenle";
+        editBtn.addEventListener("click", async () => {
+          const current = r.note || "";
+          const next = prompt("Public not (boş = sil):", current);
+          if (next === null) return;
+          try{
+            statusEl.textContent = "Kaydediliyor...";
+            const saved = await setPublicNote(r.id, next);
+            if (saved && saved.ok){
+              if (saved.deleted) delete notesById[r.id];
+              else notesById[r.id] = { note: saved.note || "", updatedAt: saved.updatedAt || 0 };
+              statusEl.textContent = "Kaydedildi.";
+              lastAtEl.textContent = new Date().toLocaleString("tr-TR");
+              render();
+            } else {
+              statusEl.textContent = "Kaydedilemedi.";
+            }
+          }catch{
+            statusEl.textContent = "Kaydedilemedi (rate limit olabilir).";
+            alert("Not kaydedilemedi. Biraz sonra tekrar dene.");
+          }
+        });
+
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "btn";
+        copyBtn.type = "button";
+        copyBtn.textContent = "Kopyala";
+        copyBtn.addEventListener("click", async () => {
+          const text = `${r.title}\n${r.url}\nID: ${r.id}\n\nNOT:\n${r.note || ""}`;
+          try{
+            await navigator.clipboard.writeText(text);
+            statusEl.textContent = "Kopyalandı.";
+          }catch{
+            statusEl.textContent = "Kopyalanamadı.";
+          }
+        });
+
+        actions.appendChild(editBtn);
+        actions.appendChild(copyBtn);
+
+        row.appendChild(status);
+        row.appendChild(title);
+        row.appendChild(note);
+        row.appendChild(updated);
+        row.appendChild(actions);
+
+        rowsEl.appendChild(row);
+      }
+    }
+
+    function downloadCSV(){
+      const visible = buildRows();
+      const header = ["id","title","url","note","updatedAt"];
+      const lines = [header.join(",")];
+
+      for (const r of visible){
+        const cols = [
+          r.id,
+          r.title,
+          r.url,
+          (r.note || "").replace(/\r\n/g,"\n").replace(/\r/g,"\n"),
+          String(r.updatedAt || 0),
+        ].map(v => {
+          const s = (v ?? "").toString().replace(/"/g,'""');
+          return `"${s}"`;
+        });
+        lines.push(cols.join(","));
+      }
+
+      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "fsp_notes_report.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    }
+
+    async function refreshAll(){
+      statusEl.textContent = "Yükleniyor...";
+      try{
+        allItems = await loadItemsFromIA();
+
+        const ids = allItems.map(x => x.id);
+        const parts = chunk(ids, 200);
+
+        const allNotes = {};
+        for (const part of parts){
+          const n = await fetchNotes(part);
+          Object.assign(allNotes, n);
+        }
+        notesById = allNotes;
+
+        lastAtEl.textContent = new Date().toLocaleString("tr-TR");
+        statusEl.textContent = "Hazır.";
+        render();
+      }catch(e){
+        console.error(e);
+        statusEl.textContent = "Hata: notlar yüklenemedi.";
+      }
+    }
+
+    // events
+    let t = null;
+    qEl.addEventListener("input", () => {
+      clearTimeout(t);
+      t = setTimeout(render, 180);
+    });
+    showEmptyEl.addEventListener("change", render);
+    sortEl.addEventListener("change", render);
+    refreshBtn.addEventListener("click", refreshAll);
+    csvBtn.addEventListener("click", downloadCSV);
+
+    // start
+    refreshAll();
+  </script>
+</body>
+</html>
