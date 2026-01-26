@@ -727,9 +727,10 @@
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
 
-    // ✅ Worker base URL (senin worker domain)
+    // ✅ Worker base URL (POST /counts, POST /hit)
     const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
 
+    // ✅ 10 saniye dinleme sonrası "play" say
     const PLAY_QUALIFY_MS = 10_000;
 
     const scrollArea = document.getElementById("scrollArea");
@@ -900,6 +901,7 @@
       }
     }
 
+    // ✅ Daha sağlam: gate kurar kurmaz timer hazır olsun
     function armPlayGate(it){
       clearPlayGateTimer();
       playGate = {
@@ -910,6 +912,7 @@
         lastNow: 0,
         timer: null,
       };
+      startPlayGateTimer();
     }
 
     function startPlayGateTimer(){
@@ -920,10 +923,12 @@
       playGate.timer = setInterval(() => {
         try{
           if (!playGate.armed || playGate.sent) return;
+
           if (!playerEl || playerEl.paused){
             playGate.lastNow = performance.now();
             return;
           }
+
           const now = performance.now();
           const dt = now - playGate.lastNow;
           playGate.lastNow = now;
@@ -947,11 +952,12 @@
       clearPlayGateTimer();
     }
 
-    try{
-      plyr.on("playing", () => startPlayGateTimer());
-      plyr.on("pause",   () => stopPlayGateTimer());
-      plyr.on("ended",   () => stopPlayGateTimer());
-    }catch{}
+    // ✅ En sağlam: direkt <audio> eventleri (Safari dahil)
+    playerEl.addEventListener("play",    () => startPlayGateTimer());
+    playerEl.addEventListener("playing", () => startPlayGateTimer());
+    playerEl.addEventListener("pause",   () => stopPlayGateTimer());
+    playerEl.addEventListener("ended",   () => stopPlayGateTimer());
+    playerEl.addEventListener("emptied", () => stopPlayGateTimer());
 
     const LS = {
       favs:  "fsp1.favs.v1",
@@ -1194,13 +1200,11 @@
       return t;
     }
 
-    // Safari fix: SVG icon DOM ile
     function setArrowIcon(svgEl, isAsc) {
       if (!svgEl) return;
       while (svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
 
       const ns = "http://www.w3.org/2000/svg";
-
       const p1 = document.createElementNS(ns, "path");
       p1.setAttribute("d", isAsc ? "M12 19V5" : "M12 5v14");
 
