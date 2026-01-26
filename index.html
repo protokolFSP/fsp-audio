@@ -727,11 +727,11 @@
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
 
-    // ✅ Worker base URL (POST /counts, POST /hit)
+    // Worker base URL (POST /counts, POST /hit)
     const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
 
-    // ✅ 10 saniye dinleme sonrası "play" say
-    const PLAY_QUALIFY_MS = 10_000;
+    // ✅ Play sayımı: anında (audio gerçekten başlayınca 1 kez)
+    const PLAY_COUNT_INSTANT = true;
 
     const scrollArea = document.getElementById("scrollArea");
 
@@ -807,7 +807,6 @@
       return out;
     }
 
-    // ✅ Worker: POST /counts
     async function fetchCounts(type, ids){
       if (!ids.length) return {};
       try{
@@ -855,7 +854,6 @@
       render();
     }
 
-    // ✅ Worker: POST /hit
     function sendHit(type, it){
       try{
         const payload = {
@@ -885,79 +883,28 @@
       }
     }
 
-    let playGate = {
-      id: null,
-      armed: false,
-      sent: false,
-      listenedMs: 0,
-      lastNow: 0,
-      timer: null,
-    };
+    let playGate = { id: null, armed: false, sent: false };
 
-    function clearPlayGateTimer(){
-      if (playGate.timer){
-        clearInterval(playGate.timer);
-        playGate.timer = null;
-      }
-    }
-
-    // ✅ Daha sağlam: gate kurar kurmaz timer hazır olsun
     function armPlayGate(it){
-      clearPlayGateTimer();
-      playGate = {
-        id: it?.id || null,
-        armed: true,
-        sent: false,
-        listenedMs: 0,
-        lastNow: 0,
-        timer: null,
-      };
-      startPlayGateTimer();
+      playGate = { id: it?.id || null, armed: true, sent: false };
     }
 
-    function startPlayGateTimer(){
+    function trySendPlayNow(){
+      if (!PLAY_COUNT_INSTANT) return;
       if (!playGate.armed || playGate.sent || !playGate.id) return;
-      if (playGate.timer) return;
-      playGate.lastNow = performance.now();
+      if (!playerEl || playerEl.paused) return;
 
-      playGate.timer = setInterval(() => {
-        try{
-          if (!playGate.armed || playGate.sent) return;
+      playGate.sent = true;
 
-          if (!playerEl || playerEl.paused){
-            playGate.lastNow = performance.now();
-            return;
-          }
-
-          const now = performance.now();
-          const dt = now - playGate.lastNow;
-          playGate.lastNow = now;
-
-          if (dt > 0 && dt < 2000) playGate.listenedMs += dt;
-
-          if (playGate.listenedMs >= PLAY_QUALIFY_MS){
-            playGate.sent = true;
-            clearPlayGateTimer();
-            const it = items.find(x => x.id === playGate.id) || { id: playGate.id, title:"", name:"" };
-            bumpLocalGlobalCount("play", it.id);
-            sendHit("play", it);
-            scheduleRefreshCounts(1200);
-            render();
-          }
-        }catch{}
-      }, 250);
+      const it = items.find(x => x.id === playGate.id) || { id: playGate.id, title:"", name:"" };
+      bumpLocalGlobalCount("play", it.id);
+      sendHit("play", it);
+      scheduleRefreshCounts(1200);
+      render();
     }
 
-    function stopPlayGateTimer(){
-      clearPlayGateTimer();
-    }
-
-    // ✅ En sağlam: direkt <audio> eventleri (Safari dahil)
-    playerEl.addEventListener("play",    () => startPlayGateTimer());
-    playerEl.addEventListener("playing", () => startPlayGateTimer());
-    playerEl.addEventListener("pause",   () => stopPlayGateTimer());
-    playerEl.addEventListener("ended",   () => stopPlayGateTimer());
-    playerEl.addEventListener("emptied", () => stopPlayGateTimer());
+    playerEl.addEventListener("play",    () => setTimeout(trySendPlayNow, 0));
+    playerEl.addEventListener("playing", () => trySendPlayNow());
 
     const LS = {
       favs:  "fsp1.favs.v1",
@@ -1907,7 +1854,6 @@
       });
     })();
 
-    // INIT
     setSortIcons();
     restorePlayerPos();
     restoreSpeed();
