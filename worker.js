@@ -1,11 +1,11 @@
 // File: worker.js  (Cloudflare Workers + Durable Object + SQLite storage)
-// ✅ COUNTERS ONLY (play/download) + CORS-safe
+// COUNTERS ONLY (play/download) + CORS-safe
 //
-// Endpoints (public):
+// Public endpoints:
 //  - GET  /health
 //  - POST /counts  body: { type: "play"|"download"|"both", ids: string[] }
 //  - POST /hit     body: { type: "play"|"download", id: string, title?: string, file_name?: string }
-//  - GET  /top?type=play|download&limit=10&cursor=0
+//  - GET  /top?type=play|download&limit=10&cursor=<token|number>
 //
 // Admin:
 //  - POST /reset   header: x-admin-token: <ADMIN_TOKEN>
@@ -23,8 +23,11 @@ const MAX_FILE_LEN = 260;
 const MAX_IDS_POST = 600;
 const TOP_LIMIT_MAX = 50;
 
-// sqlite IN() için güvenli parça boyutu
+// sqlite IN() güvenli parça boyutu (SQLite max vars ~999 varsayılır)
 const SQL_IN_CHUNK = 400;
+
+// Body hard limit (DoS önleme)
+const MAX_BODY_BYTES = 32 * 1024; // 32KB
 
 function corsHeaders() {
   return {
@@ -36,17 +39,25 @@ function corsHeaders() {
   };
 }
 
-function json(obj, status = 200) {
+function json(obj, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(obj), {
     status,
-    headers: { ...corsHeaders(), "content-type": "application/json; charset=utf-8" },
+    headers: {
+      ...corsHeaders(),
+      ...extraHeaders,
+      "content-type": "application/json; charset=utf-8",
+    },
   });
 }
 
-function text(msg, status = 200) {
+function text(msg, status = 200, extraHeaders = {}) {
   return new Response(msg, {
     status,
-    headers: { ...corsHeaders(), "content-type": "text/plain; charset=utf-8" },
+    headers: {
+      ...corsHeaders(),
+      ...extraHeaders,
+      "content-type": "text/plain; charset=utf-8",
+    },
   });
 }
 
@@ -74,6 +85,7 @@ function clampStr(s, maxLen) {
 function sanitizeId(id) {
   const v = (id || "").trim();
   if (!v || v.length > MAX_ID_LEN) return "";
+  if (v.includes("\u0000")) return "";
   return v;
 }
 
@@ -91,10 +103,22 @@ function sanitizeIds(ids, maxCount) {
   return out;
 }
 
+function parseContentLength(request) {
+  const h = request.headers.get("content-length");
+  if (!h) return null;
+  const n = Number(h);
+  return Number.isFinite(n) ? n : null;
+}
+
 async function readJsonBody(request) {
+  const cl = parseContentLength(request);
+  if (cl != null && cl > MAX_BODY_BYTES) return { __tooLarge: true };
+
   try {
     const txt = await request.text();
     if (!txt) return null;
+    if (txt.length > MAX_BODY_BYTES) return { __tooLarge: true };
+
     const parsed = JSON.parse(txt);
     return parsed && typeof parsed === "object" ? parsed : null;
   } catch {
@@ -127,6 +151,34 @@ function errToString(e) {
     return e.message ? String(e.message) : JSON.stringify(e);
   } catch {
     return "Unknown error";
+  }
+}
+
+// base64url helpers (cursor)
+function b64UrlEncode(str) {
+  // btoa expects latin1; JSON is ascii-safe here. If you expect unicode, encodeURIComponent first.
+  const b64 = btoa(str);
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+function b64UrlDecode(token) {
+  const b64 = token.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((token.length + 3) % 4);
+  return atob(b64);
+}
+function encodeCursorKeyset(obj) {
+  return b64UrlEncode(JSON.stringify(obj));
+}
+function decodeCursorKeyset(token) {
+  try {
+    const raw = b64UrlDecode(token);
+    const j = JSON.parse(raw);
+    if (!j || typeof j !== "object") return null;
+    const c = Number(j.c);
+    const u = Number(j.u);
+    const i = typeof j.i === "string" ? j.i : "";
+    if (!Number.isFinite(c) || !Number.isFinite(u) || !i) return null;
+    return { c, u, i };
+  } catch {
+    return null;
   }
 }
 
@@ -212,6 +264,7 @@ export class CountersDO {
 
   async routeCounts(request) {
     const body = await readJsonBody(request);
+    if (body && body.__tooLarge) return json({ ok: false, error: "Body too large" }, 413);
     if (!body) return badRequest("JSON body bekleniyor");
 
     const type = normalizeType(body.type || "");
@@ -254,6 +307,7 @@ export class CountersDO {
 
   async routeHit(request) {
     const body = await readJsonBody(request);
+    if (body && body.__tooLarge) return json({ ok: false, error: "Body too large" }, 413);
     if (!body) return badRequest("JSON body bekleniyor");
 
     const type = normalizeType(body.type || "");
@@ -281,49 +335,101 @@ export class CountersDO {
         updatedAt = excluded.updatedAt
       ;
     `,
-      id, dPl, dDl, title, fileName, now
+      id,
+      dPl,
+      dDl,
+      title,
+      fileName,
+      now
     );
 
-    const row = this.sql
-      .exec(`SELECT pl, dl, title, file_name, updatedAt FROM counters WHERE id = ?;`, id)
-      .toArray()[0];
+    const row = this.sql.exec(
+      `SELECT pl, dl, title, file_name, updatedAt FROM counters WHERE id = ?;`,
+      id
+    ).toArray()[0];
 
     const pl = Number(row?.pl) || 0;
     const dl = Number(row?.dl) || 0;
 
-    return json({
-      ok: true,
-      id,
-      title: row?.title || "",
-      file_name: row?.file_name || "",
-      type,
-      count: type === "play" ? pl : dl,
-      updatedAt: Number(row?.updatedAt) || now,
-    }, 200);
+    return json(
+      {
+        ok: true,
+        id,
+        title: row?.title || "",
+        file_name: row?.file_name || "",
+        type,
+        count: type === "play" ? pl : dl,
+        updatedAt: Number(row?.updatedAt) || now,
+      },
+      200
+    );
   }
 
   async routeTop(url) {
     const type = normalizeTopType(url.searchParams.get("type")) || "download";
     const limit = Math.min(TOP_LIMIT_MAX, Math.max(1, Number(url.searchParams.get("limit") || "10")));
 
-    const cursorRaw = (url.searchParams.get("cursor") || "").trim();
-    const offset = Number.isFinite(Number(cursorRaw)) ? Math.max(0, Number(cursorRaw)) : 0;
-
     const orderCol = type === "play" ? "pl" : "dl";
     const whereCount = type === "play" ? "pl > 0" : "dl > 0";
 
-    const rows = this.sql.exec(
-      `
-      SELECT id, pl, dl, title, file_name, updatedAt
-      FROM counters
-      WHERE ${whereCount}
-      ORDER BY ${orderCol} DESC, updatedAt DESC, id ASC
-      LIMIT ? OFFSET ?;
-      `,
-      limit + 1, offset
-    ).toArray();
+    const cursorRaw = (url.searchParams.get("cursor") || "").trim();
 
-    const page = rows.slice(0, limit).map((r) => ({
+    // Back-compat: numeric cursor => OFFSET pagination
+    const cursorNum = cursorRaw !== "" && Number.isFinite(Number(cursorRaw)) ? Math.max(0, Number(cursorRaw)) : null;
+
+    // Preferred: keyset cursor token
+    const keyset = cursorRaw && cursorNum === null ? decodeCursorKeyset(cursorRaw) : null;
+
+    let rows;
+    if (keyset) {
+      // keyset predicate for: ORDER BY count DESC, updatedAt DESC, id ASC
+      rows = this.sql.exec(
+        `
+        SELECT id, pl, dl, title, file_name, updatedAt
+        FROM counters
+        WHERE ${whereCount}
+          AND (
+            ${orderCol} < ?
+            OR (${orderCol} = ? AND updatedAt < ?)
+            OR (${orderCol} = ? AND updatedAt = ? AND id > ?)
+          )
+        ORDER BY ${orderCol} DESC, updatedAt DESC, id ASC
+        LIMIT ?;
+        `,
+        keyset.c,
+        keyset.c,
+        keyset.u,
+        keyset.c,
+        keyset.u,
+        keyset.i,
+        limit + 1
+      ).toArray();
+    } else if (cursorNum !== null) {
+      rows = this.sql.exec(
+        `
+        SELECT id, pl, dl, title, file_name, updatedAt
+        FROM counters
+        WHERE ${whereCount}
+        ORDER BY ${orderCol} DESC, updatedAt DESC, id ASC
+        LIMIT ? OFFSET ?;
+        `,
+        limit + 1,
+        cursorNum
+      ).toArray();
+    } else {
+      rows = this.sql.exec(
+        `
+        SELECT id, pl, dl, title, file_name, updatedAt
+        FROM counters
+        WHERE ${whereCount}
+        ORDER BY ${orderCol} DESC, updatedAt DESC, id ASC
+        LIMIT ?;
+        `,
+        limit + 1
+      ).toArray();
+    }
+
+    const pageRows = rows.slice(0, limit).map((r) => ({
       id: String(r.id),
       title: r.title || "",
       file_name: r.file_name || "",
@@ -332,8 +438,25 @@ export class CountersDO {
       updatedAt: Number(r.updatedAt) || 0,
     }));
 
-    const nextCursor = rows.length > limit ? String(offset + limit) : null;
-    return json({ ok: true, type, limit, cursor: nextCursor, rows: page }, 200);
+    let nextCursor = null;
+    if (rows.length > limit && pageRows.length) {
+      const last = pageRows[pageRows.length - 1];
+      nextCursor = encodeCursorKeyset({ c: last.count, u: last.updatedAt, i: last.id });
+    } else if (rows.length > limit && cursorNum !== null) {
+      nextCursor = String(cursorNum + limit);
+    }
+
+    return json(
+      {
+        ok: true,
+        type,
+        limit,
+        cursor: nextCursor,
+        rows: pageRows,
+        cursor_mode: keyset ? "keyset" : cursorNum !== null ? "offset" : "none",
+      },
+      200
+    );
   }
 
   async routeReset(request) {
@@ -343,6 +466,7 @@ export class CountersDO {
     }
 
     const body = await readJsonBody(request);
+    if (body && body.__tooLarge) return json({ ok: false, error: "Body too large" }, 413);
     if (!body) return badRequest("JSON body bekleniyor");
 
     const mode = (body.mode || "").toString();
