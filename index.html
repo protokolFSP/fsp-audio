@@ -1664,40 +1664,25 @@
       render();
     });
 
- const SEARCH_DEBOUNCE_MS = 900;
-
-let searchTimer = null;
+    let searchTimer = null;
 let lastSentTerm = "";
-
-function sendSearchEvent(termRaw) {
-  const term = (termRaw || "").trim();
-  if (term.length < 2) return;
-  if (term === lastSentTerm) return;
-
-  lastSentTerm = term;
-
-  gaEvent("search", {
-    search_term: term,
-    results_count: getVisibleItems().length,
-  });
-}
 
 searchEl.addEventListener("input", () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => {
     render();
-    sendSearchEvent(searchEl.value);
-  }, SEARCH_DEBOUNCE_MS);
-});
 
-searchEl.addEventListener("keydown", (e) => {
-  if (e.key !== "Enter") return;
-  e.preventDefault();
-  clearTimeout(searchTimer);
-  render();
-  sendSearchEvent(searchEl.value);
-});
+    const term = (searchEl.value || "").trim();
+    const visibleCount = getVisibleItems().length;
 
+    // Spam olmasın: min 2 karakter + değiştiyse gönder
+    if (term.length >= 2 && term !== lastSentTerm) {
+      lastSentTerm = term;
+      gaEvent("search", {
+        search_term: term,
+        results_count: visibleCount
+      });
+    }
 
     // Arama temizlenince bir kez gönder (opsiyonel ama faydalı)
     if (term.length === 0 && lastSentTerm !== "") {
