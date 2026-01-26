@@ -1,11 +1,18 @@
-// File: worker.js
+// worker.js — Cloudflare Workers + Durable Objects (SQLite-backed)
+// Endpoints:
+//   GET  /health
+//   POST /counts   { type:"play"|"download"|"both", ids:[...] }
+//   POST /hit      { type:"play"|"download", id, title?, file_name? }
+//   GET  /top?type=play|download&limit=10&cursor=0
+//   POST /reset    { mode:"all" }  or  { mode:"id", id:"..." }   (requires x-admin-token == env.ADMIN_TOKEN)
 
 const MAX_ID_LEN = 300;
 const MAX_TITLE_LEN = 300;
 const MAX_FILE_LEN = 260;
 
-const MAX_IDS_POST = 600;
-const TOP_LIMIT_MAX = 50;
+const MAX_IDS_POST = 600;      // client POST /counts ids limit
+const TOP_LIMIT_MAX = 50;      // /top limit upper bound
+const SQL_IN_CHUNK = 400;      // chunk size for IN (...) queries (safe)
 
 function corsHeaders() {
   return {
@@ -36,7 +43,7 @@ function badRequest(message) {
 }
 
 function normalizeType(v) {
-  const t = (v || "").toLowerCase();
+  const t = (v || "").toString().toLowerCase();
   return t === "play" || t === "download" || t === "both" ? t : null;
 }
 
@@ -46,17 +53,20 @@ function clampStr(s, maxLen) {
 }
 
 function sanitizeId(id) {
-  const v = (id || "").trim();
-  if (!v || v.length > MAX_ID_LEN) return "";
+  const v = (id || "").toString().trim();
+  if (!v) return "";
+  if (v.length > MAX_ID_LEN) return "";
   return v;
 }
 
 function sanitizeIds(ids, maxCount) {
   const out = [];
   const seen = new Set();
+  if (!Array.isArray(ids)) return out;
+
   for (const raw of ids) {
     if (out.length >= maxCount) break;
-    const id = sanitizeId(String(raw ?? ""));
+    const id = sanitizeId(raw);
     if (!id) continue;
     if (seen.has(id)) continue;
     seen.add(id);
@@ -91,28 +101,32 @@ export class CountersDO {
   constructor(state, env) {
     this.state = state;
     this.env = env;
+
+    // SQLite-backed Durable Object storage:
     this.sql = state.storage.sql;
-    this._init = null;
+
+    this._inited = false;
   }
 
-  async init() {
-    if (this._init) return this._init;
-    this._init = (async () => {
-      this.sql.exec(`
-        CREATE TABLE IF NOT EXISTS counters (
-          id TEXT PRIMARY KEY,
-          pl INTEGER NOT NULL DEFAULT 0,
-          dl INTEGER NOT NULL DEFAULT 0,
-          title TEXT NOT NULL DEFAULT '',
-          file_name TEXT NOT NULL DEFAULT '',
-          updatedAt INTEGER NOT NULL DEFAULT 0
-        );
-      `);
-      this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_pl ON counters(pl DESC);`);
-      this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_dl ON counters(dl DESC);`);
-      this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_updated ON counters(updatedAt DESC);`);
-    })();
-    return this._init;
+  init() {
+    if (this._inited) return;
+    this._inited = true;
+
+    // sql.exec supports multiple statements separated by semicolons.
+    this.sql.exec(`
+      CREATE TABLE IF NOT EXISTS counters (
+        id        TEXT PRIMARY KEY,
+        pl        INTEGER NOT NULL DEFAULT 0,
+        dl        INTEGER NOT NULL DEFAULT 0,
+        title     TEXT NOT NULL DEFAULT '',
+        file_name TEXT NOT NULL DEFAULT '',
+        updatedAt INTEGER NOT NULL DEFAULT 0
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_counters_pl      ON counters(pl DESC);
+      CREATE INDEX IF NOT EXISTS idx_counters_dl      ON counters(dl DESC);
+      CREATE INDEX IF NOT EXISTS idx_counters_updated ON counters(updatedAt DESC);
+    `);
   }
 
   async fetch(request) {
@@ -127,39 +141,44 @@ export class CountersDO {
       return text("OK", 200);
     }
 
-    await this.init();
+    this.init();
 
-    if (url.pathname === "/counts") {
-      if (request.method !== "POST") return text("Method not allowed", 405);
-      return this.routeCounts(request);
+    try {
+      if (url.pathname === "/counts") {
+        if (request.method !== "POST") return text("Method not allowed", 405);
+        return await this.routeCounts(request);
+      }
+
+      if (url.pathname === "/hit") {
+        if (request.method !== "POST") return text("Method not allowed", 405);
+        return await this.routeHit(request);
+      }
+
+      if (url.pathname === "/top") {
+        if (request.method !== "GET") return text("Method not allowed", 405);
+        return await this.routeTop(url);
+      }
+
+      if (url.pathname === "/reset") {
+        if (request.method !== "POST") return text("Method not allowed", 405);
+        return await this.routeReset(request);
+      }
+
+      return text("Not found", 404);
+    } catch (err) {
+      // Never throw; always respond JSON with CORS.
+      return json({ ok: false, error: "Internal error", detail: String(err?.message || err) }, 500);
     }
-
-    if (url.pathname === "/hit") {
-      if (request.method !== "POST") return text("Method not allowed", 405);
-      return this.routeHit(request);
-    }
-
-    if (url.pathname === "/top") {
-      if (request.method !== "GET") return text("Method not allowed", 405);
-      return this.routeTop(url);
-    }
-
-    if (url.pathname === "/reset") {
-      if (request.method !== "POST") return text("Method not allowed", 405);
-      return this.routeReset(request);
-    }
-
-    return text("Not found", 404);
   }
 
   async routeCounts(request) {
     const body = await readJsonBody(request);
     if (!body) return badRequest("JSON body bekleniyor");
 
-    const type = normalizeType(body.type || "");
-    if (!type) return badRequest("type play/download/both olmalı");
+    const type = normalizeType(body.type);
+    if (!type) return badRequest('type "play", "download" veya "both" olmalı');
 
-    const ids = sanitizeIds(Array.isArray(body.ids) ? body.ids : [], MAX_IDS_POST);
+    const ids = sanitizeIds(body.ids, MAX_IDS_POST);
     if (!ids.length) {
       return json({ ok: true, type, counts: type === "both" ? { play: {}, download: {} } : {} }, 200);
     }
@@ -167,13 +186,14 @@ export class CountersDO {
     const play = {};
     const download = {};
 
-    const chunkSize = 500;
-    for (let i = 0; i < ids.length; i += chunkSize) {
-      const chunk = ids.slice(i, i + chunkSize);
+    for (let i = 0; i < ids.length; i += SQL_IN_CHUNK) {
+      const chunk = ids.slice(i, i + SQL_IN_CHUNK);
       const placeholders = chunk.map(() => "?").join(",");
+
+      // Returns array of row objects: [{id, pl, dl}, ...]
       const rows = this.sql
-        .prepare(`SELECT id, pl, dl FROM counters WHERE id IN (${placeholders})`)
-        .all(...chunk);
+        .exec(`SELECT id, pl, dl FROM counters WHERE id IN (${placeholders});`, ...chunk)
+        .toArray();
 
       const found = new Map();
       for (const r of rows) {
@@ -200,20 +220,22 @@ export class CountersDO {
     const body = await readJsonBody(request);
     if (!body) return badRequest("JSON body bekleniyor");
 
-    const type = normalizeType(body.type || "");
-    if (type !== "play" && type !== "download") return badRequest("type play/download olmalı");
+    const type = normalizeType(body.type);
+    if (type !== "play" && type !== "download") return badRequest('type "play" veya "download" olmalı');
 
-    const id = sanitizeId(typeof body.id === "string" ? body.id : "");
+    const id = sanitizeId(body.id);
     if (!id) return badRequest("id gerekli");
 
-    const title = clampStr(typeof body.title === "string" ? body.title : "", MAX_TITLE_LEN);
-    const fileName = clampStr(typeof body.file_name === "string" ? body.file_name : "", MAX_FILE_LEN);
+    const title = clampStr(body.title, MAX_TITLE_LEN);
+    const fileName = clampStr(body.file_name, MAX_FILE_LEN);
 
     const dPl = type === "play" ? 1 : 0;
     const dDl = type === "download" ? 1 : 0;
     const now = Date.now();
 
-    this.sql.prepare(`
+    // Upsert
+    this.sql.exec(
+      `
       INSERT INTO counters (id, pl, dl, title, file_name, updatedAt)
       VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
@@ -221,12 +243,24 @@ export class CountersDO {
         dl = dl + excluded.dl,
         title = CASE WHEN excluded.title != '' THEN excluded.title ELSE title END,
         file_name = CASE WHEN excluded.file_name != '' THEN excluded.file_name ELSE file_name END,
-        updatedAt = excluded.updatedAt
-    `).run(id, dPl, dDl, title, fileName, now);
+        updatedAt = excluded.updatedAt;
+      `,
+      id,
+      dPl,
+      dDl,
+      title,
+      fileName,
+      now
+    );
 
-    const row = this.sql
-      .prepare(`SELECT pl, dl, title, file_name, updatedAt FROM counters WHERE id = ?`)
-      .get(id);
+    let row = null;
+    try {
+      row = this.sql
+        .exec(`SELECT pl, dl, title, file_name, updatedAt FROM counters WHERE id = ?;`, id)
+        .one();
+    } catch {
+      row = null;
+    }
 
     const pl = Number(row?.pl) || 0;
     const dl = Number(row?.dl) || 0;
@@ -241,7 +275,7 @@ export class CountersDO {
         count: type === "play" ? pl : dl,
         updatedAt: Number(row?.updatedAt) || now,
       },
-      200,
+      200
     );
   }
 
@@ -253,19 +287,26 @@ export class CountersDO {
     const offset = Number.isFinite(Number(cursorRaw)) ? Math.max(0, Number(cursorRaw)) : 0;
 
     const orderCol = type === "play" ? "pl" : "dl";
-    const rows = this.sql.prepare(`
-      SELECT id, pl, dl, title, file_name, updatedAt
-      FROM counters
-      ORDER BY ${orderCol} DESC, updatedAt DESC, id ASC
-      LIMIT ? OFFSET ?
-    `).all(limit + 1, offset);
+
+    const rows = this.sql
+      .exec(
+        `
+        SELECT id, pl, dl, title, file_name, updatedAt
+        FROM counters
+        ORDER BY ${orderCol} DESC, updatedAt DESC, id ASC
+        LIMIT ? OFFSET ?;
+        `,
+        limit + 1,
+        offset
+      )
+      .toArray();
 
     const page = rows.slice(0, limit).map((r) => ({
       id: String(r.id),
       title: r.title || "",
       file_name: r.file_name || "",
       type: type === "play" ? "play" : "download",
-      count: type === "play" ? (Number(r.pl) || 0) : (Number(r.dl) || 0),
+      count: type === "play" ? Number(r.pl) || 0 : Number(r.dl) || 0,
       updatedAt: Number(r.updatedAt) || 0,
     }));
 
@@ -286,15 +327,17 @@ export class CountersDO {
     const mode = (body.mode || "").toString();
 
     if (mode === "id") {
-      const id = sanitizeId(typeof body.id === "string" ? body.id : "");
+      const id = sanitizeId(body.id);
       if (!id) return badRequest("id gerekli");
-      this.sql.prepare(`DELETE FROM counters WHERE id = ?`).run(id);
+
+      this.sql.exec(`DELETE FROM counters WHERE id = ?;`, id);
       return json({ ok: true, mode: "id", deleted: 1, id }, 200);
     }
 
     if (mode === "all") {
-      const before = this.sql.prepare(`SELECT COUNT(*) AS n FROM counters`).get();
-      const n = Number(before?.n) || 0;
+      const before = this.sql.exec(`SELECT COUNT(*) AS n FROM counters;`).toArray();
+      const n = Number(before?.[0]?.n) || 0;
+
       this.sql.exec(`DELETE FROM counters;`);
       return json({ ok: true, mode: "all", deleted: n }, 200);
     }
