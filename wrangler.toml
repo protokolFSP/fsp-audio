@@ -1,0 +1,12 @@
+name = "fspdlcounter"
+main = "worker.js"
+compatibility_date = "2026-01-26"
+
+[durable_objects]
+bindings = [
+  { name = "COUNTERS_DO", class_name = "CountersDO" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["CountersDO"]
