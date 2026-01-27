@@ -1,11 +1,11 @@
-// File: worker.js  (Cloudflare Workers + Durable Object + SQLite storage)
-// COUNTERS ONLY (play/download) + CORS-safe
+// File: worker.js (Cloudflare Workers + Durable Object WITHOUT SQLite)
+// ✅ COUNTERS ONLY (play/download) + CORS-safe
 //
-// Public endpoints:
+// Public:
 //  - GET  /health
 //  - POST /counts  body: { type: "play"|"download"|"both", ids: string[] }
 //  - POST /hit     body: { type: "play"|"download", id: string, title?: string, file_name?: string }
-//  - GET  /top?type=play|download&limit=10&cursor=<token|number>
+//  - GET  /top?type=play|download&limit=10&cursor=0
 //
 // Admin:
 //  - POST /reset   header: x-admin-token: <ADMIN_TOKEN>
@@ -13,21 +13,20 @@
 //
 // Bindings required:
 //  - Durable Object binding name: COUNTERS_DO (class: CountersDO)
-//  - Durable Object must be SQLite-backed (migrations new_sqlite_classes includes "CountersDO")
+//  - No SQLite migration needed for this version
 //  - Secret (optional): ADMIN_TOKEN
 
-const MAX_ID_LEN = 300;
+const MAX_ID_LEN = 800;
 const MAX_TITLE_LEN = 300;
 const MAX_FILE_LEN = 260;
 
 const MAX_IDS_POST = 600;
 const TOP_LIMIT_MAX = 50;
 
-// sqlite IN() güvenli parça boyutu (SQLite max vars ~999 varsayılır)
-const SQL_IN_CHUNK = 400;
+const MAX_BODY_BYTES = 32 * 1024;
 
-// Body hard limit (DoS önleme)
-const MAX_BODY_BYTES = 32 * 1024; // 32KB
+const TOP_STORE_MAX = 500;
+const LIST_PAGE_LIMIT = 512;
 
 function corsHeaders() {
   return {
@@ -39,25 +38,17 @@ function corsHeaders() {
   };
 }
 
-function json(obj, status = 200, extraHeaders = {}) {
+function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), {
     status,
-    headers: {
-      ...corsHeaders(),
-      ...extraHeaders,
-      "content-type": "application/json; charset=utf-8",
-    },
+    headers: { ...corsHeaders(), "content-type": "application/json; charset=utf-8" },
   });
 }
 
-function text(msg, status = 200, extraHeaders = {}) {
+function text(msg, status = 200) {
   return new Response(msg, {
     status,
-    headers: {
-      ...corsHeaders(),
-      ...extraHeaders,
-      "content-type": "text/plain; charset=utf-8",
-    },
+    headers: { ...corsHeaders(), "content-type": "text/plain; charset=utf-8" },
   });
 }
 
@@ -138,12 +129,6 @@ function getGlobalStub(env) {
   return env.COUNTERS_DO.get(id);
 }
 
-function chunk(arr, size) {
-  const out = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-}
-
 function errToString(e) {
   try {
     if (!e) return "Unknown error";
@@ -154,70 +139,61 @@ function errToString(e) {
   }
 }
 
-// base64url helpers (cursor)
-function b64UrlEncode(str) {
-  // btoa expects latin1; JSON is ascii-safe here. If you expect unicode, encodeURIComponent first.
-  const b64 = btoa(str);
-  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+function counterKey(id) {
+  return `c:${id}`;
 }
-function b64UrlDecode(token) {
-  const b64 = token.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((token.length + 3) % 4);
-  return atob(b64);
-}
-function encodeCursorKeyset(obj) {
-  return b64UrlEncode(JSON.stringify(obj));
-}
-function decodeCursorKeyset(token) {
-  try {
-    const raw = b64UrlDecode(token);
-    const j = JSON.parse(raw);
-    if (!j || typeof j !== "object") return null;
-    const c = Number(j.c);
-    const u = Number(j.u);
-    const i = typeof j.i === "string" ? j.i : "";
-    if (!Number.isFinite(c) || !Number.isFinite(u) || !i) return null;
-    return { c, u, i };
-  } catch {
-    return null;
-  }
+function topKey(type) {
+  return `top:${type}`;
 }
 
-/**
- * Durable Object: single global instance ("global")
- * Stores everything in sqlite via state.storage.sql (exec + toArray)
- */
+function sortTopRows(rows) {
+  rows.sort((a, b) => {
+    const ca = Number(a.count) || 0;
+    const cb = Number(b.count) || 0;
+    if (ca !== cb) return cb - ca;
+    const ua = Number(a.updatedAt) || 0;
+    const ub = Number(b.updatedAt) || 0;
+    if (ua !== ub) return ub - ua;
+    return String(a.id).localeCompare(String(b.id));
+  });
+  return rows;
+}
+
+async function getMapValues(storage, keys) {
+  const res = await storage.get(keys);
+  if (res instanceof Map) return res;
+  const m = new Map();
+  for (const k of keys) m.set(k, res?.[k]);
+  return m;
+}
+
+async function listKeysByPrefix(storage, prefix) {
+  const out = [];
+  let start = prefix;
+  const end = prefix + "\uffff";
+
+  while (true) {
+    const page = await storage.list({ start, end, limit: LIST_PAGE_LIMIT });
+    const keys = [...page.keys()];
+    if (!keys.length) break;
+    out.push(keys);
+    const last = keys[keys.length - 1];
+    start = last + "\u0000";
+  }
+
+  return out;
+}
+
 export class CountersDO {
   constructor(state, env) {
     this.state = state;
     this.env = env;
-    this.sql = state.storage.sql;
     this._init = null;
   }
 
   async init() {
     if (this._init) return this._init;
-
-    this._init = this.state.blockConcurrencyWhile(async () => {
-      if (!this.sql || typeof this.sql.exec !== "function") {
-        throw new Error("SQLite missing: state.storage.sql.exec not available (SQLite-backed DO değil)");
-      }
-
-      this.sql.exec(`
-        CREATE TABLE IF NOT EXISTS counters (
-          id TEXT PRIMARY KEY,
-          pl INTEGER NOT NULL DEFAULT 0,
-          dl INTEGER NOT NULL DEFAULT 0,
-          title TEXT NOT NULL DEFAULT '',
-          file_name TEXT NOT NULL DEFAULT '',
-          updatedAt INTEGER NOT NULL DEFAULT 0
-        );
-      `);
-
-      this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_pl ON counters(pl DESC);`);
-      this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_dl ON counters(dl DESC);`);
-      this.sql.exec(`CREATE INDEX IF NOT EXISTS idx_counters_updated ON counters(updatedAt DESC);`);
-    });
-
+    this._init = this.state.blockConcurrencyWhile(async () => {});
     return this._init;
   }
 
@@ -275,28 +251,23 @@ export class CountersDO {
       return json({ ok: true, type, counts: type === "both" ? { play: {}, download: {} } : {} }, 200);
     }
 
+    const keys = ids.map(counterKey);
+    const map = await getMapValues(this.state.storage, keys);
+
     const play = {};
     const download = {};
 
-    for (const part of chunk(ids, SQL_IN_CHUNK)) {
-      const placeholders = part.map(() => "?").join(",");
-      const rows = this.sql
-        .exec(`SELECT id, pl, dl FROM counters WHERE id IN (${placeholders});`, ...part)
-        .toArray();
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i];
+      const v = map.get(keys[i]) || null;
+      const pl = Number(v?.pl) || 0;
+      const dl = Number(v?.dl) || 0;
 
-      const found = new Map();
-      for (const r of rows) {
-        found.set(String(r.id), { pl: Number(r.pl) || 0, dl: Number(r.dl) || 0 });
-      }
-
-      for (const id of part) {
-        const v = found.get(id) || { pl: 0, dl: 0 };
-        if (type === "play") play[id] = v.pl;
-        else if (type === "download") download[id] = v.dl;
-        else {
-          play[id] = v.pl;
-          download[id] = v.dl;
-        }
+      if (type === "play") play[id] = pl;
+      else if (type === "download") download[id] = dl;
+      else {
+        play[id] = pl;
+        download[id] = dl;
       }
     }
 
@@ -314,149 +285,82 @@ export class CountersDO {
     if (type !== "play" && type !== "download") return badRequest("type play/download olmalı");
 
     const id = sanitizeId(typeof body.id === "string" ? body.id : "");
-    if (!id) return badRequest("id gerekli");
+    if (!id) return badRequest("id gerekli (veya çok uzun)");
 
     const title = clampStr(typeof body.title === "string" ? body.title : "", MAX_TITLE_LEN);
     const fileName = clampStr(typeof body.file_name === "string" ? body.file_name : "", MAX_FILE_LEN);
 
-    const dPl = type === "play" ? 1 : 0;
-    const dDl = type === "download" ? 1 : 0;
     const now = Date.now();
+    const key = counterKey(id);
+    const tKey = topKey(type);
 
-    this.sql.exec(
-      `
-      INSERT INTO counters (id, pl, dl, title, file_name, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT(id) DO UPDATE SET
-        pl = pl + excluded.pl,
-        dl = dl + excluded.dl,
-        title = CASE WHEN excluded.title != '' THEN excluded.title ELSE title END,
-        file_name = CASE WHEN excluded.file_name != '' THEN excluded.file_name ELSE file_name END,
-        updatedAt = excluded.updatedAt
-      ;
-    `,
-      id,
-      dPl,
-      dDl,
-      title,
-      fileName,
-      now
-    );
+    let outRow = null;
 
-    const row = this.sql.exec(
-      `SELECT pl, dl, title, file_name, updatedAt FROM counters WHERE id = ?;`,
-      id
-    ).toArray()[0];
+    await this.state.storage.transaction(async (txn) => {
+      const cur = (await txn.get(key)) || null;
 
-    const pl = Number(row?.pl) || 0;
-    const dl = Number(row?.dl) || 0;
+      const next = {
+        pl: (Number(cur?.pl) || 0) + (type === "play" ? 1 : 0),
+        dl: (Number(cur?.dl) || 0) + (type === "download" ? 1 : 0),
+        title: title || (cur?.title || ""),
+        file_name: fileName || (cur?.file_name || ""),
+        updatedAt: now,
+      };
 
-    return json(
-      {
+      await txn.put(key, next);
+
+      const topArr = (await txn.get(tKey)) || [];
+      const clean = Array.isArray(topArr) ? topArr.filter((x) => x && x.id && x.id !== id) : [];
+
+      const count = type === "play" ? next.pl : next.dl;
+      clean.push({
+        id,
+        title: next.title || "",
+        file_name: next.file_name || "",
+        count,
+        updatedAt: next.updatedAt,
+      });
+
+      sortTopRows(clean);
+      if (clean.length > TOP_STORE_MAX) clean.length = TOP_STORE_MAX;
+
+      await txn.put(tKey, clean);
+
+      outRow = {
         ok: true,
         id,
-        title: row?.title || "",
-        file_name: row?.file_name || "",
+        title: next.title || "",
+        file_name: next.file_name || "",
         type,
-        count: type === "play" ? pl : dl,
-        updatedAt: Number(row?.updatedAt) || now,
-      },
-      200
-    );
+        count,
+        updatedAt: next.updatedAt,
+      };
+    });
+
+    return json(outRow || { ok: true, id, type, count: 0, updatedAt: now }, 200);
   }
 
   async routeTop(url) {
     const type = normalizeTopType(url.searchParams.get("type")) || "download";
     const limit = Math.min(TOP_LIMIT_MAX, Math.max(1, Number(url.searchParams.get("limit") || "10")));
 
-    const orderCol = type === "play" ? "pl" : "dl";
-    const whereCount = type === "play" ? "pl > 0" : "dl > 0";
-
     const cursorRaw = (url.searchParams.get("cursor") || "").trim();
+    const offset = Number.isFinite(Number(cursorRaw)) ? Math.max(0, Number(cursorRaw)) : 0;
 
-    // Back-compat: numeric cursor => OFFSET pagination
-    const cursorNum = cursorRaw !== "" && Number.isFinite(Number(cursorRaw)) ? Math.max(0, Number(cursorRaw)) : null;
+    const arr = (await this.state.storage.get(topKey(type))) || [];
+    const rows = Array.isArray(arr) ? arr : [];
 
-    // Preferred: keyset cursor token
-    const keyset = cursorRaw && cursorNum === null ? decodeCursorKeyset(cursorRaw) : null;
-
-    let rows;
-    if (keyset) {
-      // keyset predicate for: ORDER BY count DESC, updatedAt DESC, id ASC
-      rows = this.sql.exec(
-        `
-        SELECT id, pl, dl, title, file_name, updatedAt
-        FROM counters
-        WHERE ${whereCount}
-          AND (
-            ${orderCol} < ?
-            OR (${orderCol} = ? AND updatedAt < ?)
-            OR (${orderCol} = ? AND updatedAt = ? AND id > ?)
-          )
-        ORDER BY ${orderCol} DESC, updatedAt DESC, id ASC
-        LIMIT ?;
-        `,
-        keyset.c,
-        keyset.c,
-        keyset.u,
-        keyset.c,
-        keyset.u,
-        keyset.i,
-        limit + 1
-      ).toArray();
-    } else if (cursorNum !== null) {
-      rows = this.sql.exec(
-        `
-        SELECT id, pl, dl, title, file_name, updatedAt
-        FROM counters
-        WHERE ${whereCount}
-        ORDER BY ${orderCol} DESC, updatedAt DESC, id ASC
-        LIMIT ? OFFSET ?;
-        `,
-        limit + 1,
-        cursorNum
-      ).toArray();
-    } else {
-      rows = this.sql.exec(
-        `
-        SELECT id, pl, dl, title, file_name, updatedAt
-        FROM counters
-        WHERE ${whereCount}
-        ORDER BY ${orderCol} DESC, updatedAt DESC, id ASC
-        LIMIT ?;
-        `,
-        limit + 1
-      ).toArray();
-    }
-
-    const pageRows = rows.slice(0, limit).map((r) => ({
-      id: String(r.id),
+    const page = rows.slice(offset, offset + limit).map((r) => ({
+      id: String(r.id || ""),
       title: r.title || "",
       file_name: r.file_name || "",
       type,
-      count: type === "play" ? Number(r.pl) || 0 : Number(r.dl) || 0,
+      count: Number(r.count) || 0,
       updatedAt: Number(r.updatedAt) || 0,
     }));
 
-    let nextCursor = null;
-    if (rows.length > limit && pageRows.length) {
-      const last = pageRows[pageRows.length - 1];
-      nextCursor = encodeCursorKeyset({ c: last.count, u: last.updatedAt, i: last.id });
-    } else if (rows.length > limit && cursorNum !== null) {
-      nextCursor = String(cursorNum + limit);
-    }
-
-    return json(
-      {
-        ok: true,
-        type,
-        limit,
-        cursor: nextCursor,
-        rows: pageRows,
-        cursor_mode: keyset ? "keyset" : cursorNum !== null ? "offset" : "none",
-      },
-      200
-    );
+    const nextCursor = offset + limit < rows.length ? String(offset + limit) : null;
+    return json({ ok: true, type, limit, cursor: nextCursor, rows: page }, 200);
   }
 
   async routeReset(request) {
@@ -475,15 +379,35 @@ export class CountersDO {
       const id = sanitizeId(typeof body.id === "string" ? body.id : "");
       if (!id) return badRequest("id gerekli");
 
-      this.sql.exec(`DELETE FROM counters WHERE id = ?;`, id);
+      const key = counterKey(id);
+
+      await this.state.storage.transaction(async (txn) => {
+        await txn.delete(key);
+
+        for (const t of ["play", "download"]) {
+          const k = topKey(t);
+          const arr = (await txn.get(k)) || [];
+          const next = Array.isArray(arr) ? arr.filter((x) => x && x.id && x.id !== id) : [];
+          await txn.put(k, next);
+        }
+      });
+
       return json({ ok: true, mode: "id", deleted: 1, id }, 200);
     }
 
     if (mode === "all") {
-      const row = this.sql.exec(`SELECT COUNT(*) AS n FROM counters;`).toArray()[0];
-      const n = Number(row?.n) || 0;
-      this.sql.exec(`DELETE FROM counters;`);
-      return json({ ok: true, mode: "all", deleted: n }, 200);
+      let deleted = 0;
+
+      const pages = await listKeysByPrefix(this.state.storage, "c:");
+      for (const keys of pages) {
+        if (!keys.length) continue;
+        await this.state.storage.delete(keys);
+        deleted += keys.length;
+      }
+
+      await this.state.storage.delete([topKey("play"), topKey("download")]);
+
+      return json({ ok: true, mode: "all", deleted }, 200);
     }
 
     return badRequest('mode "all" veya "id" olmalı');
@@ -506,7 +430,7 @@ export default {
 
       const stub = getGlobalStub(env);
       if (!stub) {
-        return json({ ok: false, error: "COUNTERS_DO binding missing (DO binding + SQLite migration kontrol et)" }, 500);
+        return json({ ok: false, error: "COUNTERS_DO binding missing (DO binding kontrol et)" }, 500);
       }
 
       if (url.pathname === "/counts" || url.pathname === "/hit" || url.pathname === "/top" || url.pathname === "/reset") {
