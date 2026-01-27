@@ -268,8 +268,9 @@
       box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
     }
 
+    /* ✅ ICONLAR %20 BÜYÜTÜLDÜ + görünürlük garantisi */
     .sortBtn svg{
-      width: 20px;
+      width: 20px;      /* 16 -> 20  (≈%25, %20 hedef için güvenli) */
       height: 20px;
       display: block;
       flex: 0 0 auto;
@@ -282,7 +283,7 @@
       position: absolute;
       right: 4px;
       bottom: 2px;
-      width: 12px;
+      width: 12px;      /* 10 -> 12 */
       height: 12px;
       opacity: .95;
     }
@@ -801,17 +802,12 @@
     let globalPlayCounts = {};
     let globalDownloadCounts = {};
 
-    // ✅ NEW: sayaç offline olursa 1→0 düşmesini engellemek için durum
-    let counterStatus = "";
-    let lastCountsOkAt = 0;
-
     function chunk(arr, size){
       const out = [];
       for (let i=0; i<arr.length; i+=size) out.push(arr.slice(i, i+size));
       return out;
     }
 
-    // ✅ FIX: hata olunca {} dönme (sayacı sıfırlıyordu) -> null dön
     async function fetchCounts(type, ids){
       if (!ids.length) return {};
       try{
@@ -822,14 +818,11 @@
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ type, ids })
         });
-        if (!res.ok) throw new Error("HTTP " + res.status);
+        if (!res.ok) throw new Error("counts failed");
         const j = await res.json();
-        if (!j || j.ok !== true || !j.counts) throw new Error("bad json");
-        lastCountsOkAt = Date.now();
-        counterStatus = "";
-        return j.counts || {};
+        return (j && j.counts) ? j.counts : {};
       }catch{
-        return null; // <— kritik: mevcut sayacı silme
+        return {};
       }
     }
 
@@ -839,49 +832,26 @@
       refreshCountsTimer = setTimeout(() => refreshAllCounts().catch(()=>{}), ms);
     }
 
-    // ✅ FIX: refresh başarısızsa global sayaçları BOŞALTMA
     async function refreshAllCounts(){
       if (!items.length) return;
 
       const ids = items.map(it => it.id);
       const parts = chunk(ids, 200);
 
-      // mevcut değerleri koruyarak güncelle
-      const playAll = { ...globalPlayCounts };
-      const dlAll   = { ...globalDownloadCounts };
-
-      let anyOk = false;
+      const playAll = {};
+      const dlAll = {};
 
       for (const part of parts){
         const [p, d] = await Promise.all([
           fetchCounts("play", part),
           fetchCounts("download", part),
         ]);
-
-        if (p && typeof p === "object"){
-          anyOk = true;
-          for (const id of part){
-            playAll[id] = Number(p[id]) || 0; // başarı varsa eksik id=0 kabul
-          }
-        }
-
-        if (d && typeof d === "object"){
-          anyOk = true;
-          for (const id of part){
-            dlAll[id] = Number(d[id]) || 0;
-          }
-        }
+        Object.assign(playAll, p);
+        Object.assign(dlAll, d);
       }
 
-      if (anyOk){
-        globalPlayCounts = playAll;
-        globalDownloadCounts = dlAll;
-        counterStatus = "";
-      } else {
-        // hiç veri gelmediyse mevcut sayaçlar korunur (1→0 olmaz)
-        counterStatus = "Sayaç bağlantısı geçici olarak yok (değerler korunuyor).";
-      }
-
+      globalPlayCounts = playAll;
+      globalDownloadCounts = dlAll;
       render();
     }
 
@@ -1174,6 +1144,7 @@
       return t;
     }
 
+    // ✅ Safari/Eski tarayıcı FIX: SVG innerHTML yok; path DOM ile + stroke garanti
     function setArrowIcon(svgEl, isAsc) {
       if (!svgEl) return;
       while (svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
@@ -1555,14 +1526,6 @@
         row.addEventListener("click", () => playById(it.id));
         listEl.appendChild(row);
       }
-
-      // ✅ NEW: sayaç offline mesajını sadece boşsa (veya önceki sayaç mesajıysa) göster
-      const cur = (statusEl.textContent || "").trim();
-      if (counterStatus){
-        if (!cur || cur.startsWith("Sayaç")) statusEl.textContent = counterStatus;
-      } else {
-        if (cur.startsWith("Sayaç")) statusEl.textContent = "";
-      }
     }
 
     function iconButton(kind, on, title){
@@ -1702,6 +1665,7 @@
       render();
     });
 
+    // --- Search analytics (debounced + normalized; raw only in ?debug) ---
     const SEARCH_DEBOUNCE_MS = 900;
 
     let searchTimer = null;
@@ -1712,6 +1676,7 @@
       const termNorm = foldTR(termRaw);
       const visibleCount = getVisibleItems().length;
 
+      // Arama temizlenince bir kez gönder
       if (termRaw.length === 0) {
         if (lastSentTermNorm !== "") {
           lastSentTermNorm = "";
@@ -1720,7 +1685,10 @@
         return;
       }
 
+      // Çok kısa terimleri spam'leme (normalize bazlı)
       if (termNorm.length < 2) return;
+
+      // Aynı normalize terimi tekrar tekrar gönderme
       if (termNorm === lastSentTermNorm) return;
 
       lastSentTermNorm = termNorm;
