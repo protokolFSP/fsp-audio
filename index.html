@@ -268,9 +268,8 @@
       box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
     }
 
-    /* ✅ ICONLAR %20 BÜYÜTÜLDÜ + görünürlük garantisi */
     .sortBtn svg{
-      width: 20px;      /* 16 -> 20  (≈%25, %20 hedef için güvenli) */
+      width: 20px;
       height: 20px;
       display: block;
       flex: 0 0 auto;
@@ -283,7 +282,7 @@
       position: absolute;
       right: 4px;
       bottom: 2px;
-      width: 12px;      /* 10 -> 12 */
+      width: 12px;
       height: 12px;
       opacity: .95;
     }
@@ -735,6 +734,14 @@
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
     const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
 
+    const IS_SAFARI = (() => {
+      const ua = navigator.userAgent || "";
+      const isApple = /Mac|iPhone|iPad|iPod/i.test(ua);
+      const hasSafari = /Safari/i.test(ua);
+      const notChromeLike = !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|Edg|OPR/i.test(ua);
+      return isApple && hasSafari && notChromeLike;
+    })();
+
     const scrollArea = document.getElementById("scrollArea");
     const listEl   = document.getElementById("list");
     const searchEl = document.getElementById("search");
@@ -815,7 +822,9 @@
           method: "POST",
           mode: "cors",
           cache: "no-store",
-          headers: { "content-type": "application/json" },
+          headers: {
+            "content-type": IS_SAFARI ? "text/plain;charset=utf-8" : "application/json"
+          },
           body: JSON.stringify({ type, ids })
         });
         if (!res.ok) throw new Error("counts failed");
@@ -850,6 +859,12 @@
         Object.assign(dlAll, d);
       }
 
+      const hasAny =
+        Object.keys(playAll).length > 0 ||
+        Object.keys(dlAll).length > 0;
+
+      if (!hasAny) return;
+
       globalPlayCounts = playAll;
       globalDownloadCounts = dlAll;
       render();
@@ -864,13 +879,26 @@
           file_name: (it?.name || "").split("/").pop() || ""
         };
 
-        fetch(COUNTER_API + "/hit", {
+        const url = COUNTER_API + "/hit";
+        const data = JSON.stringify(payload);
+
+        if (IS_SAFARI && navigator.sendBeacon){
+          const ok = navigator.sendBeacon(
+            url,
+            new Blob([data], { type: "text/plain;charset=utf-8" })
+          );
+          if (ok) return;
+        }
+
+        fetch(url, {
           method: "POST",
           mode: "cors",
           cache: "no-store",
           keepalive: true,
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(payload)
+          headers: {
+            "content-type": IS_SAFARI ? "text/plain;charset=utf-8" : "application/json"
+          },
+          body: data
         }).catch(() => {});
       }catch{}
     }
@@ -884,7 +912,6 @@
       }
     }
 
-    // ✅ Play sayımı: gerçekten "playing" olunca 1 kez
     let playGate = { id: null, armed: false, sent: false };
     function armPlayGate(it){
       playGate = { id: it?.id || null, armed: true, sent: false };
@@ -942,7 +969,6 @@
 
     if (!localStorage.getItem(LS.sortMode)) localStorage.setItem(LS.sortMode, sortMode);
     if (!localStorage.getItem(LS.sortDirDate)) localStorage.setItem(LS.sortDirDate, dateSortDir);
-
     if (!localStorage.getItem(LS.sortDirPlay)) localStorage.setItem(LS.sortDirPlay, playSortDir);
     if (!localStorage.getItem(LS.sortDirDl)) localStorage.setItem(LS.sortDirDl, dlSortDir);
 
@@ -1144,7 +1170,6 @@
       return t;
     }
 
-    // ✅ Safari/Eski tarayıcı FIX: SVG innerHTML yok; path DOM ile + stroke garanti
     function setArrowIcon(svgEl, isAsc) {
       if (!svgEl) return;
       while (svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
@@ -1665,7 +1690,6 @@
       render();
     });
 
-    // --- Search analytics (debounced + normalized; raw only in ?debug) ---
     const SEARCH_DEBOUNCE_MS = 900;
 
     let searchTimer = null;
@@ -1676,7 +1700,6 @@
       const termNorm = foldTR(termRaw);
       const visibleCount = getVisibleItems().length;
 
-      // Arama temizlenince bir kez gönder
       if (termRaw.length === 0) {
         if (lastSentTermNorm !== "") {
           lastSentTermNorm = "";
@@ -1685,10 +1708,7 @@
         return;
       }
 
-      // Çok kısa terimleri spam'leme (normalize bazlı)
       if (termNorm.length < 2) return;
-
-      // Aynı normalize terimi tekrar tekrar gönderme
       if (termNorm === lastSentTermNorm) return;
 
       lastSentTermNorm = termNorm;
