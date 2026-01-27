@@ -859,14 +859,14 @@
         Object.assign(dlAll, d);
       }
 
-      const hasAny =
-        Object.keys(playAll).length > 0 ||
-        Object.keys(dlAll).length > 0;
+      const playHas = Object.keys(playAll).length > 0;
+      const dlHas   = Object.keys(dlAll).length > 0;
 
-      if (!hasAny) return;
+      if (!playHas && !dlHas) return;
 
-      globalPlayCounts = playAll;
-      globalDownloadCounts = dlAll;
+      if (playHas) globalPlayCounts = playAll;
+      if (dlHas)   globalDownloadCounts = dlAll;
+
       render();
     }
 
@@ -969,6 +969,7 @@
 
     if (!localStorage.getItem(LS.sortMode)) localStorage.setItem(LS.sortMode, sortMode);
     if (!localStorage.getItem(LS.sortDirDate)) localStorage.setItem(LS.sortDirDate, dateSortDir);
+
     if (!localStorage.getItem(LS.sortDirPlay)) localStorage.setItem(LS.sortDirPlay, playSortDir);
     if (!localStorage.getItem(LS.sortDirDl)) localStorage.setItem(LS.sortDirDl, dlSortDir);
 
