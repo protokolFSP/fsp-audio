@@ -216,18 +216,17 @@
       line-height: 1.05;
     }
 
-    /* 7 column layout:
+    /* 6 column layout:
        1) title
        2) duration
        3) play count
        4) fav
-       5) selected
-       6) download
-       7) download count
+       5) download
+       6) download count
     */
     .headerRow, .itemRow{
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 8ch 54px 36px 36px 36px 54px;
+      grid-template-columns: minmax(0, 1fr) 8ch 54px 36px 36px 54px;
       align-items: center;
       column-gap: 8px;
     }
@@ -362,7 +361,7 @@
 
     @media (max-width: 680px){
       #scrollArea{ padding: 14px; }
-      .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 46px 34px 34px 34px 46px; }
+      .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 46px 34px 34px 46px; }
       .title{
         white-space: nowrap;
         overflow: hidden;
@@ -392,15 +391,6 @@
       border-color: var(--blue);
       background: rgba(43,124,255,.10);
       box-shadow: var(--blueGlow);
-    }
-    .iconBtn[data-kind="check"].on{
-      border-color: var(--green);
-      background: rgba(22,163,74,.14);
-      box-shadow: var(--greenGlow);
-    }
-    .iconBtn[data-kind="check"].on svg{
-      stroke: var(--green);
-      stroke-width: 2.6;
     }
     .iconBtn svg{ width: 14px; height: 14px; opacity: .9; }
 
@@ -684,14 +674,6 @@
           </button>
         </div>
 
-        <div class="headIconCell">
-          <button id="filterSel" class="filterBtn" title="Seçilenler filtrele" type="button" aria-pressed="false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M20 6L9 17l-5-5"/>
-            </svg>
-          </button>
-        </div>
-
         <div class="headIconCell" aria-hidden="true"></div>
 
         <div class="headIconCell">
@@ -777,7 +759,6 @@
     const speedValueEl = document.getElementById("speedValue");
 
     const filterFavBtn  = document.getElementById("filterFav");
-    const filterSelBtn  = document.getElementById("filterSel");
     const resetBtn      = document.getElementById("resetBtn");
 
     const sortDurBtn  = document.getElementById("sortDurBtn");
@@ -948,7 +929,6 @@
 
     const LS = {
       favs:  "fsp1.favs.v1",
-      sels:  "fsp1.sels.v1",
       pos:   "fsp1.fp.pos.v1",
       durs:  "fsp1.durs.v1",
       sortMode: "fsp1.sort.mode.v2",
@@ -971,11 +951,9 @@
     const saveAny = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
     let favs  = loadMap(LS.favs);
-    let sels  = loadMap(LS.sels);
     let durs  = loadMap(LS.durs);
 
     let filterFav  = false;
-    let filterSel  = false;
 
     let items = [];
     let activeId = null;
@@ -993,7 +971,6 @@
         saveAny(LS.uiState, {
           q: (searchEl.value || ""),
           filterFav: !!filterFav,
-          filterSel: !!filterSel,
           activeId: (activeId || null),
           scrollTop: Number(scrollArea.scrollTop) || 0
         });
@@ -1005,9 +982,9 @@
       if (!s) return;
       if (typeof s.q === "string") searchEl.value = s.q;
       if (typeof s.filterFav === "boolean") filterFav = s.filterFav;
-      if (typeof s.filterSel === "boolean") filterSel = s.filterSel;
       if (typeof s.activeId === "string") activeId = s.activeId;
       if (typeof s.scrollTop === "number") pendingScrollTop = s.scrollTop;
+      // eski sürümlerde filterSel vardıysa yok sayıyoruz
     }
 
     function restoreScrollIfNeeded(){
@@ -1520,7 +1497,6 @@
       let arr = items.filter(it => {
         if (q && !foldTR(it.title).includes(q)) return false;
         if (filterFav && !favs[it.id]) return false;
-        if (filterSel && !sels[it.id]) return false;
         return true;
       });
 
@@ -1576,10 +1552,7 @@
       metaEl.textContent = `Görünən: ${visible.length} / Toplam: ${items.length}`;
 
       filterFavBtn.classList.toggle("on", filterFav);
-      filterSelBtn.classList.toggle("on", filterSel);
-
       filterFavBtn.setAttribute("aria-pressed",  String(filterFav));
-      filterSelBtn.setAttribute("aria-pressed",  String(filterSel));
 
       listEl.innerHTML = "";
 
@@ -1605,7 +1578,6 @@
         playCount.textContent = String(Number(globalPlayCounts[it.id]) || 0);
 
         const favBtn = iconButton("star", !!favs[it.id], "Favori");
-        const selBtn = iconButton("check", !!sels[it.id], "Seç");
         const dlBtn  = iconButton("download", false, "İndir");
 
         const dlCount = document.createElement("div");
@@ -1616,13 +1588,6 @@
           e.stopPropagation();
           favs[it.id] = !favs[it.id];
           saveMap(LS.favs, favs);
-          render();
-        });
-
-        selBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          sels[it.id] = !sels[it.id];
-          saveMap(LS.sels, sels);
           render();
         });
 
@@ -1643,7 +1608,7 @@
           }, 0);
         });
 
-        for (const b of [favBtn, selBtn, dlBtn]){
+        for (const b of [favBtn, dlBtn]){
           b.addEventListener("pointerup", (e) => e.stopPropagation());
           b.addEventListener("pointerdown", (e) => e.stopPropagation());
         }
@@ -1652,7 +1617,6 @@
         row.appendChild(dur);
         row.appendChild(playCount);
         row.appendChild(favBtn);
-        row.appendChild(selBtn);
         row.appendChild(dlBtn);
         row.appendChild(dlCount);
 
@@ -1667,17 +1631,12 @@
       btn.className = "iconBtn" + (on ? " on" : "");
       btn.title = title;
       btn.dataset.kind = kind;
-      if (kind === "star" || kind === "check") btn.setAttribute("aria-pressed", String(!!on));
 
       if (kind === "star"){
+        btn.setAttribute("aria-pressed", String(!!on));
         btn.innerHTML = `
           <svg viewBox="0 0 24 24" fill="${on ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
-          </svg>`;
-      } else if (kind === "check"){
-        btn.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M20 6L9 17l-5-5"/>
           </svg>`;
       } else if (kind === "download"){
         btn.innerHTML = `
@@ -1783,11 +1742,9 @@
     });
 
     filterFavBtn.addEventListener("click", () => { filterFav = !filterFav; render(); });
-    filterSelBtn.addEventListener("click", () => { filterSel = !filterSel; render(); });
 
     resetBtn.addEventListener("click", () => {
       filterFav = false;
-      filterSel = false;
       searchEl.value = "";
 
       sortMode = "date";
