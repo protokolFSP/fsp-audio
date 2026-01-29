@@ -1,3 +1,4 @@
+<!-- /index.html -->
 <!doctype html>
 <html lang="tr">
 <head>
@@ -215,9 +216,18 @@
       line-height: 1.05;
     }
 
+    /* 7 column layout:
+       1) title
+       2) duration
+       3) play count
+       4) fav
+       5) selected
+       6) download
+       7) download count
+    */
     .headerRow, .itemRow{
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 8ch 54px 36px 36px 54px;
+      grid-template-columns: minmax(0, 1fr) 8ch 54px 36px 36px 36px 54px;
       align-items: center;
       column-gap: 8px;
     }
@@ -352,7 +362,7 @@
 
     @media (max-width: 680px){
       #scrollArea{ padding: 14px; }
-      .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 46px 34px 34px 46px; }
+      .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 46px 34px 34px 34px 46px; }
       .title{
         white-space: nowrap;
         overflow: hidden;
@@ -674,6 +684,14 @@
           </button>
         </div>
 
+        <div class="headIconCell">
+          <button id="filterSel" class="filterBtn" title="Seçilenler filtrele" type="button" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+          </button>
+        </div>
+
         <div class="headIconCell" aria-hidden="true"></div>
 
         <div class="headIconCell">
@@ -725,6 +743,8 @@
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
     const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
+
+    const FORCE_REFRESH = new URLSearchParams(location.search).has("refresh");
 
     const IS_SAFARI = (() => {
       const ua = navigator.userAgent || "";
@@ -937,11 +957,18 @@
       sortDirPlay: "fsp1.sort.play.dir.v1",
       sortDirDl:   "fsp1.sort.dl.dir.v1",
       speed: "fsp1.speed.v1",
-      zoom:  "fsp1.ui.zoom.v1"
+      zoom:  "fsp1.ui.zoom.v1",
+
+      itemsCache:   "fsp1.items.cache.s1.v1",
+      itemsCacheAt: "fsp1.items.cache.s1.at.v1",
+      metaUpdated:  "fsp1.items.meta.updated.s1.v1",
+      uiState:      "fsp1.ui.state.v1"
     };
 
     const loadMap = (k) => { try { return JSON.parse(localStorage.getItem(k) || "{}"); } catch { return {}; } };
     const saveMap = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+    const loadAny = (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } };
+    const saveAny = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
     let favs  = loadMap(LS.favs);
     let sels  = loadMap(LS.sels);
@@ -953,6 +980,48 @@
     let items = [];
     let activeId = null;
 
+    const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 gün
+    let pendingScrollTop = null;
+
+    function itemsFingerprint(list){
+      if (!Array.isArray(list) || !list.length) return "";
+      return list.map(x => String(x?.id || "")).sort().join("|");
+    }
+
+    function saveUiState(){
+      try{
+        saveAny(LS.uiState, {
+          q: (searchEl.value || ""),
+          filterFav: !!filterFav,
+          filterSel: !!filterSel,
+          activeId: (activeId || null),
+          scrollTop: Number(scrollArea.scrollTop) || 0
+        });
+      }catch{}
+    }
+
+    function restoreUiState(){
+      const s = loadAny(LS.uiState);
+      if (!s) return;
+      if (typeof s.q === "string") searchEl.value = s.q;
+      if (typeof s.filterFav === "boolean") filterFav = s.filterFav;
+      if (typeof s.filterSel === "boolean") filterSel = s.filterSel;
+      if (typeof s.activeId === "string") activeId = s.activeId;
+      if (typeof s.scrollTop === "number") pendingScrollTop = s.scrollTop;
+    }
+
+    function restoreScrollIfNeeded(){
+      if (pendingScrollTop == null) return;
+      const v = pendingScrollTop;
+      pendingScrollTop = null;
+      requestAnimationFrame(() => { scrollArea.scrollTop = v; });
+    }
+
+    window.addEventListener("pagehide", saveUiState);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") saveUiState();
+    });
+
     let sortMode = localStorage.getItem(LS.sortMode) || "date";
     let durSortDir  = (localStorage.getItem(LS.sortDirDur) === "desc") ? "desc" : "asc";
     let dateSortDir = (localStorage.getItem(LS.sortDirDate) === "asc") ? "asc" : "desc";
@@ -961,7 +1030,6 @@
 
     if (!localStorage.getItem(LS.sortMode)) localStorage.setItem(LS.sortMode, sortMode);
     if (!localStorage.getItem(LS.sortDirDate)) localStorage.setItem(LS.sortDirDate, dateSortDir);
-
     if (!localStorage.getItem(LS.sortDirPlay)) localStorage.setItem(LS.sortDirPlay, playSortDir);
     if (!localStorage.getItem(LS.sortDirDl)) localStorage.setItem(LS.sortDirDl, dlSortDir);
 
@@ -1363,13 +1431,46 @@
     }
 
     async function loadItems(){
-      statusEl.textContent = "Yükleniyor...";
+      const cached = loadAny(LS.itemsCache);
+      const cachedAt = Number(localStorage.getItem(LS.itemsCacheAt) || "0");
+      const cacheFresh =
+        !FORCE_REFRESH &&
+        Array.isArray(cached) &&
+        cached.length > 0 &&
+        Number.isFinite(cachedAt) &&
+        (Date.now() - cachedAt) < CACHE_TTL_MS;
+
+      if (cacheFresh){
+        items = cached;
+        statusEl.textContent = "";
+        setSortIcons();
+        render();
+        restoreScrollIfNeeded();
+        scheduleRefreshCounts(50);
+      } else {
+        statusEl.textContent = "Yükleniyor...";
+      }
 
       try{
-        const metaUrl = `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}?v=${Date.now()}`;
-        const res = await fetch(metaUrl, { cache: "no-store" });
+        const metaUrl = `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}`;
+        const res = await fetch(metaUrl, { cache: FORCE_REFRESH ? "no-store" : "no-cache" });
         if (!res.ok) throw new Error("IA metadata okunamadı");
         const j = await res.json();
+
+        const newUpdated = String(
+          j?.item_lastupdated ||
+          j?.item_last_update ||
+          j?.updated ||
+          j?.metadata?.updateddate ||
+          j?.metadata?.publicdate ||
+          ""
+        );
+        const oldUpdated = String(localStorage.getItem(LS.metaUpdated) || "");
+
+        if (cacheFresh && newUpdated && oldUpdated && newUpdated === oldUpdated){
+          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
+          return;
+        }
 
         const files = Array.isArray(j.files) ? j.files : [];
         const list = files
@@ -1388,14 +1489,28 @@
             return { id, title, name, url, src: "S1" };
           });
 
-        items = list;
-        statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
-        setSortIcons();
-        render();
-        scheduleRefreshCounts(100);
+        const newFp = itemsFingerprint(list);
+        const oldFp = itemsFingerprint(items);
+        const shouldUpdate = !cacheFresh || (newFp && newFp !== oldFp);
+
+        if (shouldUpdate){
+          items = list;
+          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
+          localStorage.setItem(LS.itemsCache, JSON.stringify(items));
+          if (newUpdated) localStorage.setItem(LS.metaUpdated, newUpdated);
+
+          statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
+          setSortIcons();
+          render();
+          restoreScrollIfNeeded();
+          scheduleRefreshCounts(100);
+        } else {
+          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
+          if (newUpdated) localStorage.setItem(LS.metaUpdated, newUpdated);
+        }
       }catch(err){
         console.error(err);
-        statusEl.textContent = "Liste yüklenemedi.";
+        if (!cacheFresh) statusEl.textContent = "Liste yüklenemedi.";
       }
     }
 
@@ -1461,10 +1576,10 @@
       metaEl.textContent = `Görünən: ${visible.length} / Toplam: ${items.length}`;
 
       filterFavBtn.classList.toggle("on", filterFav);
-      if (filterSelBtn) filterSelBtn.classList.toggle("on", filterSel);
+      filterSelBtn.classList.toggle("on", filterSel);
 
       filterFavBtn.setAttribute("aria-pressed",  String(filterFav));
-      if (filterSelBtn) filterSelBtn.setAttribute("aria-pressed",  String(filterSel));
+      filterSelBtn.setAttribute("aria-pressed",  String(filterSel));
 
       listEl.innerHTML = "";
 
@@ -1490,6 +1605,7 @@
         playCount.textContent = String(Number(globalPlayCounts[it.id]) || 0);
 
         const favBtn = iconButton("star", !!favs[it.id], "Favori");
+        const selBtn = iconButton("check", !!sels[it.id], "Seç");
         const dlBtn  = iconButton("download", false, "İndir");
 
         const dlCount = document.createElement("div");
@@ -1500,6 +1616,13 @@
           e.stopPropagation();
           favs[it.id] = !favs[it.id];
           saveMap(LS.favs, favs);
+          render();
+        });
+
+        selBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          sels[it.id] = !sels[it.id];
+          saveMap(LS.sels, sels);
           render();
         });
 
@@ -1520,7 +1643,7 @@
           }, 0);
         });
 
-        for (const b of [favBtn, dlBtn]){
+        for (const b of [favBtn, selBtn, dlBtn]){
           b.addEventListener("pointerup", (e) => e.stopPropagation());
           b.addEventListener("pointerdown", (e) => e.stopPropagation());
         }
@@ -1529,6 +1652,7 @@
         row.appendChild(dur);
         row.appendChild(playCount);
         row.appendChild(favBtn);
+        row.appendChild(selBtn);
         row.appendChild(dlBtn);
         row.appendChild(dlCount);
 
@@ -1543,6 +1667,7 @@
       btn.className = "iconBtn" + (on ? " on" : "");
       btn.title = title;
       btn.dataset.kind = kind;
+      if (kind === "star" || kind === "check") btn.setAttribute("aria-pressed", String(!!on));
 
       if (kind === "star"){
         btn.innerHTML = `
@@ -1658,7 +1783,7 @@
     });
 
     filterFavBtn.addEventListener("click", () => { filterFav = !filterFav; render(); });
-    if (filterSelBtn) filterSelBtn.addEventListener("click", () => { filterSel = !filterSel; render(); });
+    filterSelBtn.addEventListener("click", () => { filterSel = !filterSel; render(); });
 
     resetBtn.addEventListener("click", () => {
       filterFav = false;
@@ -1803,13 +1928,13 @@
       return { left: l, top: t };
     }
 
-    fp.addEventListener("pointerdown", (e) => {
+    fpHeader.addEventListener("pointerdown", (e) => {
       if (!shouldStartDrag(e.target)) return;
 
       dragging = true;
       moved = false;
 
-      fp.setPointerCapture(e.pointerId);
+      fpHeader.setPointerCapture(e.pointerId);
       fpHeader.style.cursor = "grabbing";
 
       startClientX = e.clientX;
@@ -1825,7 +1950,7 @@
       fp.style.right  = "auto";
     });
 
-    fp.addEventListener("pointermove", (e) => {
+    fpHeader.addEventListener("pointermove", (e) => {
       if (!dragging) return;
 
       const dxClient = e.clientX - startClientX;
@@ -1861,7 +1986,7 @@
       dragging = false;
       fpHeader.style.cursor = "grab";
 
-      try { fp.releasePointerCapture(pointerId); } catch {}
+      try { fpHeader.releasePointerCapture(pointerId); } catch {}
       clampPlayerToViewport();
 
       if (moved){
@@ -1870,10 +1995,10 @@
       }
     }
 
-    fp.addEventListener("pointerup", (e) => endDrag(e.pointerId));
-    fp.addEventListener("pointercancel", (e) => endDrag(e.pointerId));
+    fpHeader.addEventListener("pointerup", (e) => endDrag(e.pointerId));
+    fpHeader.addEventListener("pointercancel", (e) => endDrag(e.pointerId));
 
-    fp.addEventListener("click", (e) => {
+    fpHeader.addEventListener("click", (e) => {
       if (Date.now() < suppressClickUntil){
         e.preventDefault();
         e.stopPropagation();
@@ -1914,6 +2039,7 @@
     })();
 
     setSortIcons();
+    restoreUiState();
     restorePlayerPos();
     restoreSpeed();
     restoreZoom();
