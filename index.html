@@ -964,19 +964,19 @@
         src: it.src || "S1"
       });
     }
-    function trackTranscriptDownload(it, filename){
-      gaEvent("transcript_download", {
-        audio_id: it.id,
-        audio_title: it.title,
-        file_name: filename || (it.txtName || "").split("/").pop() || "",
-        src: it.src || "S1"
-      });
-    }
     function trackTranscriptOpen(it){
       gaEvent("transcript_open", {
         audio_id: it.id,
         audio_title: it.title,
         file_name: (it.txtName || "").split("/").pop() || "",
+        src: it.src || "S1"
+      });
+    }
+    function trackTranscriptDownload(it, filename){
+      gaEvent("transcript_download", {
+        audio_id: it.id,
+        audio_title: it.title,
+        file_name: filename || (it.txtName || "").split("/").pop() || "",
         src: it.src || "S1"
       });
     }
@@ -1422,7 +1422,6 @@
       while (svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
 
       const ns = "http://www.w3.org/2000/svg";
-
       const mkPath = (d) => {
         const p = document.createElementNS(ns, "path");
         p.setAttribute("d", d);
@@ -1617,11 +1616,10 @@
     }
 
     function audioNameToTxtName(name){
-      const n = (name || "").toString();
-      return n.replace(/\.(m4a|mp3)$/i, ".txt");
+      return (name || "").toString().replace(/\.(m4a|mp3)$/i, ".txt");
     }
 
-    // Transcript popup logic (lazy fetch + cache)
+    // Transcript popup (lazy fetch + memory cache)
     const transcriptCache = new Map(); // id -> { text, at }
     let txCurrentItem = null;
     let txAbort = null;
@@ -1631,6 +1629,7 @@
       txOverlay.setAttribute("aria-hidden", "false");
       updateOverlayScale();
     }
+
     function closeTxOverlay(){
       if (txAbort) { try{ txAbort.abort(); }catch{} txAbort = null; }
       txOverlay.classList.remove("open");
@@ -1713,7 +1712,7 @@
         txContentEl.textContent = trimmed;
         txCopyBtn.disabled = false;
       }catch(err){
-        if (err && (err.name === "AbortError")) return;
+        if (err && err.name === "AbortError") return;
         if (txCurrentItem?.id !== it.id) return;
         txInfoEl.textContent = "Transkript yüklenemedi.";
         txContentEl.textContent = "";
@@ -1729,7 +1728,9 @@
         if (navigator.clipboard && navigator.clipboard.writeText){
           await navigator.clipboard.writeText(text);
           txInfoEl.textContent = "Kopyalandı ✅";
-          setTimeout(() => { if (txOverlay.classList.contains("open")) txInfoEl.textContent = "Hazır"; }, 900);
+          setTimeout(() => {
+            if (txOverlay.classList.contains("open")) txInfoEl.textContent = "Hazır";
+          }, 900);
           return;
         }
       }catch{}
@@ -1746,7 +1747,9 @@
         document.execCommand("copy");
         ta.remove();
         txInfoEl.textContent = "Kopyalandı ✅";
-        setTimeout(() => { if (txOverlay.classList.contains("open")) txInfoEl.textContent = "Hazır"; }, 900);
+        setTimeout(() => {
+          if (txOverlay.classList.contains("open")) txInfoEl.textContent = "Hazır";
+        }, 900);
       }catch{
         txInfoEl.textContent = "Kopyalama başarısız.";
       }
@@ -1755,7 +1758,10 @@
     txCopyBtn.addEventListener("click", (e) => { e.stopPropagation(); copyTranscriptToClipboard().catch(()=>{}); });
     txCloseBtn.addEventListener("click", (e) => { e.stopPropagation(); closeTxOverlay(); });
 
-    // Background tap closes + prevents accidental click-through
+    // panel içi tıklamalar kapanmayı tetiklemesin
+    txPanel.addEventListener("pointerdown", (e) => e.stopPropagation(), { capture: true });
+
+    // Arka plana dokununca kapat
     txOverlay.addEventListener("pointerdown", (e) => {
       if (e.target === txOverlay){
         e.preventDefault();
@@ -1769,521 +1775,6 @@
         e.preventDefault();
         closeTxOverlay();
       }
-    });
-
-    let playGate = { id: null, armed: false, sent: false };
-
-    const durQueue = [];
-    const durLoading = new Set();
-    let durActive = 0;
-    const DUR_CONCURRENCY = 2;
-    let rerenderTimer = null;
-
-    function scheduleRerender(){
-      if (rerenderTimer) return;
-      rerenderTimer = setTimeout(() => {
-        rerenderTimer = null;
-        render();
-      }, 120);
-    }
-
-    function armPlayGate(it){
-      playGate = { id: it?.id || null, armed: true, sent: false };
-    }
-
-    function trySendPlayOnPlaying(){
-      if (!playGate.armed || playGate.sent || !playGate.id) return;
-      if (!playerEl || playerEl.paused) return;
-
-      playGate.sent = true;
-      const it = items.find(x => x.id === playGate.id) || { id: playGate.id, title:"", name:"" };
-      bumpLocalGlobalCount("play", it.id);
-      sendHit("play", it);
-      scheduleRefreshCounts(1200);
-      render();
-    }
-
-    function setArrowIcon(svgEl, isAsc) {
-      if (!svgEl) return;
-      while (svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
-
-      const ns = "http://www.w3.org/2000/svg";
-
-      const mkPath = (d) => {
-        const p = document.createElementNS(ns, "path");
-        p.setAttribute("d", d);
-        p.setAttribute("fill", "none");
-        p.setAttribute("stroke", "currentColor");
-        p.setAttribute("stroke-width", "2");
-        p.setAttribute("stroke-linecap", "round");
-        p.setAttribute("stroke-linejoin", "round");
-        return p;
-      };
-
-      svgEl.setAttribute("viewBox", "0 0 24 24");
-      svgEl.setAttribute("aria-hidden", "true");
-      svgEl.setAttribute("focusable", "false");
-
-      svgEl.appendChild(mkPath(isAsc ? "M12 19V5" : "M12 5v14"));
-      svgEl.appendChild(mkPath(isAsc ? "M7 10l5-5 5 5" : "M7 14l5 5 5-5"));
-    }
-
-    function setSortIcons(){
-      sortDurBtn.classList.remove("on");
-      sortDateBtn.classList.remove("on");
-      sortPlayBtn.classList.remove("on");
-      sortDlCountBtn.classList.remove("on");
-
-      setArrowIcon(sortDurIcon, durSortDir === "asc");
-      setArrowIcon(sortDateIcon, dateSortDir === "asc");
-      setArrowIcon(sortPlayIcon, playSortDir === "asc");
-      setArrowIcon(sortDlCountIcon, dlSortDir === "asc");
-
-      if (sortMode === "dur") sortDurBtn.classList.add("on");
-      if (sortMode === "date") sortDateBtn.classList.add("on");
-      if (sortMode === "play") sortPlayBtn.classList.add("on");
-      if (sortMode === "download") sortDlCountBtn.classList.add("on");
-    }
-
-    function loadDurationFor(it){
-      return new Promise((resolve, reject) => {
-        const a = new Audio();
-        a.preload = "metadata";
-        a.src = it.url;
-
-        let done = false;
-
-        const cleanup = () => {
-          a.removeEventListener("loadedmetadata", onMeta);
-          a.removeEventListener("error", onErr);
-          try { a.src = ""; } catch {}
-        };
-
-        const finish = (ok, err) => {
-          if (done) return;
-          done = true;
-          cleanup();
-          durLoading.delete(it.id);
-          ok ? resolve() : reject(err || new Error("metadata error"));
-        };
-
-        const onMeta = () => {
-          const dur = a.duration;
-          if (Number.isFinite(dur) && dur > 0){
-            durs[it.id] = dur;
-            saveMap(LS.durs, durs);
-            scheduleRerender();
-          }
-          finish(true);
-        };
-
-        const onErr = () => finish(false, new Error("metadata error"));
-
-        a.addEventListener("loadedmetadata", onMeta, { once: true });
-        a.addEventListener("error", onErr, { once: true });
-
-        setTimeout(() => {
-          if (!done) finish(false, new Error("timeout"));
-        }, 12000);
-      });
-    }
-
-    function requestDuration(it){
-      const id = it.id;
-      if (durs[id] > 0) return;
-      if (durLoading.has(id)) return;
-      durLoading.add(id);
-      durQueue.push(it);
-      pumpDurationQueue();
-    }
-
-    function pumpDurationQueue(){
-      while (durActive < DUR_CONCURRENCY && durQueue.length){
-        const it = durQueue.shift();
-        durActive++;
-        loadDurationFor(it).catch(() => {}).finally(() => {
-          durActive--;
-          pumpDurationQueue();
-        });
-      }
-    }
-
-    async function loadItems(){
-      const cached = loadAny(LS.itemsCache);
-      const cachedAt = Number(localStorage.getItem(LS.itemsCacheAt) || "0");
-      const cacheFresh =
-        !FORCE_REFRESH &&
-        Array.isArray(cached) &&
-        cached.length > 0 &&
-        Number.isFinite(cachedAt) &&
-        (Date.now() - cachedAt) < CACHE_TTL_MS;
-
-      if (cacheFresh){
-        items = cached;
-        statusEl.textContent = "";
-        setSortIcons();
-        render();
-        restoreScrollIfNeeded();
-        scheduleRefreshCounts(50);
-      } else {
-        statusEl.textContent = "Yükleniyor...";
-      }
-
-      try{
-        const metaUrl = `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}`;
-        const res = await fetch(metaUrl, { cache: FORCE_REFRESH ? "no-store" : "no-cache" });
-        if (!res.ok) throw new Error("IA metadata okunamadı");
-        const j = await res.json();
-
-        const newUpdated = String(
-          j?.item_lastupdated ||
-          j?.item_last_update ||
-          j?.updated ||
-          j?.metadata?.updateddate ||
-          j?.metadata?.publicdate ||
-          ""
-        );
-
-        const files = Array.isArray(j.files) ? j.files : [];
-
-        const txtSet = new Set(
-          files
-            .map(f => String(f?.name || "").toLowerCase())
-            .filter(n => n.endsWith(".txt"))
-        );
-
-        const list = files
-          .filter(f => {
-            const name = (f.name || "").toLowerCase();
-            if (!(name.endsWith(".m4a") || name.endsWith(".mp3"))) return false;
-            if (!("source" in f)) return true;
-            return (String(f.source).toLowerCase() === "original");
-          })
-          .map((f, idx) => {
-            const name = f.name || "";
-            const title = (f.title || "").trim() || decodeURIComponentSafe(name.split("/").pop() || name);
-            const url = buildDownloadUrl(IA_IDENTIFIER_1, name);
-            const localId = name || url || (title + "#" + idx);
-            const id = "S1|" + localId;
-
-            const txtName = audioNameToTxtName(name);
-            const txtUrl  = buildDownloadUrl(IA_IDENTIFIER_1, txtName);
-            const hasTxt  = txtSet.has(String(txtName || "").toLowerCase());
-
-            return { id, title, name, url, txtName, txtUrl, hasTxt, src: "S1" };
-          });
-
-        const newFp = itemsFingerprint(list);
-        const oldFp = itemsFingerprint(items);
-
-        const cachedMissingTxtSchema =
-          cacheFresh &&
-          Array.isArray(items) &&
-          items.length > 0 &&
-          !("hasTxt" in (items[0] || {}));
-
-        const shouldUpdate = cachedMissingTxtSchema || !cacheFresh || (newFp && newFp !== oldFp);
-
-        if (shouldUpdate){
-          items = list;
-          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
-          localStorage.setItem(LS.itemsCache, JSON.stringify(items));
-          if (newUpdated) localStorage.setItem(LS.metaUpdated, newUpdated);
-
-          statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
-          setSortIcons();
-          render();
-          restoreScrollIfNeeded();
-          scheduleRefreshCounts(100);
-        } else {
-          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
-          if (newUpdated) localStorage.setItem(LS.metaUpdated, newUpdated);
-        }
-      }catch(err){
-        console.error(err);
-        if (!cacheFresh) statusEl.textContent = "Liste yüklenemedi.";
-      }
-    }
-
-    function getVisibleItems(){
-      const q = foldTR((searchEl.value || "").trim());
-
-      let arr = items.filter(it => {
-        if (q && !foldTR(it.title).includes(q)) return false;
-        if (filterFav && !favs[it.id]) return false;
-        return true;
-      });
-
-      if (sortMode === "dur"){
-        const dir = (durSortDir === "asc") ? 1 : -1;
-        arr.sort((a,b) => {
-          const ha = (durs[a.id] > 0);
-          const hb = (durs[b.id] > 0);
-          if (ha !== hb) return ha ? -1 : 1;
-          if (ha && hb){
-            const da = durs[a.id];
-            const db = durs[b.id];
-            if (da !== db) return (da - db) * dir;
-          }
-          return a.title.localeCompare(b.title, "tr");
-        });
-      } else if (sortMode === "date"){
-        const dir = (dateSortDir === "asc") ? 1 : -1;
-        arr.sort((a,b) => {
-          const ta = parseEndDate(a);
-          const tb = parseEndDate(b);
-          const ha = (ta !== null);
-          const hb = (tb !== null);
-          if (ha !== hb) return ha ? -1 : 1;
-          if (ha && hb && ta !== tb) return (ta - tb) * dir;
-          return a.title.localeCompare(b.title, "tr");
-        });
-      } else if (sortMode === "play"){
-        const dir = (playSortDir === "asc") ? 1 : -1;
-        arr.sort((a,b) => {
-          const ca = Number(globalPlayCounts[a.id]) || 0;
-          const cb = Number(globalPlayCounts[b.id]) || 0;
-          if (ca !== cb) return (ca - cb) * dir;
-          return a.title.localeCompare(b.title, "tr");
-        });
-      } else if (sortMode === "download"){
-        const dir = (dlSortDir === "asc") ? 1 : -1;
-        arr.sort((a,b) => {
-          const ca = Number(globalDownloadCounts[a.id]) || 0;
-          const cb = Number(globalDownloadCounts[b.id]) || 0;
-          if (ca !== cb) return (ca - cb) * dir;
-          return a.title.localeCompare(b.title, "tr");
-        });
-      } else {
-        arr.sort((a,b) => a.title.localeCompare(b.title, "tr"));
-      }
-
-      return arr;
-    }
-
-    function render(){
-      const visible = getVisibleItems();
-      metaEl.textContent = `Görünən: ${visible.length} / Toplam: ${items.length}`;
-
-      filterFavBtn.classList.toggle("on", filterFav);
-      filterFavBtn.setAttribute("aria-pressed",  String(filterFav));
-
-      listEl.innerHTML = "";
-
-      const toMeasure = (sortMode === "dur") ? items : visible;
-      for (const it of toMeasure){
-        if (!(durs[it.id] > 0)) requestDuration(it);
-      }
-
-      for (const it of visible){
-        const row = document.createElement("div");
-        row.className = "itemRow" + (it.id === activeId ? " active" : "");
-
-        const title = document.createElement("div");
-        title.className = "title";
-        title.innerHTML = highlightDisease(it.title);
-
-        const dur = document.createElement("div");
-        dur.className = "dur";
-        dur.textContent = (durs[it.id] > 0) ? fmtDur(durs[it.id]) : "…";
-
-        const playCount = document.createElement("div");
-        playCount.className = "countCell";
-        playCount.textContent = String(Number(globalPlayCounts[it.id]) || 0);
-
-        const favBtn = iconButton("star", !!favs[it.id], "Favori");
-        const dlBtn  = iconButton("download", false, "İndir");
-
-        const dlCount = document.createElement("div");
-        dlCount.className = "countCell";
-        dlCount.textContent = String(Number(globalDownloadCounts[it.id]) || 0);
-
-        const txtBtn = iconButton("txt", false, "Transkript aç (.txt)");
-        txtBtn.disabled = !(it.hasTxt && it.txtUrl);
-
-        favBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          favs[it.id] = !favs[it.id];
-          saveMap(LS.favs, favs);
-          render();
-        });
-
-        dlBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          const filename =
-            (it.name || it.file || "").split("/").pop() ||
-            safeFilenameBase(it.title) + ".m4a";
-
-          forceDownload(it.url, filename);
-
-          setTimeout(() => {
-            bumpLocalGlobalCount("download", it.id);
-            sendHit("download", it);
-            scheduleRefreshCounts(1200);
-            trackAudioDownload(it, filename);
-            render();
-          }, 0);
-        });
-
-        txtBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          showTranscriptForItem(it).catch(() => {});
-        });
-
-        for (const b of [favBtn, dlBtn, txtBtn]){
-          b.addEventListener("pointerup", (e) => e.stopPropagation());
-          b.addEventListener("pointerdown", (e) => e.stopPropagation());
-        }
-
-        row.appendChild(title);
-        row.appendChild(dur);
-        row.appendChild(playCount);
-        row.appendChild(favBtn);
-        row.appendChild(dlBtn);
-        row.appendChild(dlCount);
-        row.appendChild(txtBtn);
-
-        row.addEventListener("click", () => playById(it.id));
-        listEl.appendChild(row);
-      }
-    }
-
-    function iconButton(kind, on, title){
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "iconBtn" + (on ? " on" : "");
-      btn.title = title;
-      btn.dataset.kind = kind;
-
-      if (kind === "star"){
-        btn.setAttribute("aria-pressed", String(!!on));
-        btn.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="${on ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
-          </svg>`;
-      } else if (kind === "download"){
-        btn.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M12 3v12"/>
-            <path d="M7 10l5 5 5-5"/>
-            <path d="M5 21h14"/>
-          </svg>`;
-      } else if (kind === "txt"){
-        btn.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <path d="M14 2v6h6"/>
-            <path d="M8 13h8"/><path d="M8 17h8"/>
-          </svg>`;
-      }
-
-      return btn;
-    }
-
-    function playById(id){
-      const visible = getVisibleItems();
-      const idx = visible.findIndex(x => x.id === id);
-      if (idx === -1) return;
-      playAtVisibleIndex(idx);
-    }
-
-    function setMediaSource(url, mime){
-      while (playerEl.firstChild) playerEl.removeChild(playerEl.firstChild);
-      const s = document.createElement("source");
-      s.src = url;
-      if (mime) s.type = mime;
-      playerEl.appendChild(s);
-      playerEl.load();
-    }
-
-    function playAtVisibleIndex(idx){
-      const visible = getVisibleItems();
-      const it = visible[idx];
-      if (!it) return;
-
-      armPlayGate(it);
-      trackAudioPlay(it);
-
-      statusEl.textContent = "";
-      activeId = it.id;
-      fpTitle.textContent = it.title;
-      render();
-
-      const url = it.url;
-      const mime = guessMime(url);
-      const currentSpeed = SPEEDS[speedIndex] || 1;
-
-      try{
-        plyr.speed = currentSpeed;
-        setMediaSource(url, mime);
-        const p = plyr.play();
-        if (p && typeof p.catch === "function"){
-          p.catch(() => {
-            statusEl.textContent = "Oynatma engellendi. Player içindeki ▶︎ tuşuna bas.";
-          });
-        }
-        setTimeout(() => {
-          if (playerEl && playerEl.paused) {
-            statusEl.textContent = statusEl.textContent || "Oynatma başlamadı. Player içindeki ▶︎ tuşuna bas.";
-          }
-        }, 900);
-      }catch{
-        statusEl.textContent = "Player başlatılamadı.";
-      }
-    }
-
-    function playPrev(){
-      const visible = getVisibleItems();
-      if (!visible.length) return;
-      let idx = visible.findIndex(x => x.id === activeId);
-      if (idx === -1) idx = 0;
-      idx = (idx - 1 + visible.length) % visible.length;
-      playAtVisibleIndex(idx);
-    }
-
-    function playNext(){
-      const visible = getVisibleItems();
-      if (!visible.length) return;
-      let idx = visible.findIndex(x => x.id === activeId);
-      if (idx === -1) idx = 0;
-      idx = (idx + 1) % visible.length;
-      playAtVisibleIndex(idx);
-    }
-
-    prevBtn.addEventListener("click", playPrev);
-    nextBtn.addEventListener("click", playNext);
-    plyr.on("ended", () => { setTimeout(() => playNext(), 0); });
-
-    document.addEventListener("keydown", (e) => {
-      const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
-      const inTyping = (tag === "input" || tag === "textarea");
-      if (inTyping) return;
-
-      if (e.code === "Space"){
-        e.preventDefault();
-        plyr.togglePlay();
-      } else if (e.code === "ArrowLeft"){
-        e.preventDefault();
-        playPrev();
-      } else if (e.code === "ArrowRight"){
-        e.preventDefault();
-        playNext();
-      }
-    });
-
-    filterFavBtn.addEventListener("click", () => { filterFav = !filterFav; render(); });
-
-    resetBtn.addEventListener("click", () => {
-      filterFav = false;
-      searchEl.value = "";
-
-      sortMode = "date";
-      dateSortDir = "desc";
-      localStorage.setItem(LS.sortMode, sortMode);
-      localStorage.setItem(LS.sortDirDate, dateSortDir);
-
-      setSortIcons();
-      render();
     });
 
     const SEARCH_DEBOUNCE_MS = 900;
@@ -2522,13 +2013,400 @@
       });
     })();
 
+    async function loadItems(){
+      const cached = loadAny(LS.itemsCache);
+      const cachedAt = Number(localStorage.getItem(LS.itemsCacheAt) || "0");
+      const cacheFresh =
+        !FORCE_REFRESH &&
+        Array.isArray(cached) &&
+        cached.length > 0 &&
+        Number.isFinite(cachedAt) &&
+        (Date.now() - cachedAt) < CACHE_TTL_MS;
+
+      if (cacheFresh){
+        items = cached;
+        statusEl.textContent = "";
+        setSortIcons();
+        render();
+        restoreScrollIfNeeded();
+        scheduleRefreshCounts(50);
+      } else {
+        statusEl.textContent = "Yükleniyor...";
+      }
+
+      try{
+        const metaUrl = `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}`;
+        const res = await fetch(metaUrl, { cache: FORCE_REFRESH ? "no-store" : "no-cache" });
+        if (!res.ok) throw new Error("IA metadata okunamadı");
+        const j = await res.json();
+
+        const newUpdated = String(
+          j?.item_lastupdated ||
+          j?.item_last_update ||
+          j?.updated ||
+          j?.metadata?.updateddate ||
+          j?.metadata?.publicdate ||
+          ""
+        );
+
+        const oldUpdated = String(localStorage.getItem(LS.metaUpdated) || "");
+        if (cacheFresh && newUpdated && oldUpdated && newUpdated === oldUpdated){
+          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
+          return;
+        }
+
+        const files = Array.isArray(j.files) ? j.files : [];
+
+        const txtSet = new Set(
+          files
+            .map(f => String(f?.name || "").toLowerCase())
+            .filter(n => n.endsWith(".txt"))
+        );
+
+        const list = files
+          .filter(f => {
+            const name = (f.name || "").toLowerCase();
+            if (!(name.endsWith(".m4a") || name.endsWith(".mp3"))) return false;
+            if (!("source" in f)) return true;
+            return (String(f.source).toLowerCase() === "original");
+          })
+          .map((f, idx) => {
+            const name = f.name || "";
+            const title = (f.title || "").trim() || decodeURIComponentSafe(name.split("/").pop() || name);
+            const url = buildDownloadUrl(IA_IDENTIFIER_1, name);
+            const localId = name || url || (title + "#" + idx);
+            const id = "S1|" + localId;
+
+            const txtName = audioNameToTxtName(name);
+            const txtUrl  = buildDownloadUrl(IA_IDENTIFIER_1, txtName);
+            const hasTxt  = txtSet.has(String(txtName || "").toLowerCase());
+
+            return { id, title, name, url, txtName, txtUrl, hasTxt, src: "S1" };
+          });
+
+        const newFp = itemsFingerprint(list);
+        const oldFp = itemsFingerprint(items);
+        const shouldUpdate = !cacheFresh || (newFp && newFp !== oldFp);
+
+        if (shouldUpdate){
+          items = list;
+          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
+          localStorage.setItem(LS.itemsCache, JSON.stringify(items));
+          if (newUpdated) localStorage.setItem(LS.metaUpdated, newUpdated);
+
+          statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
+          setSortIcons();
+          render();
+          restoreScrollIfNeeded();
+          scheduleRefreshCounts(100);
+        } else {
+          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
+          if (newUpdated) localStorage.setItem(LS.metaUpdated, newUpdated);
+        }
+      }catch(err){
+        console.error(err);
+        if (!cacheFresh) statusEl.textContent = "Liste yüklenemedi.";
+      }
+    }
+
+    function getVisibleItems(){
+      const q = foldTR((searchEl.value || "").trim());
+
+      let arr = items.filter(it => {
+        if (q && !foldTR(it.title).includes(q)) return false;
+        if (filterFav && !favs[it.id]) return false;
+        return true;
+      });
+
+      if (sortMode === "dur"){
+        const dir = (durSortDir === "asc") ? 1 : -1;
+        arr.sort((a,b) => {
+          const ha = (durs[a.id] > 0);
+          const hb = (durs[b.id] > 0);
+          if (ha !== hb) return ha ? -1 : 1;
+          if (ha && hb){
+            const da = durs[a.id];
+            const db = durs[b.id];
+            if (da !== db) return (da - db) * dir;
+          }
+          return a.title.localeCompare(b.title, "tr");
+        });
+      } else if (sortMode === "date"){
+        const dir = (dateSortDir === "asc") ? 1 : -1;
+        arr.sort((a,b) => {
+          const ta = parseEndDate(a);
+          const tb = parseEndDate(b);
+          const ha = (ta !== null);
+          const hb = (tb !== null);
+          if (ha !== hb) return ha ? -1 : 1;
+          if (ha && hb && ta !== tb) return (ta - tb) * dir;
+          return a.title.localeCompare(b.title, "tr");
+        });
+      } else if (sortMode === "play"){
+        const dir = (playSortDir === "asc") ? 1 : -1;
+        arr.sort((a,b) => {
+          const ca = Number(globalPlayCounts[a.id]) || 0;
+          const cb = Number(globalPlayCounts[b.id]) || 0;
+          if (ca !== cb) return (ca - cb) * dir;
+          return a.title.localeCompare(b.title, "tr");
+        });
+      } else if (sortMode === "download"){
+        const dir = (dlSortDir === "asc") ? 1 : -1;
+        arr.sort((a,b) => {
+          const ca = Number(globalDownloadCounts[a.id]) || 0;
+          const cb = Number(globalDownloadCounts[b.id]) || 0;
+          if (ca !== cb) return (ca - cb) * dir;
+          return a.title.localeCompare(b.title, "tr");
+        });
+      } else {
+        arr.sort((a,b) => a.title.localeCompare(b.title, "tr"));
+      }
+
+      return arr;
+    }
+
+    function iconButton(kind, on, title){
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "iconBtn" + (on ? " on" : "");
+      btn.title = title;
+      btn.dataset.kind = kind;
+
+      if (kind === "star"){
+        btn.setAttribute("aria-pressed", String(!!on));
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="${on ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
+          </svg>`;
+      } else if (kind === "download"){
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 3v12"/>
+            <path d="M7 10l5 5 5-5"/>
+            <path d="M5 21h14"/>
+          </svg>`;
+      } else if (kind === "txt"){
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <path d="M14 2v6h6"/>
+            <path d="M8 13h8"/><path d="M8 17h8"/>
+          </svg>`;
+      }
+
+      return btn;
+    }
+
+    function render(){
+      const visible = getVisibleItems();
+      metaEl.textContent = `Görünən: ${visible.length} / Toplam: ${items.length}`;
+
+      filterFavBtn.classList.toggle("on", filterFav);
+      filterFavBtn.setAttribute("aria-pressed",  String(filterFav));
+
+      listEl.innerHTML = "";
+
+      const toMeasure = (sortMode === "dur") ? items : visible;
+      for (const it of toMeasure){
+        if (!(durs[it.id] > 0)) requestDuration(it);
+      }
+
+      for (const it of visible){
+        const row = document.createElement("div");
+        row.className = "itemRow" + (it.id === activeId ? " active" : "");
+
+        const title = document.createElement("div");
+        title.className = "title";
+        title.innerHTML = highlightDisease(it.title);
+
+        const dur = document.createElement("div");
+        dur.className = "dur";
+        dur.textContent = (durs[it.id] > 0) ? fmtDur(durs[it.id]) : "…";
+
+        const playCount = document.createElement("div");
+        playCount.className = "countCell";
+        playCount.textContent = String(Number(globalPlayCounts[it.id]) || 0);
+
+        const favBtn = iconButton("star", !!favs[it.id], "Favori");
+        const dlBtn  = iconButton("download", false, "İndir");
+
+        const dlCount = document.createElement("div");
+        dlCount.className = "countCell";
+        dlCount.textContent = String(Number(globalDownloadCounts[it.id]) || 0);
+
+        const txtBtn = iconButton("txt", false, "Transkript aç (.txt)");
+        txtBtn.disabled = !(it.hasTxt && it.txtUrl);
+
+        favBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          favs[it.id] = !favs[it.id];
+          saveMap(LS.favs, favs);
+          render();
+        });
+
+        dlBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const filename =
+            (it.name || it.file || "").split("/").pop() ||
+            safeFilenameBase(it.title) + ".m4a";
+
+          forceDownload(it.url, filename);
+
+          setTimeout(() => {
+            bumpLocalGlobalCount("download", it.id);
+            sendHit("download", it);
+            scheduleRefreshCounts(1200);
+            trackAudioDownload(it, filename);
+            render();
+          }, 0);
+        });
+
+        txtBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          showTranscriptForItem(it).catch(() => {});
+        });
+
+        for (const b of [favBtn, dlBtn, txtBtn]){
+          b.addEventListener("pointerup", (e) => e.stopPropagation());
+          b.addEventListener("pointerdown", (e) => e.stopPropagation());
+        }
+
+        row.appendChild(title);
+        row.appendChild(dur);
+        row.appendChild(playCount);
+        row.appendChild(favBtn);
+        row.appendChild(dlBtn);
+        row.appendChild(dlCount);
+        row.appendChild(txtBtn);
+
+        row.addEventListener("click", () => playById(it.id));
+        listEl.appendChild(row);
+      }
+    }
+
+    function playById(id){
+      const visible = getVisibleItems();
+      const idx = visible.findIndex(x => x.id === id);
+      if (idx === -1) return;
+      playAtVisibleIndex(idx);
+    }
+
+    function setMediaSource(url, mime){
+      while (playerEl.firstChild) playerEl.removeChild(playerEl.firstChild);
+      const s = document.createElement("source");
+      s.src = url;
+      if (mime) s.type = mime;
+      playerEl.appendChild(s);
+      playerEl.load();
+    }
+
+    function playAtVisibleIndex(idx){
+      const visible = getVisibleItems();
+      const it = visible[idx];
+      if (!it) return;
+
+      armPlayGate(it);
+      trackAudioPlay(it);
+
+      statusEl.textContent = "";
+      activeId = it.id;
+      fpTitle.textContent = it.title;
+      render();
+
+      const url = it.url;
+      const mime = guessMime(url);
+      const currentSpeed = SPEEDS[speedIndex] || 1;
+
+      try{
+        plyr.speed = currentSpeed;
+        setMediaSource(url, mime);
+        const p = plyr.play();
+        if (p && typeof p.catch === "function"){
+          p.catch(() => {
+            statusEl.textContent = "Oynatma engellendi. Player içindeki ▶︎ tuşuna bas.";
+          });
+        }
+        setTimeout(() => {
+          if (playerEl && playerEl.paused) {
+            statusEl.textContent = statusEl.textContent || "Oynatma başlamadı. Player içindeki ▶︎ tuşuna bas.";
+          }
+        }, 900);
+      }catch{
+        statusEl.textContent = "Player başlatılamadı.";
+      }
+    }
+
+    function playPrev(){
+      const visible = getVisibleItems();
+      if (!visible.length) return;
+      let idx = visible.findIndex(x => x.id === activeId);
+      if (idx === -1) idx = 0;
+      idx = (idx - 1 + visible.length) % visible.length;
+      playAtVisibleIndex(idx);
+    }
+
+    function playNext(){
+      const visible = getVisibleItems();
+      if (!visible.length) return;
+      let idx = visible.findIndex(x => x.id === activeId);
+      if (idx === -1) idx = 0;
+      idx = (idx + 1) % visible.length;
+      playAtVisibleIndex(idx);
+    }
+
+    prevBtn.addEventListener("click", playPrev);
+    nextBtn.addEventListener("click", playNext);
+    plyr.on("ended", () => { setTimeout(() => playNext(), 0); });
+
+    document.addEventListener("keydown", (e) => {
+      const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
+      const inTyping = (tag === "input" || tag === "textarea");
+      if (inTyping) return;
+
+      if (e.code === "Space"){
+        e.preventDefault();
+        plyr.togglePlay();
+      } else if (e.code === "ArrowLeft"){
+        e.preventDefault();
+        playPrev();
+      } else if (e.code === "ArrowRight"){
+        e.preventDefault();
+        playNext();
+      }
+    });
+
+    filterFavBtn.addEventListener("click", () => { filterFav = !filterFav; render(); });
+
+    resetBtn.addEventListener("click", () => {
+      filterFav = false;
+      searchEl.value = "";
+
+      sortMode = "date";
+      dateSortDir = "desc";
+      localStorage.setItem(LS.sortMode, sortMode);
+      localStorage.setItem(LS.sortDirDate, dateSortDir);
+
+      setSortIcons();
+      render();
+    });
+
+    (function setActiveNav(){
+      const here = location.href.replace(/\/$/, "");
+      document.querySelectorAll(".navRow .navLink").forEach(a => {
+        a.classList.remove("on");
+        const u = (a.getAttribute("href") || "").replace(/\/$/, "");
+        if (!u) return;
+        if (here === u || here.startsWith(u + "/")) a.classList.add("on");
+      });
+    })();
+
     setSortIcons();
     restoreUiState();
     restorePlayerPos();
     restoreSpeed();
     restoreZoom();
-    setTimeout(() => clampPlayerToViewport(), 0);
-    setTimeout(() => updateOverlayScale(), 0);
+    setTimeout(clampPlayerToViewport, 0);
+    setTimeout(updateOverlayScale, 0);
     loadItems();
   </script>
 </body>
