@@ -1,5 +1,3 @@
-from pathlib import Path
-
 html = """<!doctype html>
 <html lang="tr">
 <head>
@@ -3011,8 +3009,3 @@ html = """<!doctype html>
   </script>
 </body>
 </html>
-"""
-
-out_path = Path("/mnt/data/index.html")
-out_path.write_text(html, encoding="utf-8")
-str(out_path)
