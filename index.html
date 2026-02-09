@@ -64,24 +64,12 @@
       height: 100%;
       overflow: auto;
       -webkit-overflow-scrolling: touch;
-      overscroll-behavior-y: contain;  padding: 0;
-max-width: 980px;
+      overscroll-behavior-y: contain;
+      padding: 18px;
+      max-width: 980px;
       margin: 0 auto;
     }
 
-
-    #stickyTop{
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background: var(--bg);
-      padding: 18px 18px 0 18px;
-      box-shadow: 0 10px 22px rgba(0,0,0,.06);
-    }
-
-    #listWrap{
-      padding: 0 18px 18px 18px;
-    }
     #appScale{
       transform-origin: top left;
       will-change: transform;
@@ -154,20 +142,45 @@ max-width: 980px;
       flex-wrap: wrap;
     }
 
+    /* Sticky bar (CSS sticky where it works, JS docks it where it doesn't) */
+    #stickyBar{
+      position: sticky;
+      top: 0;
+      z-index: 1200;
+      background: var(--bg);
+      padding: 10px 0;
+      border-radius: 16px;
+      box-shadow:
+        0 1px 0 rgba(0,0,0,.06),
+        0 10px 18px rgba(0,0,0,.05);
+    }
+    #stickyBar.docked{
+      position: fixed;
+      z-index: 1200;
+      padding: 10px 0;
+      border-radius: 16px;
+      box-shadow:
+        0 1px 0 rgba(0,0,0,.06),
+        0 14px 28px rgba(0,0,0,.10);
+    }
+    #stickyBarPh{ height: 0; }
+
     #search{
       flex: 1 1 520px;
       min-width: 220px;
-      padding: 10px 12px;
+      height: 46px;
+      padding: 0 14px;
       border: 1px solid #d8d8d8;
-      border-radius: 14px;
-      font-size: 1rem;
+      border-radius: 16px;
+      font-size: 1.05rem;
       outline: none;
     }
 
     #resetBtn{
-      padding: 10px 16px;
+      height: 46px;
+      padding: 0 16px;
       border: 1px solid #d8d8d8;
-      border-radius: 14px;
+      border-radius: 16px;
       background: white;
       cursor: pointer;
       font-size: 1rem;
@@ -370,21 +383,11 @@ max-width: 980px;
       border-radius: 4px;
     }
 
-    
-    .itemRow.selected:not(.active){
-      box-shadow: 0 0 0 2px rgba(43,124,255,.18) inset;
-    }
-.title{
+    .title{
       font-size: 1.02rem;
       font-weight: 500;
-      line-height: 1.02;  min-width: 0;
-      cursor: pointer;
-
-      white-space: nowrap;
-    
-      overflow: hidden;
-    
-      text-overflow: ellipsis;
+      line-height: 1.02;
+      min-width: 0;
     }
 
     .dur{
@@ -409,9 +412,7 @@ max-width: 980px;
     }
 
     @media (max-width: 680px){
-      #scrollArea{ padding: 0; }
-      #stickyTop{ padding: 14px 14px 0 14px; }
-      #listWrap{ padding: 0 14px 14px 14px; }
+      #scrollArea{ padding: 14px; }
       .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 46px 34px 34px 46px 34px; }
       .title{
         white-space: nowrap;
@@ -440,6 +441,12 @@ max-width: 980px;
     .iconBtn:hover{ background: var(--hover); }
     .iconBtn:disabled{ opacity: .35; cursor: default; }
     .iconBtn:disabled:hover{ background: white; }
+
+    .iconBtn.txtMissing{
+      opacity: .22 !important;
+      filter: grayscale(1);
+      border-style: dashed;
+    }
 
     .iconBtn.on{
       border-color: var(--blue);
@@ -495,10 +502,8 @@ max-width: 980px;
       touch-action: none;
     }
 
-    #floatingPlayer.hiddenWhileTyping{
-      opacity: 0;
-      pointer-events: none;
-    }
+    /* Typing mode: do not block pointer events */
+    #floatingPlayer.hiddenWhileTyping{ opacity: .35; }
 
     #fpHeader{
       display:flex;
@@ -552,9 +557,9 @@ max-width: 980px;
     }
 
     .miniBtn{
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
       border: 1px solid #d8d8d8;
       background: white;
       cursor: pointer;
@@ -563,7 +568,7 @@ max-width: 980px;
       justify-content:center;
     }
     .miniBtn:hover{ background: var(--hover); }
-    .miniBtn svg{ width:18px; height:18px; }
+    .miniBtn svg{ width:16px; height:16px; }
 
     .speedWrap{
       display:flex;
@@ -670,7 +675,7 @@ max-width: 980px;
       left: max(12px, env(safe-area-inset-left));
       top: max(12px, env(safe-area-inset-top));
       width: min(360px, calc(100vw - 24px));
-      height: min(72vh, 720px);
+      height: min(86vh, 720px);
       background: #fff;
       border: 1.5px solid #d6d6d6;
       border-right-color: #bdbdbd;
@@ -785,9 +790,7 @@ max-width: 980px;
       -webkit-transform: translateZ(0);
       transform: translateZ(0);
       will-change: transform, width, height;
-      touch-action: auto;
-    
-      pointer-events: none;
+      touch-action: none;
     }
     #txOverlay.open{ display: block; }
 
@@ -795,8 +798,8 @@ max-width: 980px;
       position: absolute;
       top: max(14px, env(safe-area-inset-top));
       right: max(14px, env(safe-area-inset-right));
-      width: min(740px, calc(100vw - 28px));
-      height: min(68vh, 640px);
+      width: min(760px, calc(100vw - 28px));
+      height: min(70vh, 680px);
       background: #fff;
       border: 1.5px solid #d6d6d6;
       border-right-color: #bdbdbd;
@@ -810,8 +813,6 @@ max-width: 980px;
       display:flex;
       flex-direction: column;
       touch-action: none;
-    
-      pointer-events: auto;
     }
 
     #txHeader{
@@ -858,6 +859,7 @@ max-width: 980px;
       font-size: .92rem;
       user-select:none;
       line-height: 1;
+      white-space: nowrap;
     }
     .txBtn:hover{ background: var(--hover); }
     .txBtn:disabled{ opacity: .45; cursor: default; }
@@ -888,23 +890,26 @@ max-width: 980px;
       border-radius: 14px;
       background: #fff;
       box-shadow: inset 0 1px 0 rgba(0,0,0,.03);
+      position: sticky;
+      top: 0;
+      z-index: 3;
     }
     #txSearchRow.on{ display: flex; }
 
     #txSearchInput{
       flex: 1 1 auto;
       min-width: 140px;
-      height: 36px;
-      padding: 0 12px;
+      height: 46px;
+      padding: 0 14px;
       border: 1px solid #d8d8d8;
-      border-radius: 12px;
-      font-size: .96rem;
+      border-radius: 14px;
+      font-size: 1.05rem;
       outline: none;
     }
 
     .txNavBtn{
-      width: 52px;
-      height: 40px;
+      width: 60px;
+      height: 46px;
       border-radius: 14px;
       border: 1px solid #d8d8d8;
       background: white;
@@ -913,16 +918,15 @@ max-width: 980px;
       align-items:center;
       justify-content:center;
       user-select:none;
-      font-weight: 800;
+      font-weight: 900;
+      font-size: 32px;
       line-height: 1;
-    
-      font-size: 18px;
     }
     .txNavBtn:hover{ background: var(--hover); }
     .txNavBtn:disabled{ opacity: .45; cursor: default; }
 
     #txMatchCount{
-      min-width: 86px;
+      min-width: 98px;
       text-align: right;
       color: #404040;
       font-variant-numeric: tabular-nums;
@@ -935,7 +939,7 @@ max-width: 980px;
       word-break: break-word;
       font-variant-numeric: tabular-nums;
       line-height: 1.35;
-      font-size: 0.96rem;
+      font-size: .92rem;
       margin: 0;
     }
 
@@ -947,6 +951,18 @@ max-width: 980px;
     .txMark.active{
       background: rgba(245,158,11,.35);
       box-shadow: 0 0 0 2px rgba(245,158,11,.20);
+    }
+
+    @media (max-width: 680px){
+      #txHeader{ flex-wrap: wrap; gap: 8px; }
+      #txTitle{
+        flex: 1 1 100%;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+      }
+      #txBtns{ width: 100%; justify-content: flex-end; }
+      .txBtn{ height: 34px; padding: 0 10px; font-size: .9rem; }
     }
 
     #txResizeHandle{
@@ -966,14 +982,12 @@ max-width: 980px;
       border-top-right-radius: 16px;
     }
     #txResizeHandle svg{ width: 18px; height: 18px; opacity: .75; }
-
   </style>
 </head>
 
 <body>
   <div id="scrollArea">
     <div id="appScale">
-      <div id="stickyTop">
       <div class="pageTitle">
         <span>FSP Audio — Güncel</span>
         <button id="sidebarOpenBtn" type="button" aria-label="Menü" title="Menü">
@@ -993,92 +1007,92 @@ max-width: 980px;
         <a class="navLink" href="https://protokolfsp.github.io/FSP-Notlari/">FSP-NOTLARI</a>
       </nav>
 
-      <div class="topbar">
-        <input id="search" type="text" placeholder="Arama (ör. ACS, DM, PAVK)..." />
-        <button id="resetBtn" type="button">Hepsi</button>
+      <div id="stickyBar">
+        <div class="topbar">
+          <input id="search" type="text" placeholder="Arama (ör. ACS, DM, PAVK)..." />
+          <button id="resetBtn" type="button">Hepsi</button>
 
-        <div class="zoomWrap" aria-label="Görünüm">
-          <button id="zoomOutBtn" class="zoomBtn zoomOut" type="button" aria-label="Küçült">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="11" cy="11" r="6"></circle>
-              <path d="M20 20l-3.5-3.5"></path>
-              <path d="M8.5 11h5"></path>
-            </svg>
-          </button>
+          <div class="zoomWrap" aria-label="Görünüm">
+            <button id="zoomOutBtn" class="zoomBtn zoomOut" type="button" aria-label="Küçült">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="6"></circle>
+                <path d="M20 20l-3.5-3.5"></path>
+                <path d="M8.5 11h5"></path>
+              </svg>
+            </button>
 
-          <button id="zoomInBtn" class="zoomBtn zoomIn" type="button" aria-label="Büyüt">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="11" cy="11" r="6"></circle>
-              <path d="M20 20l-3.5-3.5"></path>
-              <path d="M11 8.5v5"></path>
-              <path d="M8.5 11h5"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <div id="meta">Görünən: 0 / Toplam: 0</div>
-
-      <div class="headerRow">
-        <div class="colTitle">
-          <div class="titleHead">
-            <span>Kayıt</span>
-            <button id="sortDateBtn" class="sortBtn" type="button" title="Tarihe göre sırala (dosya sonu)">
-              <svg id="sortDateIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"></svg>
+            <button id="zoomInBtn" class="zoomBtn zoomIn" type="button" aria-label="Büyüt">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="6"></circle>
+                <path d="M20 20l-3.5-3.5"></path>
+                <path d="M11 8.5v5"></path>
+                <path d="M8.5 11h5"></path>
+              </svg>
             </button>
           </div>
         </div>
 
-        <div class="colDur" style="text-align:right;">
-          <div class="durHead">
-            <span>Süre</span>
-            <button id="sortDurBtn" class="sortBtn" type="button" title="Süreye göre sırala">
-              <svg id="sortDurIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"></svg>
+        <div id="meta">Görünən: 0 / Toplam: 0</div>
+
+        <div class="headerRow">
+          <div class="colTitle">
+            <div class="titleHead">
+              <span>Kayıt</span>
+              <button id="sortDateBtn" class="sortBtn" type="button" title="Tarihe göre sırala (dosya sonu)">
+                <svg id="sortDateIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="colDur" style="text-align:right;">
+            <div class="durHead">
+              <span>Süre</span>
+              <button id="sortDurBtn" class="sortBtn" type="button" title="Süreye göre sırala">
+                <svg id="sortDurIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="headIconCell">
+            <button id="sortPlayBtn" class="sortBtn" type="button" title="Dinlenme sayısına göre sırala">
+              <svg class="mainIcon" viewBox="0 0 24 24" aria-hidden="true">
+                <path class="iconBlue" d="M3 10v4c0 .55.45 1 1 1h3l5 4V5L7 9H4c-.55 0-1 .45-1 1z"/>
+                <path class="iconOrange" d="M16.5 8.5a1 1 0 0 1 1.4.1c1 1.2 1.6 2.7 1.6 4.4s-.6 3.2-1.6 4.4a1 1 0 1 1-1.5-1.3c.7-.9 1.1-2 1.1-3.1s-.4-2.2-1.1-3.1a1 1 0 0 1 .1-1.4z"/>
+              </svg>
+              <svg id="sortPlayIcon" class="dirIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"></svg>
             </button>
           </div>
-        </div>
 
-        <div class="headIconCell">
-          <button id="sortPlayBtn" class="sortBtn" type="button" title="Dinlenme sayısına göre sırala">
-            <svg class="mainIcon" viewBox="0 0 24 24" aria-hidden="true">
-              <path class="iconBlue" d="M3 10v4c0 .55.45 1 1 1h3l5 4V5L7 9H4c-.55 0-1 .45-1 1z"/>
-              <path class="iconOrange" d="M16.5 8.5a1 1 0 0 1 1.4.1c1 1.2 1.6 2.7 1.6 4.4s-.6 3.2-1.6 4.4a1 1 0 1 1-1.5-1.3c.7-.9 1.1-2 1.1-3.1s-.4-2.2-1.1-3.1a1 1 0 0 1 .1-1.4z"/>
-            </svg>
-            <svg id="sortPlayIcon" class="dirIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"></svg>
-          </button>
-        </div>
+          <div class="headIconCell">
+            <button id="filterFav" class="filterBtn" title="Favoriler filtrele" type="button" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
+              </svg>
+            </button>
+          </div>
 
-        <div class="headIconCell">
-          <button id="filterFav" class="filterBtn" title="Favoriler filtrele" type="button" aria-pressed="false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
-            </svg>
-          </button>
-        </div>
+          <div class="headIconCell" aria-hidden="true"></div>
 
-        <div class="headIconCell" aria-hidden="true"></div>
+          <div class="headIconCell">
+            <button id="sortDlCountBtn" class="sortBtn" type="button" title="İndirme sayısına göre sırala">
+              <svg class="mainIcon" viewBox="0 0 24 24" aria-hidden="true">
+                <path class="iconBlue" d="M4 3h12l4 4v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
+                <path class="iconOrange" d="M7 3h8v6H7V3zm4 10.2a3.3 3.3 0 1 0 0 6.6 3.3 3.3 0 0 0 0-6.6z"/>
+              </svg>
+              <svg id="sortDlCountIcon" class="dirIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"></svg>
+            </button>
+          </div>
 
-        <div class="headIconCell">
-          <button id="sortDlCountBtn" class="sortBtn" type="button" title="İndirme sayısına göre sırala">
-            <svg class="mainIcon" viewBox="0 0 24 24" aria-hidden="true">
-              <path class="iconBlue" d="M4 3h12l4 4v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
-              <path class="iconOrange" d="M7 3h8v6H7V3zm4 10.2a3.3 3.3 0 1 0 0 6.6 3.3 3.3 0 0 0 0-6.6z"/>
-            </svg>
-            <svg id="sortDlCountIcon" class="dirIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"></svg>
-          </button>
-        </div>
-
-        <div class="headIconCell">
-          <span class="txtHead" title="Transkript">TXT</span>
+          <div class="headIconCell">
+            <span class="txtHead" title="Transkript">TXT</span>
+          </div>
         </div>
       </div>
 
-      </div>
+      <div id="stickyBarPh" aria-hidden="true"></div>
 
-      <div id="listWrap">
-        <div id="list"></div>
-        <div id="status"></div>
-      </div>
+      <div id="list"></div>
+      <div id="status"></div>
     </div>
   </div>
 
@@ -1087,9 +1101,7 @@ max-width: 980px;
     <div id="sidebar" role="dialog" aria-label="Menü">
       <div id="sbHeader">
         <div id="sbTitle">Menü</div>
-        <button id="sbCloseBtn" type="button" aria-label="Kapat" title="Kapat">
-          ✕
-        </button>
+        <button id="sbCloseBtn" type="button" aria-label="Kapat" title="Kapat">✕</button>
       </div>
       <div id="sbBody">
         <div class="sbSection">
@@ -1231,6 +1243,9 @@ max-width: 980px;
     const metaEl   = document.getElementById("meta");
     const statusEl = document.getElementById("status");
 
+    const stickyBar = document.getElementById("stickyBar");
+    const stickyPh  = document.getElementById("stickyBarPh");
+
     const appScaleEl = document.getElementById("appScale");
     const zoomOutBtn = document.getElementById("zoomOutBtn");
     const zoomInBtn  = document.getElementById("zoomInBtn");
@@ -1280,6 +1295,7 @@ max-width: 980px;
     const txTitleEl = document.getElementById("txTitle");
     const txInfoEl = document.getElementById("txInfo");
     const txContentEl = document.getElementById("txContent");
+    const txBodyEl = document.getElementById("txBody");
 
     const txCopyBtn = document.getElementById("txCopyBtn");
     const txDownloadBtn = document.getElementById("txDownloadBtn");
@@ -1512,6 +1528,7 @@ max-width: 980px;
           q: (searchEl.value || ""),
           filterFav: !!filterFav,
           activeId: (activeId || null),
+          selectedId: (selectedId || null),
           scrollTop: Number(scrollArea.scrollTop) || 0
         });
       }catch{}
@@ -1523,6 +1540,8 @@ max-width: 980px;
       if (typeof s.q === "string") searchEl.value = s.q;
       if (typeof s.filterFav === "boolean") filterFav = s.filterFav;
       if (typeof s.activeId === "string") activeId = s.activeId;
+      if (typeof s.selectedId === "string") selectedId = s.selectedId;
+      else if (typeof s.activeId === "string") selectedId = s.activeId;
       if (typeof s.scrollTop === "number") pendingScrollTop = s.scrollTop;
     }
 
@@ -1658,7 +1677,10 @@ max-width: 980px;
 
       localStorage.setItem(LS.zoom, String(v));
       setZoomUI(v);
-      setTimeout(() => clampPlayerToViewport(), 0);
+      setTimeout(() => {
+        clampPlayerToViewport();
+        updateSticky(true);
+      }, 0);
       updateOverlayScale();
       clampTxSizeToViewport();
     }
@@ -1696,8 +1718,28 @@ max-width: 980px;
     attachDoubleTapReset(zoomInBtn);
 
     function setTypingMode(on){ fp.classList.toggle("hiddenWhileTyping", !!on); }
-    searchEl.addEventListener("focus", () => setTypingMode(true));
-    searchEl.addEventListener("blur",  () => setTypingMode(false));
+
+    function setMomentumScroll(el, on){
+      try { if (el) el.style.webkitOverflowScrolling = on ? "auto" : "touch"; } catch {}
+    }
+
+    // Background usable: blur input when user interacts outside sticky bar.
+    function maybeBlurMainSearch(e){
+      if (document.activeElement !== searchEl) return;
+      const t = e.target;
+      if (t && t.closest && t.closest("#stickyBar")) return;
+      searchEl.blur();
+    }
+    document.addEventListener("pointerdown", maybeBlurMainSearch, true);
+    scrollArea.addEventListener("touchstart", () => {
+      if (document.activeElement === searchEl) searchEl.blur();
+    }, { passive: true });
+
+    searchEl.addEventListener("focus", () => { setTypingMode(true); setMomentumScroll(scrollArea, true); });
+    searchEl.addEventListener("blur",  () => { setTypingMode(false); setMomentumScroll(scrollArea, false); });
+
+    txSearchInput.addEventListener("focus", () => setMomentumScroll(txBodyEl, true));
+    txSearchInput.addEventListener("blur",  () => setMomentumScroll(txBodyEl, false));
 
     function escHtml(s){
       return (s ?? "").toString()
@@ -1836,7 +1878,6 @@ max-width: 980px;
       else durSortDir = (durSortDir === "asc") ? "desc" : "asc";
       localStorage.setItem(LS.sortMode, sortMode);
       localStorage.setItem(LS.sortDirDur, durSortDir);
-      selectedId = activeId;
       setSortIcons();
       render();
     });
@@ -1870,6 +1911,104 @@ max-width: 980px;
       setSortIcons();
       render();
     });
+
+    // Sticky docking (fixes Safari/transform zoom + keeps visible)
+    let stickyStartTop = null;
+    let stickyDocked = false;
+    let stickyHomeParent = null;
+
+    function measureStickyStartTop(){
+      if (!stickyBar) return;
+      if (stickyDocked) return;
+      const barRect = stickyBar.getBoundingClientRect();
+      const scRect  = scrollArea.getBoundingClientRect();
+      stickyStartTop = (barRect.top - scRect.top) + scrollArea.scrollTop;
+    }
+
+    function getScrollAreaPadding(){
+      const cs = getComputedStyle(scrollArea);
+      const pt = parseFloat(cs.paddingTop) || 0;
+      const pl = parseFloat(cs.paddingLeft) || 0;
+      const pr = parseFloat(cs.paddingRight) || 0;
+      return { pt, pl, pr };
+    }
+
+    function dockStickyBar(){
+      if (stickyDocked) return;
+      stickyDocked = true;
+      stickyHomeParent = stickyBar.parentNode;
+      stickyPh.style.height = stickyBar.offsetHeight + "px";
+      stickyBar.classList.add("docked");
+      document.body.appendChild(stickyBar);
+      positionDockedStickyBar();
+    }
+
+    function undockStickyBar(){
+      if (!stickyDocked) return;
+      stickyDocked = false;
+      stickyBar.classList.remove("docked");
+      stickyBar.style.position = "";
+      stickyBar.style.left = "";
+      stickyBar.style.top = "";
+      stickyBar.style.width = "";
+      stickyBar.style.transform = "";
+      stickyBar.style.transformOrigin = "";
+      stickyPh.style.height = "0px";
+      stickyHomeParent.insertBefore(stickyBar, stickyPh);
+      measureStickyStartTop();
+    }
+
+    function positionDockedStickyBar(){
+      if (!stickyDocked) return;
+      const rect = scrollArea.getBoundingClientRect();
+      const pad = getScrollAreaPadding();
+      const left = rect.left + pad.pl;
+      const top  = rect.top + pad.pt;
+      const width = Math.max(260, rect.width - pad.pl - pad.pr);
+
+      stickyBar.style.position = "fixed";
+      stickyBar.style.transformOrigin = "top left";
+
+      if (useTransformScale){
+        stickyBar.style.left = (left / uiScale) + "px";
+        stickyBar.style.top  = (top  / uiScale) + "px";
+        stickyBar.style.width = (width / uiScale) + "px";
+        stickyBar.style.transform = `scale(${uiScale})`;
+      } else {
+        stickyBar.style.left = left + "px";
+        stickyBar.style.top  = top + "px";
+        stickyBar.style.width = width + "px";
+        stickyBar.style.transform = "";
+      }
+    }
+
+    function updateSticky(forceRecalc = false){
+      if (!stickyBar) return;
+
+      const needDock = (IS_SAFARI || useTransformScale);
+
+      if (forceRecalc && !stickyDocked){
+        requestAnimationFrame(() => measureStickyStartTop());
+      }
+
+      if (!needDock){
+        // Use native sticky
+        if (stickyDocked) undockStickyBar();
+        return;
+      }
+
+      if (stickyStartTop == null || forceRecalc){
+        if (stickyDocked) undockStickyBar();
+        measureStickyStartTop();
+      }
+
+      const shouldDock = (scrollArea.scrollTop > (stickyStartTop || 0));
+      if (shouldDock && !stickyDocked) dockStickyBar();
+      if (!shouldDock && stickyDocked) undockStickyBar();
+      if (stickyDocked) positionDockedStickyBar();
+    }
+
+    scrollArea.addEventListener("scroll", () => updateSticky(false), { passive: true });
 
     const durQueue = [];
     const durLoading = new Set();
@@ -2085,6 +2224,8 @@ max-width: 980px;
           localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
           if (newUpdated) localStorage.setItem(LS.metaUpdated, newUpdated);
         }
+
+        updateSticky(true);
       }catch(err){
         console.error(err);
         if (!cacheFresh) statusEl.textContent = "Liste yüklenemedi.";
@@ -2198,15 +2339,11 @@ max-width: 980px;
 
       for (const it of visible){
         const row = document.createElement("div");
-        row.className = "itemRow" + (it.id === activeId ? " active" : "") + (it.id === selectedId ? " selected" : "");
+        row.className = "itemRow" + (it.id === selectedId ? " active" : "");
 
         const title = document.createElement("div");
         title.className = "title";
         title.innerHTML = highlightDisease(it.title);
-        title.addEventListener("click", (e) => {
-          e.stopPropagation();
-          playById(it.id);
-        });
 
         const dur = document.createElement("div");
         dur.className = "dur";
@@ -2226,6 +2363,7 @@ max-width: 980px;
         const hasTxt = !!(it.txtUrl && it.txtName);
         const txBtn = iconButton("txt", false, hasTxt ? "TXT" : "TXT yok");
         txBtn.disabled = !hasTxt;
+        if (!hasTxt) txBtn.classList.add("txtMissing");
 
         favBtn.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -2237,7 +2375,8 @@ max-width: 980px;
 
         dlBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-          if (selectedId !== it.id){ selectedId = it.id; render(); }
+          selectedId = it.id;
+
           const filename =
             (it.name || it.file || "").split("/").pop() ||
             (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
@@ -2255,7 +2394,8 @@ max-width: 980px;
 
         txBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-          if (selectedId !== it.id){ selectedId = it.id; render(); }
+          selectedId = it.id;
+          render();
           openTranscriptFor(it).catch(() => {});
         });
 
@@ -2272,14 +2412,21 @@ max-width: 980px;
         row.appendChild(dlCount);
         row.appendChild(txBtn);
 
-        row.addEventListener("click", () => {
-          if (selectedId !== it.id){
+        // Only click on title starts playback; other columns only select.
+        row.addEventListener("click", (e) => {
+          const inTitle = !!(e.target && e.target.closest && e.target.closest(".title"));
+          if (!inTitle){
             selectedId = it.id;
             render();
+            return;
           }
+          playById(it.id);
         });
+
         listEl.appendChild(row);
       }
+
+      updateSticky(false);
     }
 
     function playById(id){
@@ -2604,17 +2751,20 @@ max-width: 980px;
       clampPlayerToViewport();
       updateOverlayScale();
       clampTxSizeToViewport();
+      updateSticky(true);
     });
     window.addEventListener("orientationchange", () => setTimeout(() => {
       clampPlayerToViewport();
       updateOverlayScale();
       clampTxSizeToViewport();
+      updateSticky(true);
     }, 150));
     if (window.visualViewport){
       window.visualViewport.addEventListener("resize", () => {
         clampPlayerToViewport();
         updateOverlayScale();
         clampTxSizeToViewport();
+        updateSticky(true);
       });
     }
 
@@ -2730,47 +2880,12 @@ max-width: 980px;
       txContentEl.textContent = txPlainText || "";
     }
 
-        function getDefaultTxSize(){
-      const { vw, vh } = getViewportWH();
-      const vwL = toLayoutPx(vw);
-      const vhL = toLayoutPx(vh);
-
-      const margin = 28;
-      const maxW = Math.max(320, vwL - margin);
-      const maxH = Math.max(260, vhL - margin);
-
-      const minW = 420;
-      const minH = 320;
-
-      const w0 = Math.min(740, maxW);
-      const h0 = Math.min(Math.max(420, Math.round(vhL * 0.66)), 720, maxH);
-
-      return {
-        w: Math.min(maxW, Math.max(minW, w0)),
-        h: Math.min(maxH, Math.max(minH, h0)),
-        minW,
-        minH,
-        maxW,
-        maxH
-      };
-    }
-
     function clampTxSizeToViewport(){
-      const d = getDefaultTxSize();
-
       const saved = loadAny(LS.txSize);
       if (saved && typeof saved.w === "number" && typeof saved.h === "number"){
-        if (saved.w >= d.minW && saved.h >= d.minH){
-          txPanel.style.width = Math.min(d.maxW, Math.max(d.minW, saved.w)) + "px";
-          txPanel.style.height = Math.min(d.maxH, Math.max(d.minH, saved.h)) + "px";
-          return;
-        }
+        txPanel.style.width = saved.w + "px";
+        txPanel.style.height = saved.h + "px";
       }
-
-      txPanel.style.width = d.w + "px";
-      txPanel.style.height = d.h + "px";
-      saveAny(LS.txSize, { w: d.w, h: d.h });
-    }
 
       const { vw, vh } = getViewportWH();
       const vwL = toLayoutPx(vw);
@@ -2783,8 +2898,8 @@ max-width: 980px;
       const curW = txPanel.offsetWidth;
       const curH = txPanel.offsetHeight;
 
-      const w = Math.min(maxW, Math.max(300, curW));
-      const h = Math.min(maxH, Math.max(240, curH));
+      const w = Math.min(maxW, Math.max(360, curW));
+      const h = Math.min(maxH, Math.max(300, curH));
 
       txPanel.style.width = w + "px";
       txPanel.style.height = h + "px";
@@ -2978,7 +3093,7 @@ max-width: 980px;
       return text;
     }
 
-    async async function openTranscriptFor(it){
+    async function openTranscriptFor(it){
       if (!it || !it.txtUrl) return;
       txCurrent = it;
       openTranscript();
@@ -3026,9 +3141,19 @@ max-width: 980px;
     }
 
     function clampTxSize(w, h){
-      const d = getDefaultTxSize();
-      const cw = Math.min(d.maxW, Math.max(d.minW, w));
-      const ch = Math.min(d.maxH, Math.max(d.minH, h));
+      const { vw, vh } = getViewportWH();
+      const vwL = toLayoutPx(vw);
+      const vhL = toLayoutPx(vh);
+
+      const margin = 28;
+      const maxW = Math.max(280, vwL - margin);
+      const maxH = Math.max(220, vhL - margin);
+
+      const minW = 360;
+      const minH = 300;
+
+      const cw = Math.min(maxW, Math.max(minW, w));
+      const ch = Math.min(maxH, Math.max(minH, h));
       return { w: cw, h: ch };
     }
 
@@ -3075,11 +3200,14 @@ max-width: 980px;
     // Init
     setSortIcons();
     restoreUiState();
-    selectedId = activeId;
     restorePlayerPos();
     restoreSpeed();
     restoreZoom();
     updateOverlayScale();
+    requestAnimationFrame(() => {
+      measureStickyStartTop();
+      updateSticky(true);
+    });
     setTimeout(clampPlayerToViewport, 0);
     loadItems();
   </script>
