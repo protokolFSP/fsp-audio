@@ -216,17 +216,18 @@
       line-height: 1.05;
     }
 
-    /* 6 column layout:
+    /* 7 column layout:
        1) title
        2) duration
        3) play count
        4) fav
-       5) download
-       6) download count
+       5) audio download
+       6) transcript (txt) download
+       7) download count
     */
     .headerRow, .itemRow{
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 8ch 54px 36px 36px 54px;
+      grid-template-columns: minmax(0, 1fr) 8ch 54px 36px 36px 36px 54px;
       align-items: center;
       column-gap: 8px;
     }
@@ -255,6 +256,13 @@
       align-items:center;
       justify-content:center;
       user-select:none;
+    }
+
+    .txtHead{
+      font-size: .85rem;
+      color: var(--muted);
+      user-select:none;
+      line-height: 1;
     }
 
     .sortBtn{
@@ -361,7 +369,7 @@
 
     @media (max-width: 680px){
       #scrollArea{ padding: 14px; }
-      .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 46px 34px 34px 46px; }
+      .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 46px 34px 34px 34px 46px; }
       .title{
         white-space: nowrap;
         overflow: hidden;
@@ -386,6 +394,8 @@
       justify-self: center;
     }
     .iconBtn:hover{ background: var(--hover); }
+    .iconBtn:disabled{ opacity: .35; cursor: default; }
+    .iconBtn:disabled:hover{ background: white; }
 
     .iconBtn.on{
       border-color: var(--blue);
@@ -609,8 +619,8 @@
         <a class="navLink" href="https://protokolfsp.github.io/All-in-One/">All-in-One</a>
         <a class="navLink" href="https://protokolfsp.github.io/Tlcfsp/">TLC</a>
         <a class="navLink" href="https://protokolfsp.github.io/MenschiB/">MenschiB</a>
-        <a class="navLink" href="https://protokolfsp.github.io/FSP_DrYemliha/">DrYemliha Notları</a> 
-        <a class="navLink" href="https://protokolfsp.github.io/FSP-Notlari/">FSP-NOTLARI</a> 
+        <a class="navLink" href="https://protokolfsp.github.io/FSP_DrYemliha/">DrYemliha Notları</a>
+        <a class="navLink" href="https://protokolfsp.github.io/FSP-Notlari/">FSP-NOTLARI</a>
       </nav>
 
       <div class="topbar">
@@ -677,6 +687,10 @@
         </div>
 
         <div class="headIconCell" aria-hidden="true"></div>
+
+        <div class="headIconCell">
+          <span class="txtHead" title="Transkript">TXT</span>
+        </div>
 
         <div class="headIconCell">
           <button id="sortDlCountBtn" class="sortBtn" type="button" title="İndirme sayısına göre sırala">
@@ -797,6 +811,14 @@
         audio_id: it.id,
         audio_title: it.title,
         file_name: filename || (it.name || "").split("/").pop() || "",
+        src: it.src || "S1"
+      });
+    }
+    function trackTranscriptDownload(it, filename){
+      gaEvent("transcript_download", {
+        audio_id: it.id,
+        audio_title: it.title,
+        file_name: filename || (it.txtName || "").split("/").pop() || "",
         src: it.src || "S1"
       });
     }
@@ -986,7 +1008,6 @@
       if (typeof s.filterFav === "boolean") filterFav = s.filterFav;
       if (typeof s.activeId === "string") activeId = s.activeId;
       if (typeof s.scrollTop === "number") pendingScrollTop = s.scrollTop;
-      // eski sürümlerde filterSel vardıysa yok sayıyoruz
     }
 
     function restoreScrollIfNeeded(){
@@ -1409,6 +1430,11 @@
       return `https://archive.org/download/${identifier}/${parts.join("/")}`;
     }
 
+    function audioNameToTxtName(name){
+      const n = (name || "").toString();
+      return n.replace(/\.(m4a|mp3)$/i, ".txt");
+    }
+
     async function loadItems(){
       const cached = loadAny(LS.itemsCache);
       const cachedAt = Number(localStorage.getItem(LS.itemsCacheAt) || "0");
@@ -1452,6 +1478,13 @@
         }
 
         const files = Array.isArray(j.files) ? j.files : [];
+
+        const txtSet = new Set(
+          files
+            .map(f => String(f?.name || "").toLowerCase())
+            .filter(n => n.endsWith(".txt"))
+        );
+
         const list = files
           .filter(f => {
             const name = (f.name || "").toLowerCase();
@@ -1465,7 +1498,12 @@
             const url = buildDownloadUrl(IA_IDENTIFIER_1, name);
             const localId = name || url || (title + "#" + idx);
             const id = "S1|" + localId;
-            return { id, title, name, url, src: "S1" };
+
+            const txtName = audioNameToTxtName(name);
+            const txtUrl  = buildDownloadUrl(IA_IDENTIFIER_1, txtName);
+            const hasTxt  = txtSet.has(String(txtName || "").toLowerCase());
+
+            return { id, title, name, url, txtName, txtUrl, hasTxt, src: "S1" };
           });
 
         const newFp = itemsFingerprint(list);
@@ -1581,6 +1619,9 @@
 
         const favBtn = iconButton("star", !!favs[it.id], "Favori");
         const dlBtn  = iconButton("download", false, "İndir");
+        const txtBtn = iconButton("txt", false, "Transkript indir (.txt)");
+
+        txtBtn.disabled = !(it.hasTxt && it.txtUrl);
 
         const dlCount = document.createElement("div");
         dlCount.className = "countCell";
@@ -1610,7 +1651,21 @@
           }, 0);
         });
 
-        for (const b of [favBtn, dlBtn]){
+        txtBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (!(it.hasTxt && it.txtUrl)){
+            statusEl.textContent = "Transkript bulunamadı.";
+            return;
+          }
+          const filename =
+            (it.txtName || "").split("/").pop() ||
+            (it.title || "transkript").replace(/[\\/:*?"<>|]+/g, "_") + ".txt";
+
+          forceDownload(it.txtUrl, filename);
+          trackTranscriptDownload(it, filename);
+        });
+
+        for (const b of [favBtn, dlBtn, txtBtn]){
           b.addEventListener("pointerup", (e) => e.stopPropagation());
           b.addEventListener("pointerdown", (e) => e.stopPropagation());
         }
@@ -1620,6 +1675,7 @@
         row.appendChild(playCount);
         row.appendChild(favBtn);
         row.appendChild(dlBtn);
+        row.appendChild(txtBtn);
         row.appendChild(dlCount);
 
         row.addEventListener("click", () => playById(it.id));
@@ -1646,6 +1702,13 @@
             <path d="M12 3v12"/>
             <path d="M7 10l5 5 5-5"/>
             <path d="M5 21h14"/>
+          </svg>`;
+      } else if (kind === "txt"){
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <path d="M14 2v6h6"/>
+            <path d="M8 13h8"/><path d="M8 17h8"/>
           </svg>`;
       }
 
