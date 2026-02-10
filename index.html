@@ -1296,11 +1296,16 @@
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
     const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
-    const SRT_BASE = "https://raw.githubusercontent.com/protokolFSP/FSPtranskript/main/transcripts/";
+    const SRT_BASES = [
+      "https://raw.githubusercontent.com/protokolFSP/FSPtranskript/main/transcripts/",
+      "https://cdn.jsdelivr.net/gh/protokolFSP/FSPtranskript@main/transcripts/"
+    ];
     const CAPTION_MAX_LINES = 6;
     const CAPTION_TARGET_LINES = 3; // 2-3 satır görünüm için hedef
 
     const FORCE_REFRESH = new URLSearchParams(location.search).has("refresh");
+    const SRT_DEBUG = new URLSearchParams(location.search).has("srtdebug");
+    const SRT_CHECK = new URLSearchParams(location.search).has("srtcheck");
 
     const IS_SAFARI = (() => {
       const ua = navigator.userAgent || "";
@@ -2146,11 +2151,11 @@ function updateSearchNoZoomFontSizes(){
 
     if (playerEl) playerEl.addEventListener("timeupdate", onCaptionsTimeupdate);
 
-    function buildSrtUrlForItem(it){
+    function buildSrtUrlsForItem(it){
       const rawName = (it?.name || "").split("/").pop() || "";
       const decoded = decodeURIComponentSafe(rawName);
       const srtName = decoded.replace(/\.(m4a|mp3)$/i, ".srt");
-      return SRT_BASE + encodeURIComponent(srtName);
+      return SRT_BASES.map(b => b + encodeURIComponent(srtName));
     }
 
     async function loadSrtForItem(it){
@@ -2172,17 +2177,19 @@ function updateSearchNoZoomFontSizes(){
       try { if (srtCtrl) srtCtrl.abort(); } catch {}
       srtCtrl = new AbortController();
 
-      const url = buildSrtUrlForItem(it);
+      const urls = buildSrtUrlsForItem(it);
+      let lastUrl = urls[0] || "";
       try{
-        const res = await fetch(url, { cache: "no-store", signal: srtCtrl.signal });
-        if (!res.ok) throw new Error("srt not found");
-        const txt = await res.text();
-        const cues = parseSrtToCues(txt);
-
-        if (!cues.length){
-          renderCaptionInfo("Altyazı boş/okunamadı.");
-          return;
+        let cues = null;
+        for (const u of urls){
+          lastUrl = u;
+          const res = await fetch(u, { cache: "no-store", signal: srtCtrl.signal });
+          if (!res.ok) continue;
+          const body = await res.text();
+          const parsed = parseSrtToCues(body);
+          if (parsed && parsed.length){ cues = parsed; break; }
         }
+        if (!cues) throw new Error("srt not found");
 
         srtCache.set(it.id, cues);
         activeCues = cues;
@@ -2190,7 +2197,7 @@ function updateSearchNoZoomFontSizes(){
         onCaptionsTimeupdate();
       }catch(err){
         if (err && err.name === "AbortError") return;
-        renderCaptionInfo("Bu kayıtta altyazı yok.");
+        renderCaptionInfo(SRT_DEBUG ? ("SRT yok: " + lastUrl) : "Bu kayıtta altyazı yok.");
       }
     }
 
@@ -2894,6 +2901,7 @@ function updateSearchNoZoomFontSizes(){
       try{
         plyr.speed = currentSpeed;
         setMediaSource(url, mime);
+        loadSrtForItem(it).catch(() => {});
         const p = plyr.play();
         if (p && typeof p.catch === "function"){
           p.catch(() => {
@@ -3776,8 +3784,58 @@ txHeader.addEventListener("pointercancel", (e) => endTxDrag(e.pointerId));
       measureStickyStartTop();
       updateSticky(true);
     });
+
+    async function checkSrtAvailability(){
+      if (!SRT_CHECK || !items.length) return;
+
+      const maxN = Math.min(items.length, 350);
+      const subset = items.slice(0, maxN);
+
+      let missing = 0;
+      let checked = 0;
+
+      const concurrency = 8;
+      const q = subset.slice();
+
+      async function headOk(url){
+        try{
+          const r = await fetch(url, { method: "HEAD", cache: "no-store" });
+          if (r.ok) return true;
+        }catch{}
+        try{
+          const r = await fetch(url, { method: "GET", cache: "no-store", headers: { "range": "bytes=0-1" } });
+          return r.ok;
+        }catch{
+          return false;
+        }
+      }
+
+      async function worker(){
+        while (q.length){
+          const it = q.shift();
+          const urls = buildSrtUrlsForItem(it);
+          let ok = false;
+          for (const u of urls){
+            if (await headOk(u)){ ok = true; break; }
+          }
+          checked++;
+          if (!ok){
+            missing++;
+            console.warn("SRT eksik:", it.title, it.name);
+          }
+          if (checked % 25 === 0){
+            statusEl.textContent = `SRT kontrol: ${checked}/${maxN} (eksik: ${missing})`;
+          }
+        }
+      }
+
+      await Promise.all(Array.from({ length: concurrency }, () => worker()));
+      statusEl.textContent = `SRT kontrol bitti: ${checked}/${maxN} (eksik: ${missing})`;
+    }
+
     setTimeout(clampPlayerToViewport, 0);
     loadItems();
+    setTimeout(() => checkSrtAvailability().catch(()=>{}), 1200);
   </script>
 </body>
 </html>
