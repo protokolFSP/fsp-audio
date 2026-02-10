@@ -1296,7 +1296,13 @@
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
     const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
+    const SRT_INDEX_API = "https://api.github.com/repos/protokolFSP/FSPtranskript/contents/transcripts?ref=main";
+    const SRT_INDEX_TTL_MS = 24 * 60 * 60 * 1000;
+    const SRT_INDEX_LS_KEY = "fsp1.srt.index.v1";
+    const SRT_INDEX_LS_AT  = "fsp1.srt.index.at.v1";
+
     const SRT_BASES = [
+      "https://protokolfsp.github.io/FSPtranskript/transcripts/",
       "https://raw.githubusercontent.com/protokolFSP/FSPtranskript/main/transcripts/",
       "https://cdn.jsdelivr.net/gh/protokolFSP/FSPtranskript@main/transcripts/"
     ];
@@ -2151,11 +2157,92 @@ function updateSearchNoZoomFontSizes(){
 
     if (playerEl) playerEl.addEventListener("timeupdate", onCaptionsTimeupdate);
 
-    function buildSrtUrlsForItem(it){
+    function loadSrtIndexFromCache(){
+      try{
+        const at = Number(localStorage.getItem(SRT_INDEX_LS_AT) || "0");
+        if (!Number.isFinite(at) || (Date.now() - at) > SRT_INDEX_TTL_MS) return null;
+        const raw = localStorage.getItem(SRT_INDEX_LS_KEY) || "";
+        const arr = JSON.parse(raw);
+        if (!Array.isArray(arr)) return null;
+        return new Set(arr.map(x => String(x)));
+      }catch{
+        return null;
+      }
+    }
+
+    async function fetchSrtIndex(){
+      try{
+        const res = await fetch(SRT_INDEX_API, { cache: "no-store" });
+        if (!res.ok) throw new Error("index fetch failed");
+        const j = await res.json();
+        const names = Array.isArray(j) ? j.map(x => x && x.name).filter(Boolean) : [];
+        if (!names.length) throw new Error("index empty");
+        try{
+          localStorage.setItem(SRT_INDEX_LS_KEY, JSON.stringify(names));
+          localStorage.setItem(SRT_INDEX_LS_AT, String(Date.now()));
+        }catch{}
+        return new Set(names);
+      }catch{
+        return null;
+      }
+    }
+
+    let srtIndexPromise = null;
+    function getSrtIndex(){
+      const cached = loadSrtIndexFromCache();
+      if (cached) return Promise.resolve(cached);
+      if (!srtIndexPromise) srtIndexPromise = fetchSrtIndex();
+      return srtIndexPromise;
+    }
+
+    function buildSrtNameCandidates(it){
       const rawName = (it?.name || "").split("/").pop() || "";
       const decoded = decodeURIComponentSafe(rawName);
-      const srtName = decoded.replace(/\.(m4a|mp3)$/i, ".srt");
-      return SRT_BASES.map(b => b + encodeURIComponent(srtName));
+
+      const baseDecoded = decoded.replace(/\.(m4a|mp3)$/i, ".srt");
+      const baseRaw     = rawName.replace(/\.(m4a|mp3)$/i, ".srt");
+
+      const hasA = /^A\s+/i.test(baseDecoded);
+      const aDecoded = hasA ? baseDecoded : ("A " + baseDecoded);
+      const aRaw     = hasA ? baseRaw     : ("A " + baseRaw);
+      const aUDecoded = hasA ? baseDecoded : ("A_" + baseDecoded);
+      const aUDRaw    = hasA ? baseRaw     : ("A_" + baseRaw);
+      const aDDecoded = hasA ? baseDecoded : ("A-" + baseDecoded);
+      const aDRaw     = hasA ? baseRaw     : ("A-" + baseRaw);
+
+      const altDecoded  = decoded + ".srt"; // bazı tool'lar foo.m4a.srt üretir
+      const altRaw      = rawName + ".srt";
+
+      // benzersiz sırada tut
+      const seen = new Set();
+      const out = [];
+      for (const n of [baseDecoded, baseRaw, aDecoded, aRaw, aUDecoded, aUDRaw, aDDecoded, aDRaw, altDecoded, altRaw]){
+        const nn = String(n || "").trim();
+        if (!nn) continue;
+        if (seen.has(nn)) continue;
+        seen.add(nn);
+        out.push(nn);
+      }
+      return out;
+    }
+
+    async function buildSrtUrlsForItem(it){
+      const names = buildSrtNameCandidates(it);
+      const idxSet = await getSrtIndex(); // null olabilir
+
+      const filtered = idxSet
+        ? names.filter(n => idxSet.has(n))
+        : names;
+
+      const finalNames = filtered.length ? filtered : names;
+
+      const urls = [];
+      for (const name of finalNames){
+        for (const base of SRT_BASES){
+          urls.push(base + encodeURIComponent(name));
+        }
+      }
+      return { urls, triedNames: finalNames };
     }
 
     async function loadSrtForItem(it){
@@ -2177,7 +2264,9 @@ function updateSearchNoZoomFontSizes(){
       try { if (srtCtrl) srtCtrl.abort(); } catch {}
       srtCtrl = new AbortController();
 
-      const urls = buildSrtUrlsForItem(it);
+      const built = await buildSrtUrlsForItem(it);
+      const urls = built.urls;
+      const triedNames = built.triedNames || [];
       let lastUrl = urls[0] || "";
       try{
         let cues = null;
@@ -2197,7 +2286,11 @@ function updateSearchNoZoomFontSizes(){
         onCaptionsTimeupdate();
       }catch(err){
         if (err && err.name === "AbortError") return;
-        renderCaptionInfo(SRT_DEBUG ? ("SRT yok: " + lastUrl) : "Bu kayıtta altyazı yok.");
+        if (SRT_DEBUG){
+          renderCaptionInfo("SRT yok. Denenen isimler: " + (triedNames.join(" | ") || "-") + "\nSon URL: " + lastUrl);
+        } else {
+          renderCaptionInfo("Bu kayıtta altyazı yok.");
+        }
       }
     }
 
@@ -2893,6 +2986,7 @@ function updateSearchNoZoomFontSizes(){
       selectedId = it.id;
       fpTitle.textContent = it.title;
       render();
+      if (typeof renderCaptionInfo === "function") renderCaptionInfo("Altyazı yükleniyor…");
 
       const url = it.url;
       const mime = guessMime(url);
