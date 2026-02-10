@@ -2718,13 +2718,6 @@ function updateSearchNoZoomFontSizes(){
         }
 
         const files = Array.isArray(j.files) ? j.files : [];
-        const txtLookup = new Map();
-        for (const f of files){
-          const nm = (f?.name || "").toString();
-          if (!nm) continue;
-          if (nm.toLowerCase().endsWith(".txt")){
-            txtLookup.set(nm.toLowerCase(), nm);
-          }
         }
 
         const list = files
@@ -2740,10 +2733,9 @@ function updateSearchNoZoomFontSizes(){
             const url = buildDownloadUrl(IA_IDENTIFIER_1, name);
             const localId = name || url || (title + "#" + idx);
             const id = "S1|" + localId;
-
-            const txtCandidateLower = replaceExtToTxt(name).toLowerCase();
-            const txtName = txtLookup.get(txtCandidateLower) || "";
-            const txtUrl = txtName ? buildDownloadUrl(IA_IDENTIFIER_1, txtName) : "";
+            const baseName = decodeURIComponentSafe((name || "").split("/").pop() || name);
+            const txtName = replaceExtToTxt(baseName);
+            const txtUrl = ""; // GitHub repo üzerinden açılışta resolve edilir
 
             return { id, title, name, url, src: "S1", txtName, txtUrl };
           });
@@ -2902,11 +2894,9 @@ function updateSearchNoZoomFontSizes(){
         const dlCount = document.createElement("div");
         dlCount.className = "countCell";
         dlCount.textContent = String(Number(globalDownloadCounts[it.id]) || 0);
-
-        const hasTxt = !!(it.txtUrl && it.txtName);
-        const txBtn = iconButton("txt", false, hasTxt ? "TXT" : "TXT yok");
-        txBtn.disabled = !hasTxt;
-        if (!hasTxt) txBtn.classList.add("txtMissing");
+        const hasTxt = true; // GitHub üzerinden açılışta kontrol ediliyor
+        const txBtn = iconButton("txt", false, "TXT");
+        txBtn.disabled = false;
 
         favBtn.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -3718,15 +3708,61 @@ function updateSearchNoZoomFontSizes(){
       const cached = txCache.get(it.id);
       if (cached && (Date.now() - cached.at) < TX_CACHE_TTL_MS) return cached.text;
 
-      const res = await fetch(it.txtUrl, { cache: "no-cache" });
-      if (!res.ok) throw new Error("txt fetch failed");
-      const text = await res.text();
-      txCache.set(it.id, { text, at: Date.now() });
-      return text;
+      const rawName = (it?.name || "").split("/").pop() || "";
+      const decoded = decodeURIComponentSafe(rawName);
+
+      const baseDecoded = replaceExtToTxt(decoded);
+      const baseRaw     = replaceExtToTxt(rawName);
+
+      const spDecoded = baseDecoded.replace(/_/g, " ");
+      const spRaw     = baseRaw.replace(/_/g, " ");
+
+      const hasA = /^A[\s_-]/i.test(baseDecoded);
+      const candidatesRaw = [
+        baseDecoded, baseRaw, spDecoded, spRaw,
+        decoded + ".txt", rawName + ".txt",
+      ];
+
+      if (!hasA){
+        const addA = (n) => ["A " + n, "A_" + n, "A-" + n];
+        candidatesRaw.push(...addA(baseDecoded), ...addA(baseRaw), ...addA(spDecoded), ...addA(spRaw));
+      }
+
+      const seen = new Set();
+      const candidates = [];
+      for (const n of candidatesRaw){
+        const nn = String(n || "").trim();
+        if (!nn) continue;
+        if (seen.has(nn)) continue;
+        seen.add(nn);
+        candidates.push(nn);
+      }
+
+      let lastUrl = "";
+      for (const name of candidates){
+        for (const base of (Array.isArray(SRT_BASES) ? SRT_BASES : [])){
+          const url = base + encodeURIComponent(name);
+          lastUrl = url;
+
+          const res = await fetch(url, { cache: "no-store" });
+          if (!res.ok) continue;
+
+          const text = await res.text();
+          if (!text || !text.trim()) continue;
+
+          it.txtName = name;
+          it.txtUrl  = url;
+
+          txCache.set(it.id, { text, at: Date.now() });
+          return text;
+        }
+      }
+
+      throw new Error("txt not found: " + (lastUrl || "-"));
     }
 
     async function openTranscriptFor(it){
-      if (!it || !it.txtUrl) return;
+      if (!it) return;
       txCurrent = it;
       openTranscript();
       trackTranscriptOpen(it);
@@ -3735,7 +3771,7 @@ function updateSearchNoZoomFontSizes(){
       updateTxInfo(it);
 
       txCopyBtn.disabled = true;
-      txDownloadBtn.disabled = false;
+      txDownloadBtn.disabled = true;
       txContentEl.textContent = "Yükleniyor…";
       txPlainText = "";
       clearTxSearchUI();
@@ -3744,9 +3780,11 @@ function updateSearchNoZoomFontSizes(){
         const t = await fetchTranscriptText(it);
         txPlainText = t || "";
         txCopyBtn.disabled = !txPlainText;
+      txDownloadBtn.disabled = !(it && it.txtUrl);
+      updateTxInfo(it);
         clearTxSearchUI();
       }catch{
-        txContentEl.textContent = "TXT yüklenemedi.";
+        txContentEl.textContent = "Bu kayıtta TXT yok.";
         txCopyBtn.disabled = true;
       }
     }
