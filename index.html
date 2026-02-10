@@ -50,6 +50,8 @@
       height: 100%;
       overscroll-behavior-y: none;
       background: var(--bg);
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
     }
 
     body{
@@ -821,7 +823,7 @@
       justify-content: space-between;
       gap: 10px;
       cursor: grab;
-      user-select: none;
+      user-select:none;
       touch-action: none;
       -webkit-tap-highlight-color: transparent;
       border-bottom: 1px solid #ececec;
@@ -1253,48 +1255,6 @@
     const metaEl   = document.getElementById("meta");
     const statusEl = document.getElementById("status");
 
-    function normalizeViewportContent(content){
-      const parts = String(content || "").split(",").map(s => s.trim()).filter(Boolean);
-      const filtered = parts.filter(p => {
-        const k = p.split("=")[0].trim().toLowerCase();
-        return k !== "maximum-scale" && k !== "minimum-scale" && k !== "user-scalable";
-      });
-      return filtered.join(",");
-    }
-
-    function setupIOSInputFocusZoomLock(){
-      const ua = navigator.userAgent || "";
-      const iOS = /iPhone|iPad|iPod/i.test(ua);
-      const iPadOS = /Mac/i.test(ua) && navigator.maxTouchPoints && navigator.maxTouchPoints > 1;
-      if (!(iOS || iPadOS)) return;
-
-      const meta = document.querySelector('meta[name="viewport"]');
-      if (!meta) return;
-
-      const base = normalizeViewportContent(meta.getAttribute("content") || "");
-      const locked = base ? (base + ",maximum-scale=1,user-scalable=no")
-                          : "width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no";
-
-      const ids = new Set(["search", "txSearchInput"]);
-      const lock = () => meta.setAttribute("content", locked);
-      const unlock = () => meta.setAttribute("content", base || "width=device-width,initial-scale=1");
-
-      document.addEventListener("focusin", (e) => {
-        const t = e.target;
-        if (t && t.id && ids.has(t.id)) lock();
-      });
-      document.addEventListener("focusout", (e) => {
-        const t = e.target;
-        if (t && t.id && ids.has(t.id)) unlock();
-      });
-      document.addEventListener("visibilitychange", () => {
-        if (document.hidden) unlock();
-      });
-    }
-
-    setupIOSInputFocusZoomLock();
-
-
     const stickyBar = document.getElementById("stickyBar");
     const stickyPh  = document.getElementById("stickyBarPh");
 
@@ -1550,6 +1510,7 @@
       uiState:      "fsp1.ui.state.v1",
 
       txSize: "fsp1.tx.size.v1",
+
       txPos:  "fsp1.tx.pos.v1"
     };
 
@@ -1664,6 +1625,33 @@
     let uiScale = 1;
     let useTransformScale = false;
 
+const TX_DEFAULT_SIZE = { w: 720, h: 600 };
+const TX_MIN_SIZE = { w: 280, h: 220 };
+
+const IOS_MIN_INPUT_PX = 16;
+
+function isIOSWebKit(){
+  const ua = navigator.userAgent || "";
+  const isAppleTouch = /iP(ad|hone|od)/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isWebKit = /WebKit/.test(ua) && !/Edg|OPR/.test(ua);
+  return isAppleTouch && isWebKit;
+}
+
+function updateSearchNoZoomFontSizes(){
+  if (!isIOSWebKit()) return;
+  const scale = Math.max(0.01, uiScale);
+  const required = Math.ceil(IOS_MIN_INPUT_PX / scale);
+  const inputs = [document.getElementById("search"), document.getElementById("txSearchInput")].filter(Boolean);
+  for (const el of inputs){
+    if (!el.dataset.baseFontPx){
+      const base = parseFloat(getComputedStyle(el).fontSize || "16");
+      el.dataset.baseFontPx = String(Number.isFinite(base) ? base : 16);
+    }
+    const basePx = parseFloat(el.dataset.baseFontPx) || IOS_MIN_INPUT_PX;
+    el.style.fontSize = Math.max(basePx, required) + "px";
+  }
+}
+
     function getViewportWH(){
       const vv = window.visualViewport;
       const vw = (vv && vv.width)  ? vv.width  : window.innerWidth;
@@ -1699,37 +1687,6 @@
       txPanel.style.transform = `scale(${uiScale})`;
     }
 
-    function enforceMinInputFontPx(){
-      const isCoarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-      if (!isCoarse) return;
-
-      const getBase = (el) => {
-        if (!el) return 16;
-        const saved = Number(el.dataset.baseFontPx || "0");
-        if (Number.isFinite(saved) && saved > 0) return saved;
-        const cs = getComputedStyle(el);
-        const px = parseFloat(cs.fontSize) || 16;
-        el.dataset.baseFontPx = String(px);
-        return px;
-      };
-
-      if (!useTransformScale || uiScale >= 1){
-        if (txSearchInput) txSearchInput.style.fontSize = "";
-        if (searchEl) searchEl.style.fontSize = "";
-        return;
-      }
-
-      const baseTx = getBase(txSearchInput);
-      const baseMain = getBase(searchEl);
-
-      const pxTx = Math.max(16, Math.ceil(baseTx / uiScale));
-      const pxMain = Math.max(16, Math.ceil(baseMain / uiScale));
-
-      if (txSearchInput) txSearchInput.style.fontSize = pxTx + "px";
-      if (searchEl) searchEl.style.fontSize = pxMain + "px";
-    }
-
-
     function setZoomUI(v){
       const pct = Math.round(v * 100) + "%";
       zoomOutBtn.disabled = (zoomIndex <= 0);
@@ -1761,16 +1718,20 @@
         fp.style.transform = `scale(${v})`;
       }
 
+      restorePlayerPos();
+
       localStorage.setItem(LS.zoom, String(v));
       setZoomUI(v);
+
       setTimeout(() => {
         clampPlayerToViewport();
         updateSticky(true);
       }, 0);
+
       updateOverlayScale();
+      updateSearchNoZoomFontSizes();
       clampTxSizeToViewport();
       clampTxPosToViewport();
-      enforceMinInputFontPx();
     }
 
     function restoreZoom(){
@@ -2678,30 +2639,50 @@
       try{
         const s = JSON.parse(localStorage.getItem(LS.pos) || "null");
         if (!s) return;
-        if (typeof s.x === "number" && typeof s.y === "number"){
-          fp.style.left = s.x + "px";
-          fp.style.top = s.y + "px";
-          fp.style.bottom = "auto";
-          fp.style.right = "auto";
+        if (typeof s.x !== "number" || typeof s.y !== "number") return;
+
+        let x = s.x;
+        let y = s.y;
+
+        // Backward-compat: older builds stored unscaled coords in transform-scale mode.
+        if (s.ver !== 2 && useTransformScale){
+          x = x * uiScale;
+          y = y * uiScale;
         }
+
+        fp.style.left = x + "px";
+        fp.style.top  = y + "px";
+        fp.style.bottom = "auto";
+        fp.style.right  = "auto";
+
+        clampPlayerToViewport();
       }catch{}
     }
 
     function savePlayerPos(x,y){
-      localStorage.setItem(LS.pos, JSON.stringify({x,y}));
+      localStorage.setItem(LS.pos, JSON.stringify({ x, y, ver: 2 }));
     }
 
-    function getPlayerVisualSize(){
-      const s = useTransformScale ? uiScale : 1;
-      return { w: fp.offsetWidth * s, h: fp.offsetHeight * s };
+    function getPlayerRect(){
+      return fp.getBoundingClientRect();
     }
 
-    function getPlayerBounds(){
+    function getPlayerPosPx(){
+      const left = parseFloat(fp.style.left);
+      const top  = parseFloat(fp.style.top);
+      if (Number.isFinite(left) && Number.isFinite(top)) return { left, top };
+      const r = getPlayerRect();
+      return { left: r.left, top: r.top };
+    }
+
+    function getPlayerBoundsPx(){
       const { vw, vh } = getViewportWH();
-      const { w, h } = getPlayerVisualSize();
+      const r = getPlayerRect();
+      const w = r.width;
+      const h = r.height;
 
-      const keepX = Math.max(24, Math.min(w - 16, 140));
-      const keepY = Math.max(24, Math.min(h - 16, 90));
+      const keepX = Math.max(70, Math.min(w - 16, 180));
+      const keepY = Math.max(56, Math.min(h - 16, 120));
 
       const minX = -w + keepX;
       const maxX = vw - keepX;
@@ -2717,14 +2698,11 @@
     }
 
     function clampPlayerToViewport(){
-      const { minX, maxX, minY, maxY } = getPlayerBounds();
+      const { minX, maxX, minY, maxY } = getPlayerBoundsPx();
+      const cur = getPlayerPosPx();
 
-      const left = parseFloat(fp.style.left);
-      const top  = parseFloat(fp.style.top);
-      if (!Number.isFinite(left) || !Number.isFinite(top)) return;
-
-      const nx = Math.min(maxX, Math.max(minX, left));
-      const ny = Math.min(maxY, Math.max(minY, top));
+      const nx = Math.min(maxX, Math.max(minX, cur.left));
+      const ny = Math.min(maxY, Math.max(minY, cur.top));
 
       fp.style.left = nx + "px";
       fp.style.top  = ny + "px";
@@ -2750,12 +2728,7 @@
     let suppressClickUntil = 0;
 
     function getCurrentLeftTopLayout(){
-      const left = parseFloat(fp.style.left);
-      const top  = parseFloat(fp.style.top);
-      if (Number.isFinite(left) && Number.isFinite(top)) return { left, top };
-
-      const rect = fp.getBoundingClientRect();
-      return { left: rect.left, top: rect.top };
+      return getPlayerPosPx();
     }
 
     fpHeader.addEventListener("pointerdown", (e) => {
@@ -2791,7 +2764,8 @@
 
       if (!moved && (Math.abs(dxClient) + Math.abs(dyClient) > 6)) moved = true;
 
-      const { minX, maxX, minY, maxY } = getPlayerBounds();
+      const { minX, maxX, minY, maxY } = getPlayerBoundsPx();
+
       const nx = Math.min(maxX, Math.max(minX, startLeft + dx));
       const ny = Math.min(maxY, Math.max(minY, startTop  + dy));
 
@@ -2827,6 +2801,7 @@
     window.addEventListener("resize", () => {
       clampPlayerToViewport();
       updateOverlayScale();
+      updateSearchNoZoomFontSizes();
       clampTxSizeToViewport();
       clampTxPosToViewport();
       updateSticky(true);
@@ -2834,6 +2809,7 @@
     window.addEventListener("orientationchange", () => setTimeout(() => {
       clampPlayerToViewport();
       updateOverlayScale();
+      updateSearchNoZoomFontSizes();
       clampTxSizeToViewport();
       clampTxPosToViewport();
       updateSticky(true);
@@ -2842,8 +2818,9 @@
       window.visualViewport.addEventListener("resize", () => {
         clampPlayerToViewport();
         updateOverlayScale();
+        updateSearchNoZoomFontSizes();
         clampTxSizeToViewport();
-      clampTxPosToViewport();
+        clampTxPosToViewport();
         updateSticky(true);
       });
     }
@@ -2961,10 +2938,15 @@
     }
 
     function clampTxSizeToViewport(){
+      if (!txOpen) return;
+
       const saved = loadAny(LS.txSize);
       if (saved && typeof saved.w === "number" && typeof saved.h === "number"){
         txPanel.style.width = saved.w + "px";
         txPanel.style.height = saved.h + "px";
+      } else {
+        txPanel.style.width = TX_DEFAULT_SIZE.w + "px";
+        txPanel.style.height = TX_DEFAULT_SIZE.h + "px";
       }
 
       const { vw, vh } = getViewportWH();
@@ -2972,14 +2954,14 @@
       const vhL = toLayoutPx(vh);
 
       const margin = 28;
-      const maxW = Math.max(280, vwL - margin);
-      const maxH = Math.max(220, vhL - margin);
+      const maxW = Math.max(TX_MIN_SIZE.w, vwL - margin);
+      const maxH = Math.max(TX_MIN_SIZE.h, vhL - margin);
 
-      const curW = txPanel.offsetWidth;
-      const curH = txPanel.offsetHeight;
+      const curW = txPanel.offsetWidth || TX_DEFAULT_SIZE.w;
+      const curH = txPanel.offsetHeight || TX_DEFAULT_SIZE.h;
 
-      const minW = Math.min(maxW, 280);
-      const minH = Math.min(maxH, 220);
+      const minW = Math.min(maxW, TX_MIN_SIZE.w);
+      const minH = Math.min(maxH, TX_MIN_SIZE.h);
 
       const w = Math.min(maxW, Math.max(minW, curW));
       const h = Math.min(maxH, Math.max(minH, curH));
@@ -2996,13 +2978,18 @@
       const right = parseFloat(txPanel.style.right || cs.right || "0");
       return { top: Number.isFinite(top) ? top : 0, right: Number.isFinite(right) ? right : 0 };
     }
+
     function setTxPosPx(top, right){
       txPanel.style.top = top + "px";
       txPanel.style.right = right + "px";
       txPanel.style.left = "auto";
       txPanel.style.bottom = "auto";
     }
-    function saveTxPos(top, right){ saveAny(LS.txPos, { top, right }); }
+
+    function saveTxPos(top, right){
+      saveAny(LS.txPos, { top, right });
+    }
+
     function restoreTxPos(){
       const saved = loadAny(LS.txPos);
       if (!saved) return;
@@ -3011,16 +2998,13 @@
       }
     }
 
-    function getTxVisualSizePx(){
-      const s = useTransformScale ? uiScale : 1;
-      return { w: txPanel.offsetWidth * s, h: txPanel.offsetHeight * s };
-    }
-
     function clampTxPosCandidate(top, right){
       const { vw, vh } = getViewportWH();
-      const { w, h } = getTxVisualSizePx();
-      const margin = 8;
+      const rect = txPanel.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
 
+      const margin = 14;
       const minTop = margin;
       const maxTop = Math.max(minTop, vh - h - margin);
 
@@ -3041,66 +3025,14 @@
       saveTxPos(cl.top, cl.right);
     }
 
-    const TX_DRAG_IGNORE_SELECTOR = "button, a, input, textarea, select, option";
-    function shouldStartTxDrag(target){
-      return !(target && target.closest && target.closest(TX_DRAG_IGNORE_SELECTOR));
-    }
-
-    let txDragging = false;
-    let txDragStartX = 0, txDragStartY = 0;
-    let txDragStartTop = 0, txDragStartRight = 0;
-
-    txHeader.addEventListener("pointerdown", (e) => {
-      if (!txOpen) return;
-      if (!shouldStartTxDrag(e.target)) return;
-
-      txDragging = true;
-      txHeader.setPointerCapture(e.pointerId);
-      txHeader.style.cursor = "grabbing";
-
-      txDragStartX = e.clientX;
-      txDragStartY = e.clientY;
-
-      const cur = getTxPosPx();
-      txDragStartTop = cur.top;
-      txDragStartRight = cur.right;
-
-      e.preventDefault();
-      e.stopPropagation();
-    });
-
-    txHeader.addEventListener("pointermove", (e) => {
-      if (!txDragging) return;
-
-      const dx = e.clientX - txDragStartX;
-      const dy = e.clientY - txDragStartY;
-
-      const cl = clampTxPosCandidate(txDragStartTop + dy, txDragStartRight - dx);
-      setTxPosPx(cl.top, cl.right);
-
-      e.preventDefault();
-    });
-
-    function endTxDrag(pointerId){
-      if (!txDragging) return;
-      txDragging = false;
-      txHeader.style.cursor = "grab";
-
-      try{ txHeader.releasePointerCapture(pointerId); }catch{}
-      clampTxPosToViewport();
-    }
-
-    txHeader.addEventListener("pointerup", (e) => endTxDrag(e.pointerId));
-    txHeader.addEventListener("pointercancel", (e) => endTxDrag(e.pointerId));
-
-
     function openTranscript(){
       txOpen = true;
       txPanel.classList.add("open");
       txPanel.setAttribute("aria-hidden", "false");
       updateOverlayScale();
-      clampTxSizeToViewport();
+      updateSearchNoZoomFontSizes();
       restoreTxPos();
+      clampTxSizeToViewport();
       clampTxPosToViewport();
     }
 
@@ -3319,6 +3251,58 @@
     // Transcript overlay should NOT close on background click.
     txPanel.addEventListener("click", (e) => e.stopPropagation());
 
+// Draggable transcript panel (floating)
+const TX_DRAG_IGNORE_SELECTOR = "button, a, input, textarea, select, option";
+function shouldStartTxDrag(target){
+  return !(target && target.closest && target.closest(TX_DRAG_IGNORE_SELECTOR));
+}
+
+let txDragging = false;
+let txDragStartX = 0, txDragStartY = 0;
+let txDragStartTop = 0, txDragStartRight = 0;
+
+txHeader.addEventListener("pointerdown", (e) => {
+  if (!txOpen) return;
+  if (!shouldStartTxDrag(e.target)) return;
+
+  txDragging = true;
+  txHeader.setPointerCapture(e.pointerId);
+  txHeader.style.cursor = "grabbing";
+
+  txDragStartX = e.clientX;
+  txDragStartY = e.clientY;
+
+  const cur = getTxPosPx();
+  txDragStartTop = cur.top;
+  txDragStartRight = cur.right;
+
+  e.preventDefault();
+  e.stopPropagation();
+});
+
+txHeader.addEventListener("pointermove", (e) => {
+  if (!txDragging) return;
+
+  const dx = e.clientX - txDragStartX;
+  const dy = e.clientY - txDragStartY;
+
+  const cl = clampTxPosCandidate(txDragStartTop + dy, txDragStartRight - dx);
+  setTxPosPx(cl.top, cl.right);
+
+  e.preventDefault();
+});
+
+function endTxDrag(pointerId){
+  if (!txDragging) return;
+  txDragging = false;
+  txHeader.style.cursor = "grab";
+  try{ txHeader.releasePointerCapture(pointerId); }catch{}
+  clampTxPosToViewport();
+}
+
+txHeader.addEventListener("pointerup", (e) => endTxDrag(e.pointerId));
+txHeader.addEventListener("pointercancel", (e) => endTxDrag(e.pointerId));
+
     // Resizable transcript panel
     let txResizing = false;
     let txResizeStartX = 0, txResizeStartY = 0;
@@ -3334,11 +3318,11 @@
       const vhL = toLayoutPx(vh);
 
       const margin = 28;
-      const maxW = Math.max(280, vwL - margin);
-      const maxH = Math.max(220, vhL - margin);
+      const maxW = Math.max(TX_MIN_SIZE.w, vwL - margin);
+      const maxH = Math.max(TX_MIN_SIZE.h, vhL - margin);
 
-      const minW = Math.min(maxW, 280);
-      const minH = Math.min(maxH, 220);
+      const minW = Math.min(maxW, TX_MIN_SIZE.w);
+      const minH = Math.min(maxH, TX_MIN_SIZE.h);
 
       const cw = Math.min(maxW, Math.max(minW, w));
       const ch = Math.min(maxH, Math.max(minH, h));
