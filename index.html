@@ -1332,6 +1332,9 @@
       "https://raw.githubusercontent.com/protokolFSP/FSPtranskript/main/transcripts/",
       "https://cdn.jsdelivr.net/gh/protokolFSP/FSPtranskript@main/transcripts/"
     ];
+
+    // TXT transkriptler aynı repo klasöründe.
+    const TXT_BASES = SRT_BASES;
     const CAPTION_MAX_LINES = 6;
     const CAPTION_TARGET_LINES = 3; // cc modu hedef
     const CAPTION_MAX_LINES_9 = 9;
@@ -2248,6 +2251,48 @@ function updateSearchNoZoomFontSizes(){
       return out;
     }
 
+    function buildTxtNameCandidates(it){
+      const rawName = (it?.name || "").split("/").pop() || "";
+      const decoded = decodeURIComponentSafe(rawName);
+
+      const baseDecoded = decoded.replace(/\.(m4a|mp3)$/i, ".txt");
+      const baseRaw     = rawName.replace(/\.(m4a|mp3)$/i, ".txt");
+
+      const hasA = /^A\s+/i.test(baseDecoded);
+      const aDecoded  = hasA ? baseDecoded : ("A " + baseDecoded);
+      const aRaw      = hasA ? baseRaw     : ("A " + baseRaw);
+      const aUDecoded = hasA ? baseDecoded : ("A_" + baseDecoded);
+      const aURaw     = hasA ? baseRaw     : ("A_" + baseRaw);
+      const aDDecoded = hasA ? baseDecoded : ("A-" + baseDecoded);
+      const aDRaw     = hasA ? baseRaw     : ("A-" + baseRaw);
+
+      const altDecoded = decoded + ".txt";
+      const altRaw     = rawName + ".txt";
+
+      const seen = new Set();
+      const out = [];
+      for (const n of [baseDecoded, baseRaw, aDecoded, aRaw, aUDecoded, aURaw, aDDecoded, aDRaw, altDecoded, altRaw]){
+        const nn = String(n || "").trim();
+        if (!nn) continue;
+        if (seen.has(nn)) continue;
+        seen.add(nn);
+        out.push(nn);
+      }
+      return out;
+    }
+
+    async function buildTxtUrlsForItem(it){
+      const names = buildTxtNameCandidates(it);
+      const urls = [];
+      for (const name of names){
+        for (const base of TXT_BASES){
+          urls.push(base + encodeURIComponent(name));
+        }
+      }
+      return { urls, triedNames: names };
+    }
+
+
     async function buildSrtUrlsForItem(it){
       const names = buildSrtNameCandidates(it);
       const urls = [];
@@ -2718,14 +2763,6 @@ function updateSearchNoZoomFontSizes(){
         }
 
         const files = Array.isArray(j.files) ? j.files : [];
-        const txtLookup = new Map();
-        for (const f of files){
-          const nm = (f?.name || "").toString();
-          if (!nm) continue;
-          if (nm.toLowerCase().endsWith(".txt")){
-            txtLookup.set(nm.toLowerCase(), nm);
-          }
-        }
 
         const list = files
           .filter(f => {
@@ -2741,9 +2778,9 @@ function updateSearchNoZoomFontSizes(){
             const localId = name || url || (title + "#" + idx);
             const id = "S1|" + localId;
 
-            const txtCandidateLower = replaceExtToTxt(name).toLowerCase();
-            const txtName = txtLookup.get(txtCandidateLower) || "";
-            const txtUrl = txtName ? buildDownloadUrl(IA_IDENTIFIER_1, txtName) : "";
+            const txtCandidates = buildTxtNameCandidates({ name });
+            const txtName = (txtCandidates && txtCandidates.length) ? txtCandidates[0] : replaceExtToTxt(name);
+            const txtUrl = txtName ? (TXT_BASES[0] + encodeURIComponent(txtName)) : "";
 
             return { id, title, name, url, src: "S1", txtName, txtUrl };
           });
@@ -2903,7 +2940,7 @@ function updateSearchNoZoomFontSizes(){
         dlCount.className = "countCell";
         dlCount.textContent = String(Number(globalDownloadCounts[it.id]) || 0);
 
-        const hasTxt = !!(it.txtUrl && it.txtName);
+        const hasTxt = !!(it.txtUrl || it.txtName);
         const txBtn = iconButton("txt", false, hasTxt ? "TXT" : "TXT yok");
         txBtn.disabled = !hasTxt;
         if (!hasTxt) txBtn.classList.add("txtMissing");
@@ -3718,15 +3755,45 @@ function updateSearchNoZoomFontSizes(){
       const cached = txCache.get(it.id);
       if (cached && (Date.now() - cached.at) < TX_CACHE_TTL_MS) return cached.text;
 
-      const res = await fetch(it.txtUrl, { cache: "no-cache" });
-      if (!res.ok) throw new Error("txt fetch failed");
-      const text = await res.text();
-      txCache.set(it.id, { text, at: Date.now() });
-      return text;
+      const built = await buildTxtUrlsForItem(it);
+      const urls = [];
+      const seen = new Set();
+
+      // First try the currently assigned URL (if any), then fall back to candidates.
+      for (const u of [it?.txtUrl, ...(built?.urls || [])]){
+        const uu = String(u || "").trim();
+        if (!uu) continue;
+        if (seen.has(uu)) continue;
+        seen.add(uu);
+        urls.push(uu);
+      }
+
+      let lastErr = null;
+      for (const url of urls){
+        try{
+          const res = await fetch(url, { cache: "no-cache" });
+          if (!res.ok) throw new Error("txt fetch failed: " + res.status);
+          const text = await res.text();
+
+          // Update to the working source so Download uses the correct file.
+          try{
+            const u = new URL(url, location.href);
+            const fn = decodeURIComponentSafe((u.pathname || "").split("/").pop() || "");
+            if (fn) it.txtName = fn;
+          }catch{}
+          it.txtUrl = url;
+
+          txCache.set(it.id, { text, at: Date.now() });
+          return text;
+        }catch(err){
+          lastErr = err;
+        }
+      }
+      throw (lastErr || new Error("txt fetch failed"));
     }
 
     async function openTranscriptFor(it){
-      if (!it || !it.txtUrl) return;
+      if (!it) return;
       txCurrent = it;
       openTranscript();
       trackTranscriptOpen(it);
@@ -3735,7 +3802,7 @@ function updateSearchNoZoomFontSizes(){
       updateTxInfo(it);
 
       txCopyBtn.disabled = true;
-      txDownloadBtn.disabled = false;
+      txDownloadBtn.disabled = true;
       txContentEl.textContent = "Yükleniyor…";
       txPlainText = "";
       clearTxSearchUI();
@@ -3744,6 +3811,8 @@ function updateSearchNoZoomFontSizes(){
         const t = await fetchTranscriptText(it);
         txPlainText = t || "";
         txCopyBtn.disabled = !txPlainText;
+        updateTxInfo(it);
+        txDownloadBtn.disabled = false;
         clearTxSearchUI();
       }catch{
         txContentEl.textContent = "TXT yüklenemedi.";
