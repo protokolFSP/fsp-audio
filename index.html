@@ -1023,11 +1023,12 @@
       position: absolute;
       left: 0;
       right: 0;
-      bottom: calc(100% - 1px);
+      bottom: 100%;
+      transform: translateY(12px);
       pointer-events: none;
       z-index: 10000;
     }
-    #captions{ pointer-events: auto; }
+    #captions{ pointer-events: auto; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 
     /* CC + E button styling */
     #ccBtn, #expBtn{
