@@ -29,6 +29,7 @@
 
   <style>
     :root{
+      --capLines: 6;
       --border:#e9e9e9;
       --muted:#6b6b6b;
       --bg:#ffffff;
@@ -1003,18 +1004,19 @@
       background: rgba(43,124,255,.10);
       box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
     }
-
     #captions{
-      margin: 0 0 10px 0;
+      margin: 0;
       padding: 10px 12px;
+      padding-bottom: calc(10px + .55em); /* alt satır kesilmesin */
       border-radius: 12px;
-      border: 1px solid #e5e5e5;
+      border: 2px solid #d3d3d3;
       background: #fafafa;
       white-space: pre-wrap;
       line-height: 1.25;
       font-size: 1.02rem;
       overflow: hidden;
-      max-height: calc(1.25em * 6);
+      max-height: calc(1.25em * var(--capLines) + 34px);
+      box-shadow: 0 10px 22px rgba(0,0,0,.06);
     }
     #captions.isEmpty{ color: var(--muted); }
     #captions.hidden{ display:none; }
@@ -1030,6 +1032,27 @@
     }
     #captions{ pointer-events: auto; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 
+    /* cc / CC / CCx buttons */
+    .ccModeBtn{
+      width: auto;
+      min-width: 42px;
+      padding: 0 10px;
+      border-color: var(--blue);
+      border-radius: 12px;
+    }
+    .ccModeBtn .btnMark{
+      font-weight: 850;
+      font-size: 16px;
+      letter-spacing: .3px;
+      line-height: 1;
+    }
+    .ccModeBtn.on{
+      border-color: var(--blue);
+      background: rgba(43,124,255,.10);
+      box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
+    }
+    .ccModeBtn.on .btnMark{ color: var(--orange); }
+    .ccModeBtn:not(.on) .btnMark{ color: #404040; }
     /* CC + E button styling */
     #ccBtn, #expBtn{
       border-color: var(--blue);
@@ -1207,15 +1230,17 @@
     <div id="fpHeader" title="Sürükle">
       <div id="fpTitle">Bir kayıt seç...</div>
       <div id="fpHeaderRight">
-        <button id="ccBtn" class="miniBtn on" type="button" title="Altyazı (CC)" aria-pressed="true" aria-label="Altyazı (CC)">
+        <button id="ccSmallBtn" class="miniBtn ccModeBtn" type="button" title="Altyazı (cc)" aria-pressed="false" aria-label="Altyazı (cc)">
+          <span class="btnMark">cc</span>
+        </button>
+        <button id="ccMedBtn" class="miniBtn ccModeBtn" type="button" title="Altyazı (CC)" aria-pressed="false" aria-label="Altyazı (CC)">
           <span class="btnMark">CC</span>
         </button>
-
-        <button id="expBtn" class="miniBtn" type="button" title="Geniş altyazı (E)" aria-pressed="false" aria-label="Geniş altyazı (E)">
-          <span class="btnMark">E</span>
+        <button id="ccXBtn" class="miniBtn ccModeBtn" type="button" title="Altyazı (CCx)" aria-pressed="false" aria-label="Altyazı (CCx)">
+          <span class="btnMark">CCx</span>
         </button>
 
-        <div id="speedWrap" class="speedWrap" aria-label="Hız">
+<div id="speedWrap" class="speedWrap" aria-label="Hız">
           <button id="slowBtn" class="speedCtlBtn" type="button" title="Yavaşlat (🐢)">🐢</button>
           <div id="speedValue" class="speedValue on" title="Oynatma hızı">1×</div>
           <button id="fastBtn" class="speedCtlBtn" type="button" title="Hızlandır (🐇)">🐇</button>
@@ -1308,7 +1333,9 @@
       "https://cdn.jsdelivr.net/gh/protokolFSP/FSPtranskript@main/transcripts/"
     ];
     const CAPTION_MAX_LINES = 6;
-    const CAPTION_TARGET_LINES = 3; // 2-3 satır görünüm için hedef
+    const CAPTION_TARGET_LINES = 3; // cc modu hedef
+    const CAPTION_MAX_LINES_9 = 9;
+    const CAPTION_MAX_LINES_13 = 13;
 
     const FORCE_REFRESH = new URLSearchParams(location.search).has("refresh");
     const SRT_DEBUG = new URLSearchParams(location.search).has("srtdebug");
@@ -1346,8 +1373,9 @@
     const slowBtn = document.getElementById("slowBtn");
     const fastBtn = document.getElementById("fastBtn");
     const speedValueEl = document.getElementById("speedValue");
-    const ccBtn = document.getElementById("ccBtn");
-    const expBtn = document.getElementById("expBtn");
+    const ccSmallBtn = document.getElementById("ccSmallBtn");
+    const ccMedBtn   = document.getElementById("ccMedBtn");
+    const ccXBtn     = document.getElementById("ccXBtn");
     const captionsDock = document.getElementById("captionsDock");
     const captionsEl = document.getElementById("captions");
 
@@ -1580,8 +1608,7 @@
       sortDirDl:   "fsp1.sort.dl.dir.v1",
       speed: "fsp1.speed.v1",
       zoom:  "fsp1.ui.zoom.v1",
-      captionsOn: "fsp1.captions.on.v1",
-      captionsExpanded: "fsp1.captions.expanded.v1",
+      captionsMode: "fsp1.captions.mode.v1",
 
       itemsCache:   "fsp1.items.cache.s1.v2",
       itemsCacheAt: "fsp1.items.cache.s1.at.v1",
@@ -1916,41 +1943,65 @@ function updateSearchNoZoomFontSizes(){
 
 
     // ---- SRT Captions (repo: protokolFSP/FSPtranskript) ----
-    let captionsOn = (localStorage.getItem(LS.captionsOn) !== "0");
-    let captionsExpanded = (localStorage.getItem(LS.captionsExpanded) === "1");
+    const CAPTION_MODES = ["cc", "CC", "CCx"];
 
+    function readCaptionMode(){
+      const raw = localStorage.getItem(LS.captionsMode) || "";
+      if (CAPTION_MODES.includes(raw)) return raw;
+
+      // migration: eski sürümlerde captionsOn/captionsExpanded vardı
+      const oldOn = (localStorage.getItem("fsp1.captions.on.v1") !== "0");
+      const oldExp = (localStorage.getItem("fsp1.captions.expanded.v1") === "1");
+      if (oldOn) return oldExp ? "CC" : "cc";
+      return "cc";
+    }
+
+    let captionMode = readCaptionMode(); // "cc" | "CC" | "CCx" | off(null)
     const srtCache = new Map(); // item.id -> cues[]
     let srtCtrl = null;
     let activeCues = [];
     let lastCueIdx = -1;
 
+    function isCaptionsOn(){ return !!captionMode; }
+
     function getCaptionMaxLines(){
-      return captionsExpanded ? 9 : CAPTION_MAX_LINES;
+      if (captionMode === "CC") return CAPTION_MAX_LINES_9;
+      if (captionMode === "CCx") return CAPTION_MAX_LINES_13;
+      return CAPTION_MAX_LINES;
     }
 
     function getCaptionTargetLines(){
-      return captionsExpanded ? 9 : CAPTION_TARGET_LINES;
+      if (captionMode === "CC") return CAPTION_MAX_LINES_9;
+      if (captionMode === "CCx") return CAPTION_MAX_LINES_13;
+      return CAPTION_TARGET_LINES;
     }
 
     function setCaptionUi(){
-      if (ccBtn){
-        ccBtn.classList.toggle("on", captionsOn);
-        ccBtn.setAttribute("aria-pressed", String(!!captionsOn));
-      }
-      if (expBtn){
-        expBtn.classList.toggle("on", captionsExpanded);
-        expBtn.setAttribute("aria-pressed", String(!!captionsExpanded));
-      }
-      if (captionsEl){
-        captionsEl.classList.toggle("hidden", !captionsOn);
-        if (!captionsOn) captionsEl.innerHTML = "";
-      }
-    }
+      const on = isCaptionsOn();
 
-    function clampCaptionLines(text, maxLines){
-      const t = (text || "").toString().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-      const lines = t.split("\n");
-      return lines.slice(0, maxLines).join("\n").trim();
+      const setBtn = (btn, active) => {
+        if (!btn) return;
+        btn.classList.toggle("on", !!active);
+        btn.setAttribute("aria-pressed", String(!!active));
+      };
+
+      setBtn(ccSmallBtn, captionMode === "cc");
+      setBtn(ccMedBtn,   captionMode === "CC");
+      setBtn(ccXBtn,     captionMode === "CCx");
+
+      if (captionsEl){
+        captionsEl.classList.toggle("hidden", !on);
+        captionsEl.style.setProperty("--capLines", String(getCaptionMaxLines()));
+        if (!on){
+          captionsEl.innerHTML = "";
+          captionsEl.classList.add("isEmpty");
+        } else if (!captionsEl.innerHTML){
+          captionsEl.textContent = "…";
+          captionsEl.classList.add("isEmpty");
+        }
+      }
+
+      setTimeout(() => clampPlayerToViewport(), 0);
     }
 
     function stripSrtTags(s){
@@ -2034,9 +2085,10 @@ function updateSearchNoZoomFontSizes(){
 
       const parts = [];
       const target = getCaptionTargetLines();
+      const wide = getCaptionMaxLines() > CAPTION_MAX_LINES;
 
-      if (captionsExpanded){
-        const preTarget = Math.max(2, Math.floor(target / 3)); // ~3 satır üst bağlam
+      if (wide){
+        const preTarget = Math.max(2, Math.floor(target / 3));
         let preLines = 0;
         let p = idx - 1;
         const stack = [];
@@ -2098,9 +2150,11 @@ function updateSearchNoZoomFontSizes(){
 
     function renderCaptionLines(lines){
       if (!captionsEl) return;
-      if (!captionsOn) { captionsEl.innerHTML = ""; return; }
+      if (!isCaptionsOn()) { captionsEl.innerHTML = ""; return; }
 
       const maxLines = getCaptionMaxLines();
+      captionsEl.style.setProperty("--capLines", String(maxLines));
+
       const { lines: trimmed, activeStart, activeEnd } = trimLinesAroundActive(lines, maxLines);
 
       const out = [];
@@ -2115,35 +2169,41 @@ function updateSearchNoZoomFontSizes(){
           else dist = 1;
         }
 
-        const opacity = isActive ? 1 : Math.max(0.22, 0.92 - (dist * 0.12));
+        const opacity = isActive ? 1 : Math.max(0.20, 0.92 - (dist * 0.12));
         const weight = isActive ? 750 : 500;
 
         out.push(`<span style="opacity:${opacity.toFixed(2)};font-weight:${weight}">${escapeHtml(ln.text)}</span>`);
       }
 
       const html = out.join("<br>");
-      captionsEl.innerHTML = html || "—";
+      captionsEl.innerHTML = html || "…";
       captionsEl.classList.toggle("isEmpty", !html);
-
       setTimeout(() => clampPlayerToViewport(), 0);
     }
 
     function renderCaptionInfo(text){
       if (!captionsEl) return;
-      if (!captionsOn) { captionsEl.innerHTML = ""; return; }
-      captionsEl.textContent = text || "";
-      captionsEl.classList.toggle("isEmpty", true);
+      if (!isCaptionsOn()) { captionsEl.innerHTML = ""; return; }
+      captionsEl.textContent = text || "…";
+      captionsEl.classList.add("isEmpty");
       setTimeout(() => clampPlayerToViewport(), 0);
     }
 
     function onCaptionsTimeupdate(){
-      if (!captionsOn) return;
+      if (!isCaptionsOn()) return;
+      if (!activeCues.length) return;
+
       const t = Number(playerEl?.currentTime) || 0;
       const idx = findCueIdx(activeCues, t);
-      if (idx === lastCueIdx) return;
 
+      // Sessizlikte kutu kaybolmasın: önceki caption kalsın.
+      if (idx === -1){
+        if (lastCueIdx === -1) renderCaptionInfo("…");
+        return;
+      }
+
+      if (idx === lastCueIdx) return;
       lastCueIdx = idx;
-      if (idx === -1) return renderCaptionLines([]);
 
       const parts = composeCaptionParts(activeCues, idx);
       const flat = [];
@@ -2158,44 +2218,6 @@ function updateSearchNoZoomFontSizes(){
 
     if (playerEl) playerEl.addEventListener("timeupdate", onCaptionsTimeupdate);
 
-    function loadSrtIndexFromCache(){
-      try{
-        const at = Number(localStorage.getItem(SRT_INDEX_LS_AT) || "0");
-        if (!Number.isFinite(at) || (Date.now() - at) > SRT_INDEX_TTL_MS) return null;
-        const raw = localStorage.getItem(SRT_INDEX_LS_KEY) || "";
-        const arr = JSON.parse(raw);
-        if (!Array.isArray(arr)) return null;
-        return new Set(arr.map(x => String(x)));
-      }catch{
-        return null;
-      }
-    }
-
-    async function fetchSrtIndex(){
-      try{
-        const res = await fetch(SRT_INDEX_API, { cache: "no-store" });
-        if (!res.ok) throw new Error("index fetch failed");
-        const j = await res.json();
-        const names = Array.isArray(j) ? j.map(x => x && x.name).filter(Boolean) : [];
-        if (!names.length) throw new Error("index empty");
-        try{
-          localStorage.setItem(SRT_INDEX_LS_KEY, JSON.stringify(names));
-          localStorage.setItem(SRT_INDEX_LS_AT, String(Date.now()));
-        }catch{}
-        return new Set(names);
-      }catch{
-        return null;
-      }
-    }
-
-    let srtIndexPromise = null;
-    function getSrtIndex(){
-      const cached = loadSrtIndexFromCache();
-      if (cached) return Promise.resolve(cached);
-      if (!srtIndexPromise) srtIndexPromise = fetchSrtIndex();
-      return srtIndexPromise;
-    }
-
     function buildSrtNameCandidates(it){
       const rawName = (it?.name || "").split("/").pop() || "";
       const decoded = decodeURIComponentSafe(rawName);
@@ -2207,17 +2229,16 @@ function updateSearchNoZoomFontSizes(){
       const aDecoded = hasA ? baseDecoded : ("A " + baseDecoded);
       const aRaw     = hasA ? baseRaw     : ("A " + baseRaw);
       const aUDecoded = hasA ? baseDecoded : ("A_" + baseDecoded);
-      const aUDRaw    = hasA ? baseRaw     : ("A_" + baseRaw);
+      const aURaw     = hasA ? baseRaw     : ("A_" + baseRaw);
       const aDDecoded = hasA ? baseDecoded : ("A-" + baseDecoded);
       const aDRaw     = hasA ? baseRaw     : ("A-" + baseRaw);
 
-      const altDecoded  = decoded + ".srt"; // bazı tool'lar foo.m4a.srt üretir
+      const altDecoded  = decoded + ".srt";
       const altRaw      = rawName + ".srt";
 
-      // benzersiz sırada tut
       const seen = new Set();
       const out = [];
-      for (const n of [baseDecoded, baseRaw, aDecoded, aRaw, aUDecoded, aUDRaw, aDDecoded, aDRaw, altDecoded, altRaw]){
+      for (const n of [baseDecoded, baseRaw, aDecoded, aRaw, aUDecoded, aURaw, aDDecoded, aDRaw, altDecoded, altRaw]){
         const nn = String(n || "").trim();
         if (!nn) continue;
         if (seen.has(nn)) continue;
@@ -2229,34 +2250,26 @@ function updateSearchNoZoomFontSizes(){
 
     async function buildSrtUrlsForItem(it){
       const names = buildSrtNameCandidates(it);
-      const idxSet = await getSrtIndex(); // null olabilir
-
-      const filtered = idxSet
-        ? names.filter(n => idxSet.has(n))
-        : names;
-
-      const finalNames = filtered.length ? filtered : names;
-
       const urls = [];
-      for (const name of finalNames){
+      for (const name of names){
         for (const base of SRT_BASES){
           urls.push(base + encodeURIComponent(name));
         }
       }
-      return { urls, triedNames: finalNames };
+      return { urls, triedNames: names };
     }
 
     async function loadSrtForItem(it){
       activeCues = [];
       lastCueIdx = -1;
 
-      if (!captionsOn) return renderCaptionInfo("");
+      if (!isCaptionsOn()) return renderCaptionInfo("");
       if (!it) return renderCaptionInfo("Bir kayıt seç...");
 
       const cached = srtCache.get(it.id);
       if (cached){
         activeCues = cached;
-        renderCaptionInfo("");
+        renderCaptionInfo("…");
         return onCaptionsTimeupdate();
       }
 
@@ -2269,6 +2282,7 @@ function updateSearchNoZoomFontSizes(){
       const urls = built.urls;
       const triedNames = built.triedNames || [];
       let lastUrl = urls[0] || "";
+
       try{
         let cues = null;
         for (const u of urls){
@@ -2283,7 +2297,7 @@ function updateSearchNoZoomFontSizes(){
 
         srtCache.set(it.id, cues);
         activeCues = cues;
-        renderCaptionInfo("");
+        renderCaptionInfo("…");
         onCaptionsTimeupdate();
       }catch(err){
         if (err && err.name === "AbortError") return;
@@ -2295,36 +2309,36 @@ function updateSearchNoZoomFontSizes(){
       }
     }
 
-    function toggleCaptions(){
-      captionsOn = !captionsOn;
-      localStorage.setItem(LS.captionsOn, captionsOn ? "1" : "0");
+    function setModeOrToggle(nextMode){
+      if (captionMode === nextMode){
+        captionMode = null; // off
+        localStorage.setItem(LS.captionsMode, "");
+      } else {
+        captionMode = nextMode;
+        localStorage.setItem(LS.captionsMode, nextMode);
+      }
       setCaptionUi();
 
       const it = items.find(x => x.id === activeId);
-      if (captionsOn && it) loadSrtForItem(it).catch(()=>{});
-      if (!captionsOn) renderCaptionInfo("");
-      setTimeout(() => clampPlayerToViewport(), 0);
+      if (isCaptionsOn() && it) loadSrtForItem(it).catch(()=>{});
     }
 
-    function toggleExpandedCaptions(){
-      captionsExpanded = !captionsExpanded;
-      localStorage.setItem(LS.captionsExpanded, captionsExpanded ? "1" : "0");
-      setCaptionUi();
-      if (captionsOn) onCaptionsTimeupdate();
-      setTimeout(() => clampPlayerToViewport(), 0);
-    }
-
-    if (ccBtn){
-      ccBtn.addEventListener("click", (e) => {
+    if (ccSmallBtn){
+      ccSmallBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        toggleCaptions();
+        setModeOrToggle("cc");
       });
     }
-
-    if (expBtn){
-      expBtn.addEventListener("click", (e) => {
+    if (ccMedBtn){
+      ccMedBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        toggleExpandedCaptions();
+        setModeOrToggle("CC");
+      });
+    }
+    if (ccXBtn){
+      ccXBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        setModeOrToggle("CCx");
       });
     }
     function parseEndDate(item){
@@ -3177,7 +3191,7 @@ function updateSearchNoZoomFontSizes(){
 
       const keepX = Math.max(70, Math.min(w - 16, 180));
       const keepY = Math.max(56, Math.min(h - 16, 120));
-      const capH = (captionsOn && captionsEl && !captionsEl.classList.contains("hidden"))
+      const capH = (typeof isCaptionsOn === "function" && isCaptionsOn() && captionsEl && !captionsEl.classList.contains("hidden"))
         ? captionsEl.getBoundingClientRect().height
         : 0;
 
