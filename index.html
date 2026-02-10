@@ -1253,6 +1253,48 @@
     const metaEl   = document.getElementById("meta");
     const statusEl = document.getElementById("status");
 
+    function normalizeViewportContent(content){
+      const parts = String(content || "").split(",").map(s => s.trim()).filter(Boolean);
+      const filtered = parts.filter(p => {
+        const k = p.split("=")[0].trim().toLowerCase();
+        return k !== "maximum-scale" && k !== "minimum-scale" && k !== "user-scalable";
+      });
+      return filtered.join(",");
+    }
+
+    function setupIOSInputFocusZoomLock(){
+      const ua = navigator.userAgent || "";
+      const iOS = /iPhone|iPad|iPod/i.test(ua);
+      const iPadOS = /Mac/i.test(ua) && navigator.maxTouchPoints && navigator.maxTouchPoints > 1;
+      if (!(iOS || iPadOS)) return;
+
+      const meta = document.querySelector('meta[name="viewport"]');
+      if (!meta) return;
+
+      const base = normalizeViewportContent(meta.getAttribute("content") || "");
+      const locked = base ? (base + ",maximum-scale=1,user-scalable=no")
+                          : "width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no";
+
+      const ids = new Set(["search", "txSearchInput"]);
+      const lock = () => meta.setAttribute("content", locked);
+      const unlock = () => meta.setAttribute("content", base || "width=device-width,initial-scale=1");
+
+      document.addEventListener("focusin", (e) => {
+        const t = e.target;
+        if (t && t.id && ids.has(t.id)) lock();
+      });
+      document.addEventListener("focusout", (e) => {
+        const t = e.target;
+        if (t && t.id && ids.has(t.id)) unlock();
+      });
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) unlock();
+      });
+    }
+
+    setupIOSInputFocusZoomLock();
+
+
     const stickyBar = document.getElementById("stickyBar");
     const stickyPh  = document.getElementById("stickyBarPh");
 
@@ -1661,15 +1703,30 @@
       const isCoarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
       if (!isCoarse) return;
 
+      const getBase = (el) => {
+        if (!el) return 16;
+        const saved = Number(el.dataset.baseFontPx || "0");
+        if (Number.isFinite(saved) && saved > 0) return saved;
+        const cs = getComputedStyle(el);
+        const px = parseFloat(cs.fontSize) || 16;
+        el.dataset.baseFontPx = String(px);
+        return px;
+      };
+
       if (!useTransformScale || uiScale >= 1){
         if (txSearchInput) txSearchInput.style.fontSize = "";
         if (searchEl) searchEl.style.fontSize = "";
         return;
       }
 
-      const px = Math.ceil(16 / uiScale);
-      if (txSearchInput) txSearchInput.style.fontSize = px + "px";
-      if (searchEl) searchEl.style.fontSize = px + "px";
+      const baseTx = getBase(txSearchInput);
+      const baseMain = getBase(searchEl);
+
+      const pxTx = Math.max(16, Math.ceil(baseTx / uiScale));
+      const pxMain = Math.max(16, Math.ceil(baseMain / uiScale));
+
+      if (txSearchInput) txSearchInput.style.fontSize = pxTx + "px";
+      if (searchEl) searchEl.style.fontSize = pxMain + "px";
     }
 
 
@@ -2921,8 +2978,8 @@
       const curW = txPanel.offsetWidth;
       const curH = txPanel.offsetHeight;
 
-      const minW = Math.min(maxW, 720);
-      const minH = Math.min(maxH, 600);
+      const minW = Math.min(maxW, 280);
+      const minH = Math.min(maxH, 220);
 
       const w = Math.min(maxW, Math.max(minW, curW));
       const h = Math.min(maxH, Math.max(minH, curH));
@@ -3280,8 +3337,8 @@
       const maxW = Math.max(280, vwL - margin);
       const maxH = Math.max(220, vhL - margin);
 
-      const minW = Math.min(maxW, 720);
-      const minH = Math.min(maxH, 600);
+      const minW = Math.min(maxW, 280);
+      const minH = Math.min(maxH, 220);
 
       const cw = Math.min(maxW, Math.max(minW, w));
       const ch = Math.min(maxH, Math.max(minH, h));
