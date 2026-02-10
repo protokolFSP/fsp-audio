@@ -820,6 +820,10 @@
       align-items:center;
       justify-content: space-between;
       gap: 10px;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
       border-bottom: 1px solid #ececec;
       line-height: 1.05;
     }
@@ -961,14 +965,16 @@
       }
       #txBtns{ width: 100%; justify-content: flex-end; }
       .txBtn{ height: 34px; padding: 0 10px; font-size: .9rem; }
+      #search{ font-size: 16px; }
+      #txSearchInput{ font-size: 16px; }
     }
 
     #txResizeHandle{
       position: absolute;
       left: 0;
       bottom: 0;
-      width: 38px;
-      height: 38px;
+      width: 54px;
+      height: 54px;
       cursor: nwse-resize;
       display:flex;
       align-items:center;
@@ -976,10 +982,18 @@
       user-select:none;
       -webkit-tap-highlight-color: transparent;
       touch-action: none;
-      background: linear-gradient(135deg, rgba(43,124,255,.0), rgba(43,124,255,.12));
-      border-top-right-radius: 16px;
+      background: linear-gradient(135deg, rgba(43,124,255,.0), rgba(43,124,255,.18));
+      border-top: 1px solid #e2e2e2;
+      border-right: 1px solid #e2e2e2;
+      border-top-right-radius: 18px;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.90),
+        0 6px 16px rgba(0,0,0,.10);
     }
-    #txResizeHandle svg{ width: 18px; height: 18px; opacity: .75; }
+    #txResizeHandle:hover{
+      background: linear-gradient(135deg, rgba(43,124,255,.06), rgba(43,124,255,.24));
+    }
+    #txResizeHandle svg{ width: 22px; height: 22px; opacity: .88; }
   </style>
 </head>
 
@@ -1286,6 +1300,7 @@
 
     // Transcript popup nodes
     const txPanel = document.getElementById("txPanel");
+    const txHeader = document.getElementById("txHeader");
     const txResizeHandle = document.getElementById("txResizeHandle");
     const txTitleEl = document.getElementById("txTitle");
     const txInfoEl = document.getElementById("txInfo");
@@ -1492,7 +1507,8 @@
       metaUpdated:  "fsp1.items.meta.updated.s1.v1",
       uiState:      "fsp1.ui.state.v1",
 
-      txSize: "fsp1.tx.size.v1"
+      txSize: "fsp1.tx.size.v1",
+      txPos:  "fsp1.tx.pos.v1"
     };
 
     const loadMap = (k) => { try { return JSON.parse(localStorage.getItem(k) || "{}"); } catch { return {}; } };
@@ -1641,6 +1657,22 @@
       txPanel.style.transform = `scale(${uiScale})`;
     }
 
+    function enforceMinInputFontPx(){
+      const isCoarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+      if (!isCoarse) return;
+
+      if (!useTransformScale || uiScale >= 1){
+        if (txSearchInput) txSearchInput.style.fontSize = "";
+        if (searchEl) searchEl.style.fontSize = "";
+        return;
+      }
+
+      const px = Math.ceil(16 / uiScale);
+      if (txSearchInput) txSearchInput.style.fontSize = px + "px";
+      if (searchEl) searchEl.style.fontSize = px + "px";
+    }
+
+
     function setZoomUI(v){
       const pct = Math.round(v * 100) + "%";
       zoomOutBtn.disabled = (zoomIndex <= 0);
@@ -1680,6 +1712,8 @@
       }, 0);
       updateOverlayScale();
       clampTxSizeToViewport();
+      clampTxPosToViewport();
+      enforceMinInputFontPx();
     }
 
     function restoreZoom(){
@@ -2600,19 +2634,33 @@
       localStorage.setItem(LS.pos, JSON.stringify({x,y}));
     }
 
-    function clampPlayerToViewport(){
+    function getPlayerVisualSize(){
+      const s = useTransformScale ? uiScale : 1;
+      return { w: fp.offsetWidth * s, h: fp.offsetHeight * s };
+    }
+
+    function getPlayerBounds(){
       const { vw, vh } = getViewportWH();
+      const { w, h } = getPlayerVisualSize();
 
-      const vwL = toLayoutPx(vw);
-      const vhL = toLayoutPx(vh);
+      const keepX = Math.max(24, Math.min(w - 16, 140));
+      const keepY = Math.max(24, Math.min(h - 16, 90));
 
-      const wL = fp.offsetWidth;
-      const hL = fp.offsetHeight;
+      const minX = -w + keepX;
+      const maxX = vw - keepX;
+      const minY = -h + keepY;
+      const maxY = vh - keepY;
 
-      const minX = 8;
-      const minY = 8;
-      const maxX = Math.max(minX, vwL - wL - 8);
-      const maxY = Math.max(minY, vhL - hL - 8);
+      return {
+        minX: Math.min(minX, maxX),
+        maxX: Math.max(minX, maxX),
+        minY: Math.min(minY, maxY),
+        maxY: Math.max(minY, maxY),
+      };
+    }
+
+    function clampPlayerToViewport(){
+      const { minX, maxX, minY, maxY } = getPlayerBounds();
 
       const left = parseFloat(fp.style.left);
       const top  = parseFloat(fp.style.top);
@@ -2650,9 +2698,7 @@
       if (Number.isFinite(left) && Number.isFinite(top)) return { left, top };
 
       const rect = fp.getBoundingClientRect();
-      const l = useTransformScale ? (rect.left / uiScale) : rect.left;
-      const t = useTransformScale ? (rect.top  / uiScale) : rect.top;
-      return { left: l, top: t };
+      return { left: rect.left, top: rect.top };
     }
 
     fpHeader.addEventListener("pointerdown", (e) => {
@@ -2683,23 +2729,12 @@
       const dxClient = e.clientX - startClientX;
       const dyClient = e.clientY - startClientY;
 
-      const dx = useTransformScale ? (dxClient / uiScale) : dxClient;
-      const dy = useTransformScale ? (dyClient / uiScale) : dyClient;
+      const dx = dxClient;
+      const dy = dyClient;
 
       if (!moved && (Math.abs(dxClient) + Math.abs(dyClient) > 6)) moved = true;
 
-      const { vw, vh } = getViewportWH();
-      const vwL = toLayoutPx(vw);
-      const vhL = toLayoutPx(vh);
-
-      const wL = fp.offsetWidth;
-      const hL = fp.offsetHeight;
-
-      const minX = 8;
-      const minY = 8;
-      const maxX = Math.max(minX, vwL - wL - 8);
-      const maxY = Math.max(minY, vhL - hL - 8);
-
+      const { minX, maxX, minY, maxY } = getPlayerBounds();
       const nx = Math.min(maxX, Math.max(minX, startLeft + dx));
       const ny = Math.min(maxY, Math.max(minY, startTop  + dy));
 
@@ -2736,12 +2771,14 @@
       clampPlayerToViewport();
       updateOverlayScale();
       clampTxSizeToViewport();
+      clampTxPosToViewport();
       updateSticky(true);
     });
     window.addEventListener("orientationchange", () => setTimeout(() => {
       clampPlayerToViewport();
       updateOverlayScale();
       clampTxSizeToViewport();
+      clampTxPosToViewport();
       updateSticky(true);
     }, 150));
     if (window.visualViewport){
@@ -2749,6 +2786,7 @@
         clampPlayerToViewport();
         updateOverlayScale();
         clampTxSizeToViewport();
+      clampTxPosToViewport();
         updateSticky(true);
       });
     }
@@ -2895,12 +2933,118 @@
       saveAny(LS.txSize, { w, h });
     }
 
+    function getTxPosPx(){
+      const cs = getComputedStyle(txPanel);
+      const top = parseFloat(txPanel.style.top || cs.top || "0");
+      const right = parseFloat(txPanel.style.right || cs.right || "0");
+      return { top: Number.isFinite(top) ? top : 0, right: Number.isFinite(right) ? right : 0 };
+    }
+    function setTxPosPx(top, right){
+      txPanel.style.top = top + "px";
+      txPanel.style.right = right + "px";
+      txPanel.style.left = "auto";
+      txPanel.style.bottom = "auto";
+    }
+    function saveTxPos(top, right){ saveAny(LS.txPos, { top, right }); }
+    function restoreTxPos(){
+      const saved = loadAny(LS.txPos);
+      if (!saved) return;
+      if (typeof saved.top === "number" && typeof saved.right === "number"){
+        setTxPosPx(saved.top, saved.right);
+      }
+    }
+
+    function getTxVisualSizePx(){
+      const s = useTransformScale ? uiScale : 1;
+      return { w: txPanel.offsetWidth * s, h: txPanel.offsetHeight * s };
+    }
+
+    function clampTxPosCandidate(top, right){
+      const { vw, vh } = getViewportWH();
+      const { w, h } = getTxVisualSizePx();
+      const margin = 8;
+
+      const minTop = margin;
+      const maxTop = Math.max(minTop, vh - h - margin);
+
+      const minRight = margin;
+      const maxRight = Math.max(minRight, vw - w - margin);
+
+      return {
+        top: Math.min(maxTop, Math.max(minTop, top)),
+        right: Math.min(maxRight, Math.max(minRight, right)),
+      };
+    }
+
+    function clampTxPosToViewport(){
+      if (!txOpen) return;
+      const cur = getTxPosPx();
+      const cl = clampTxPosCandidate(cur.top, cur.right);
+      setTxPosPx(cl.top, cl.right);
+      saveTxPos(cl.top, cl.right);
+    }
+
+    const TX_DRAG_IGNORE_SELECTOR = "button, a, input, textarea, select, option";
+    function shouldStartTxDrag(target){
+      return !(target && target.closest && target.closest(TX_DRAG_IGNORE_SELECTOR));
+    }
+
+    let txDragging = false;
+    let txDragStartX = 0, txDragStartY = 0;
+    let txDragStartTop = 0, txDragStartRight = 0;
+
+    txHeader.addEventListener("pointerdown", (e) => {
+      if (!txOpen) return;
+      if (!shouldStartTxDrag(e.target)) return;
+
+      txDragging = true;
+      txHeader.setPointerCapture(e.pointerId);
+      txHeader.style.cursor = "grabbing";
+
+      txDragStartX = e.clientX;
+      txDragStartY = e.clientY;
+
+      const cur = getTxPosPx();
+      txDragStartTop = cur.top;
+      txDragStartRight = cur.right;
+
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    txHeader.addEventListener("pointermove", (e) => {
+      if (!txDragging) return;
+
+      const dx = e.clientX - txDragStartX;
+      const dy = e.clientY - txDragStartY;
+
+      const cl = clampTxPosCandidate(txDragStartTop + dy, txDragStartRight - dx);
+      setTxPosPx(cl.top, cl.right);
+
+      e.preventDefault();
+    });
+
+    function endTxDrag(pointerId){
+      if (!txDragging) return;
+      txDragging = false;
+      txHeader.style.cursor = "grab";
+
+      try{ txHeader.releasePointerCapture(pointerId); }catch{}
+      clampTxPosToViewport();
+    }
+
+    txHeader.addEventListener("pointerup", (e) => endTxDrag(e.pointerId));
+    txHeader.addEventListener("pointercancel", (e) => endTxDrag(e.pointerId));
+
+
     function openTranscript(){
       txOpen = true;
       txPanel.classList.add("open");
       txPanel.setAttribute("aria-hidden", "false");
       updateOverlayScale();
       clampTxSizeToViewport();
+      restoreTxPos();
+      clampTxPosToViewport();
     }
 
     function closeTranscript(){
@@ -3179,6 +3323,7 @@
       txResizing = false;
       try{ txResizeHandle.releasePointerCapture(pointerId); }catch{}
       clampTxSizeToViewport();
+      clampTxPosToViewport();
     }
 
     txResizeHandle.addEventListener("pointerup", (e) => endTxResize(e.pointerId));
