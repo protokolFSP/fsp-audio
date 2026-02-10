@@ -56,7 +56,7 @@
 
     body{
       margin: 0;
-      overflow: hidden;
+      overflow: visible;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color:#111;
       line-height: 1.10;
@@ -1019,10 +1019,28 @@
     #captions.isEmpty{ color: var(--muted); }
     #captions.hidden{ display:none; }
 
-    /* Captions role styling */
-    #captions .capPrev{ opacity: .55; }
-    #captions .capActive{ font-weight: 750; }
-    #captions .capNext{ opacity: .90; }
+    #captionsDock{
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: calc(100% - 1px);
+      pointer-events: none;
+      z-index: 10000;
+    }
+    #captions{ pointer-events: auto; }
+
+    /* CC + E button styling */
+    #ccBtn, #expBtn{
+      border-color: var(--blue);
+    }
+    #ccBtn .btnMark, #expBtn .btnMark{
+      font-weight: 800;
+      font-size: 17px;
+      letter-spacing: .5px;
+      line-height: 1;
+    }
+    #ccBtn.on .btnMark, #expBtn.on .btnMark{ color: var(--orange); }
+    #ccBtn:not(.on) .btnMark, #expBtn:not(.on) .btnMark{ color: #404040; }
 
   </style>
   </style>
@@ -1182,15 +1200,18 @@
   </div>
 
   <div id="floatingPlayer" role="region" aria-label="Oynatıcı">
+    <div id="captionsDock" aria-label="Altyazılar">
+      <div id="captions" class="isEmpty" aria-live="polite">Bir kayıt seç...</div>
+    </div>
     <div id="fpHeader" title="Sürükle">
       <div id="fpTitle">Bir kayıt seç...</div>
       <div id="fpHeaderRight">
         <button id="ccBtn" class="miniBtn on" type="button" title="Altyazı (CC)" aria-pressed="true" aria-label="Altyazı (CC)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/>
-            <path d="M10 10h-1a2 2 0 0 0 0 4h1"/>
-            <path d="M16 10h-1a2 2 0 0 0 0 4h1"/>
-          </svg>
+          <span class="btnMark">CC</span>
+        </button>
+
+        <button id="expBtn" class="miniBtn" type="button" title="Geniş altyazı (E)" aria-pressed="false" aria-label="Geniş altyazı (E)">
+          <span class="btnMark">E</span>
         </button>
 
         <div id="speedWrap" class="speedWrap" aria-label="Hız">
@@ -1212,7 +1233,6 @@
       </div>
     </div>
     <div id="fpBody">
-      <div id="captions" class="isEmpty" aria-live="polite">Bir kayıt seç...</div>
       <audio id="player" class="js-player" controls preload="metadata"></audio>
     </div>
   </div>
@@ -1315,6 +1335,8 @@
     const fastBtn = document.getElementById("fastBtn");
     const speedValueEl = document.getElementById("speedValue");
     const ccBtn = document.getElementById("ccBtn");
+    const expBtn = document.getElementById("expBtn");
+    const captionsDock = document.getElementById("captionsDock");
     const captionsEl = document.getElementById("captions");
 
     const filterFavBtn  = document.getElementById("filterFav");
@@ -1364,7 +1386,7 @@
     const txMatchCountEl = document.getElementById("txMatchCount");
 
     const plyr = new Plyr(playerEl, {
-      seekTime: 5,
+      seekTime: 6.5,
       controls: ["rewind","play","fast-forward","progress","current-time","duration","mute","volume"]
     });
 
@@ -1547,6 +1569,7 @@
       speed: "fsp1.speed.v1",
       zoom:  "fsp1.ui.zoom.v1",
       captionsOn: "fsp1.captions.on.v1",
+      captionsExpanded: "fsp1.captions.expanded.v1",
 
       itemsCache:   "fsp1.items.cache.s1.v2",
       itemsCacheAt: "fsp1.items.cache.s1.at.v1",
@@ -1882,17 +1905,34 @@ function updateSearchNoZoomFontSizes(){
 
     // ---- SRT Captions (repo: protokolFSP/FSPtranskript) ----
     let captionsOn = (localStorage.getItem(LS.captionsOn) !== "0");
+    let captionsExpanded = (localStorage.getItem(LS.captionsExpanded) === "1");
+
     const srtCache = new Map(); // item.id -> cues[]
     let srtCtrl = null;
     let activeCues = [];
     let lastCueIdx = -1;
 
-    function setCcUi(){
-      if (!ccBtn || !captionsEl) return;
-      ccBtn.classList.toggle("on", captionsOn);
-      ccBtn.setAttribute("aria-pressed", String(!!captionsOn));
-      captionsEl.classList.toggle("hidden", !captionsOn);
-      if (!captionsOn) captionsEl.innerHTML = "";
+    function getCaptionMaxLines(){
+      return captionsExpanded ? 9 : CAPTION_MAX_LINES;
+    }
+
+    function getCaptionTargetLines(){
+      return captionsExpanded ? 9 : CAPTION_TARGET_LINES;
+    }
+
+    function setCaptionUi(){
+      if (ccBtn){
+        ccBtn.classList.toggle("on", captionsOn);
+        ccBtn.setAttribute("aria-pressed", String(!!captionsOn));
+      }
+      if (expBtn){
+        expBtn.classList.toggle("on", captionsExpanded);
+        expBtn.setAttribute("aria-pressed", String(!!captionsExpanded));
+      }
+      if (captionsEl){
+        captionsEl.classList.toggle("hidden", !captionsOn);
+        if (!captionsOn) captionsEl.innerHTML = "";
+      }
     }
 
     function clampCaptionLines(text, maxLines){
@@ -1959,93 +1999,152 @@ function updateSearchNoZoomFontSizes(){
       return -1;
     }
 
-    
-        function escapeHtml(s){
-          return (s ?? "").toString()
-            .replace(/&/g,"&amp;")
-            .replace(/</g,"&lt;")
-            .replace(/>/g,"&gt;")
-            .replace(/"/g,"&quot;")
-            .replace(/'/g,"&#39;");
-        }
+    function escapeHtml(s){
+      return (s ?? "").toString()
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#39;");
+    }
 
-        function splitCaptionLines(text){
-          const t = (text || "").toString().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-          return t.split("\n").map(l => l.trimEnd()).filter(l => l.trim().length > 0);
-        }
+    function splitCaptionLines(text){
+      const t = (text || "").toString().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+      return t.split("\n").map(l => l.trimEnd()).filter(l => l.trim().length > 0);
+    }
 
-        function countLinesFromParts(parts){
-          let n = 0;
-          for (const p of (parts || [])) n += splitCaptionLines(p.text).length;
-          return n;
-        }
+    function countLinesText(text){
+      return splitCaptionLines(text).length;
+    }
 
-        function composeCaptionWindowParts(cues, idx){
-          if (!cues || idx < 0 || idx >= cues.length) return [];
+    function composeCaptionParts(cues, idx){
+      if (!cues || idx < 0 || idx >= cues.length) return [];
 
-          const parts = [];
-          if (idx > 0) parts.push({ role: "prev", text: cues[idx - 1]?.text || "" });
-          parts.push({ role: "active", text: cues[idx]?.text || "" });
+      const parts = [];
+      const target = getCaptionTargetLines();
 
-          let next = idx + 1;
-          let lines = countLinesFromParts(parts);
-
-          while (lines < CAPTION_TARGET_LINES && next < cues.length){
-            parts.push({ role: "next", text: cues[next]?.text || "" });
-            lines = countLinesFromParts(parts);
-            next++;
+      if (captionsExpanded){
+        const preTarget = Math.max(2, Math.floor(target / 3)); // ~3 satır üst bağlam
+        let preLines = 0;
+        let p = idx - 1;
+        const stack = [];
+        while (p >= 0 && preLines < preTarget){
+          const t = cues[p]?.text || "";
+          const n = countLinesText(t);
+          if (n > 0){
+            stack.push({ role: "context", isActive: false, text: t });
+            preLines += n;
           }
+          p--;
+        }
+        stack.reverse().forEach(x => parts.push(x));
+      } else if (idx > 0){
+        parts.push({ role: "context", isActive: false, text: cues[idx - 1]?.text || "" });
+      }
 
-          return parts;
+      parts.push({ role: "active", isActive: true, text: cues[idx]?.text || "" });
+
+      let total = parts.reduce((a,p) => a + countLinesText(p.text), 0);
+      let nidx = idx + 1;
+
+      while (total < target && nidx < cues.length){
+        const t = cues[nidx]?.text || "";
+        const n = countLinesText(t);
+        if (n > 0){
+          parts.push({ role: "context", isActive: false, text: t });
+          total += n;
+        }
+        nidx++;
+      }
+
+      return parts;
+    }
+
+    function trimLinesAroundActive(lines, maxLines){
+      if (lines.length <= maxLines) return { lines, activeStart: -1, activeEnd: -1 };
+
+      let activeStart = lines.findIndex(l => l.isActive);
+      let activeEnd = lines.length - 1 - [...lines].reverse().findIndex(l => l.isActive);
+      if (activeStart < 0) activeStart = activeEnd = Math.floor(lines.length / 2);
+
+      let start = 0;
+      let end = lines.length - 1;
+
+      while ((end - start + 1) > maxLines){
+        const distTop = activeStart - start;
+        const distBot = end - activeEnd;
+        if (distTop > distBot) start += 1;
+        else end -= 1;
+      }
+
+      const sliced = lines.slice(start, end + 1);
+      const newActiveStart = Math.max(0, activeStart - start);
+      const newActiveEnd = Math.max(newActiveStart, activeEnd - start);
+
+      return { lines: sliced, activeStart: newActiveStart, activeEnd: newActiveEnd };
+    }
+
+    function renderCaptionLines(lines){
+      if (!captionsEl) return;
+      if (!captionsOn) { captionsEl.innerHTML = ""; return; }
+
+      const maxLines = getCaptionMaxLines();
+      const { lines: trimmed, activeStart, activeEnd } = trimLinesAroundActive(lines, maxLines);
+
+      const out = [];
+      for (let i = 0; i < trimmed.length; i++){
+        const ln = trimmed[i];
+        const isActive = !!ln.isActive;
+
+        let dist = 0;
+        if (!isActive){
+          if (i < activeStart) dist = activeStart - i;
+          else if (i > activeEnd) dist = i - activeEnd;
+          else dist = 1;
         }
 
-        function renderCaptionsParts(parts){
-          if (!captionsEl) return;
-          if (!captionsOn) { captionsEl.innerHTML = ""; return; }
+        const opacity = isActive ? 1 : Math.max(0.22, 0.92 - (dist * 0.12));
+        const weight = isActive ? 750 : 500;
 
-          const out = [];
-          let lineCount = 0;
+        out.push(`<span style="opacity:${opacity.toFixed(2)};font-weight:${weight}">${escapeHtml(ln.text)}</span>`);
+      }
 
-          for (const p of (parts || [])){
-            const cls =
-              (p.role === "active") ? "capActive" :
-              (p.role === "prev") ? "capPrev" :
-              "capNext";
+      const html = out.join("<br>");
+      captionsEl.innerHTML = html || "—";
+      captionsEl.classList.toggle("isEmpty", !html);
 
-            for (const line of splitCaptionLines(p.text)){
-              if (lineCount >= CAPTION_MAX_LINES) break;
-              out.push(`<span class="${cls}">${escapeHtml(line)}</span>`);
-              lineCount++;
-            }
-            if (lineCount >= CAPTION_MAX_LINES) break;
-          }
+      setTimeout(() => clampPlayerToViewport(), 0);
+    }
 
-          const html = out.join("<br>");
-          captionsEl.innerHTML = html || "—";
-          captionsEl.classList.toggle("isEmpty", !html);
+    function renderCaptionInfo(text){
+      if (!captionsEl) return;
+      if (!captionsOn) { captionsEl.innerHTML = ""; return; }
+      captionsEl.textContent = text || "";
+      captionsEl.classList.toggle("isEmpty", true);
+      setTimeout(() => clampPlayerToViewport(), 0);
+    }
+
+    function onCaptionsTimeupdate(){
+      if (!captionsOn) return;
+      const t = Number(playerEl?.currentTime) || 0;
+      const idx = findCueIdx(activeCues, t);
+      if (idx === lastCueIdx) return;
+
+      lastCueIdx = idx;
+      if (idx === -1) return renderCaptionLines([]);
+
+      const parts = composeCaptionParts(activeCues, idx);
+      const flat = [];
+      for (const p of parts){
+        for (const line of splitCaptionLines(p.text)){
+          flat.push({ text: line, isActive: !!p.isActive });
         }
+      }
 
-        function setCaptionsText(text){
-          if (!captionsEl) return;
-          if (!captionsOn) { captionsEl.innerHTML = ""; return; }
+      renderCaptionLines(flat);
+    }
 
-          const t = clampCaptionLines(text || "", CAPTION_MAX_LINES);
-          captionsEl.textContent = t || "—";
-          captionsEl.classList.toggle("isEmpty", !t);
-        }
-
-        function onCaptionsTimeupdate(){
-          if (!captionsOn) return;
-          const t = Number(playerEl?.currentTime) || 0;
-          const idx = findCueIdx(activeCues, t);
-          if (idx === lastCueIdx) return;
-
-          lastCueIdx = idx;
-          if (idx === -1) return renderCaptionsParts([]);
-
-          const parts = composeCaptionWindowParts(activeCues, idx);
-          renderCaptionsParts(parts);
-        }    if (playerEl) playerEl.addEventListener("timeupdate", onCaptionsTimeupdate);
+    if (playerEl) playerEl.addEventListener("timeupdate", onCaptionsTimeupdate);
 
     function buildSrtUrlForItem(it){
       const rawName = (it?.name || "").split("/").pop() || "";
@@ -2058,17 +2157,17 @@ function updateSearchNoZoomFontSizes(){
       activeCues = [];
       lastCueIdx = -1;
 
-      if (!captionsOn) return setCaptionsText("");
-      if (!it) return setCaptionsText("Bir kayıt seç...");
+      if (!captionsOn) return renderCaptionInfo("");
+      if (!it) return renderCaptionInfo("Bir kayıt seç...");
 
       const cached = srtCache.get(it.id);
       if (cached){
         activeCues = cached;
-        setCaptionsText("");
+        renderCaptionInfo("");
         return onCaptionsTimeupdate();
       }
 
-      setCaptionsText("Altyazı yükleniyor…");
+      renderCaptionInfo("Altyazı yükleniyor…");
 
       try { if (srtCtrl) srtCtrl.abort(); } catch {}
       srtCtrl = new AbortController();
@@ -2081,28 +2180,37 @@ function updateSearchNoZoomFontSizes(){
         const cues = parseSrtToCues(txt);
 
         if (!cues.length){
-          setCaptionsText("Altyazı boş/okunamadı.");
+          renderCaptionInfo("Altyazı boş/okunamadı.");
           return;
         }
 
         srtCache.set(it.id, cues);
         activeCues = cues;
-        setCaptionsText("");
+        renderCaptionInfo("");
         onCaptionsTimeupdate();
       }catch(err){
         if (err && err.name === "AbortError") return;
-        setCaptionsText("Bu kayıtta altyazı yok.");
+        renderCaptionInfo("Bu kayıtta altyazı yok.");
       }
     }
 
     function toggleCaptions(){
       captionsOn = !captionsOn;
       localStorage.setItem(LS.captionsOn, captionsOn ? "1" : "0");
-      setCcUi();
+      setCaptionUi();
 
       const it = items.find(x => x.id === activeId);
       if (captionsOn && it) loadSrtForItem(it).catch(()=>{});
-      if (!captionsOn) setCaptionsText("");
+      if (!captionsOn) renderCaptionInfo("");
+      setTimeout(() => clampPlayerToViewport(), 0);
+    }
+
+    function toggleExpandedCaptions(){
+      captionsExpanded = !captionsExpanded;
+      localStorage.setItem(LS.captionsExpanded, captionsExpanded ? "1" : "0");
+      setCaptionUi();
+      if (captionsOn) onCaptionsTimeupdate();
+      setTimeout(() => clampPlayerToViewport(), 0);
     }
 
     if (ccBtn){
@@ -2112,7 +2220,12 @@ function updateSearchNoZoomFontSizes(){
       });
     }
 
-
+    if (expBtn){
+      expBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleExpandedCaptions();
+      });
+    }
     function parseEndDate(item){
       const raw0 = (item.name || item.file || item.title || "").toString();
       let s;
@@ -2961,10 +3074,13 @@ function updateSearchNoZoomFontSizes(){
 
       const keepX = Math.max(70, Math.min(w - 16, 180));
       const keepY = Math.max(56, Math.min(h - 16, 120));
+      const capH = (captionsOn && captionsEl && !captionsEl.classList.contains("hidden"))
+        ? captionsEl.getBoundingClientRect().height
+        : 0;
 
       const minX = -w + keepX;
       const maxX = vw - keepX;
-      const minY = -h + keepY;
+      const minY = -h + keepY + capH;
       const maxY = vh - keepY;
 
       return {
@@ -3654,7 +3770,7 @@ txHeader.addEventListener("pointercancel", (e) => endTxDrag(e.pointerId));
     restorePlayerPos();
     restoreSpeed();
     restoreZoom();
-    setCcUi();
+    setCaptionUi();
     updateOverlayScale();
     requestAnimationFrame(() => {
       measureStickyStartTop();
