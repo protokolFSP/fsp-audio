@@ -1,3 +1,4 @@
+<!-- /index.html -->
 <!doctype html>
 <html lang="tr">
 <head>
@@ -64,24 +65,12 @@
       height: 100%;
       overflow: auto;
       -webkit-overflow-scrolling: touch;
-      overscroll-behavior-y: contain;  padding: 0;
+      overscroll-behavior-y: contain;
+      padding: 18px;
       max-width: 980px;
       margin: 0 auto;
     }
 
-
-    #stickyTop{
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background: var(--bg);
-      padding: 18px 18px 0 18px;
-      box-shadow: 0 10px 22px rgba(0,0,0,.06);
-    }
-
-    #listWrap{
-      padding: 0 18px 18px 18px;
-    }
     #appScale{
       transform-origin: top left;
       will-change: transform;
@@ -95,27 +84,7 @@
       padding: 12px 16px;
       border-radius: 14px;
       margin-bottom: 14px;
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      gap: 10px;
     }
-
-    #sidebarOpenBtn{
-      width: 44px;
-      height: 40px;
-      border-radius: 14px;
-      border: 1px solid #d8d8d8;
-      background: white;
-      cursor: pointer;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      user-select:none;
-      flex: 0 0 auto;
-    }
-    #sidebarOpenBtn:hover{ background: var(--hover); }
-    #sidebarOpenBtn svg{ width: 18px; height: 18px; }
 
     .navRow{
       display:flex;
@@ -370,19 +339,6 @@
       border-radius: 4px;
     }
 
-    .itemRow.selected:not(.active){
-      box-shadow: 0 0 0 2px rgba(43,124,255,.18) inset;
-    }
-
-    .iconBtn:disabled{
-      opacity: .28;
-      cursor: default;
-      background: #f6f6f6;
-      border-color: #dcdcdc;
-      box-shadow: none;
-    }
-    .iconBtn:disabled:hover{ background: #f6f6f6; }
-
     .title{
       font-size: 1.02rem;
       font-weight: 500;
@@ -412,9 +368,7 @@
     }
 
     @media (max-width: 680px){
-      #scrollArea{ padding: 0; }
-      #stickyTop{ padding: 14px 14px 0 14px; }
-      #listWrap{ padding: 0 14px 14px 14px; }
+      #scrollArea{ padding: 14px; }
       .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 46px 34px 34px 46px 34px; }
       .title{
         white-space: nowrap;
@@ -438,7 +392,6 @@
       user-select:none;
       transition: box-shadow .15s ease, border-color .15s ease, background .15s ease, opacity .15s ease;
       justify-self: center;
-      -webkit-tap-highlight-color: transparent;
     }
     .iconBtn:hover{ background: var(--hover); }
     .iconBtn:disabled{ opacity: .35; cursor: default; }
@@ -653,147 +606,28 @@
       font-weight: 650;
     }
 
-    /* Sidebar */
-    #sbOverlay{
+    /* Transcript popup */
+    #txOverlay{
       position: fixed;
       left: 0; top: 0;
       width: 100vw;
       height: 100vh;
-      z-index: 10020;
-      display:none;
-      background: rgba(0,0,0,.18);
+      z-index: 10050;
+      display: none;
+      background: rgba(0,0,0,.06);
       -webkit-transform: translateZ(0);
       transform: translateZ(0);
       will-change: transform, width, height;
-    }
-    #sbOverlay.open{ display:block; }
-
-    #sidebar{
-      position: absolute;
-      left: max(12px, env(safe-area-inset-left));
-      top: max(12px, env(safe-area-inset-top));
-      width: min(360px, calc(100vw - 24px));
-      height: min(86vh, 720px);
-      background: #fff;
-      border: 1.5px solid #d6d6d6;
-      border-right-color: #bdbdbd;
-      border-bottom-color:#b3b3b3;
-      border-radius: 18px;
-      box-shadow:
-        10px 34px 86px rgba(0,0,0,.20),
-        4px 14px 30px rgba(0,0,0,.10),
-        0px 2px 6px rgba(0,0,0,.06);
-      overflow: hidden;
-      display:flex;
-      flex-direction: column;
-    }
-
-    #sbHeader{
-      padding: 10px 12px;
-      background: #fbfbfb;
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      gap: 10px;
-      border-bottom: 1px solid #ececec;
-      line-height: 1.05;
-    }
-    #sbTitle{
-      font-weight: 750;
-      font-size: 1rem;
-      flex: 1 1 auto;
-      min-width: 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    #sbCloseBtn{
-      width: 40px;
-      height: 36px;
-      border-radius: 12px;
-      border: 1px solid #d8d8d8;
-      background: white;
-      cursor: pointer;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      user-select:none;
-    }
-    #sbCloseBtn:hover{ background: var(--hover); }
-
-    #sbBody{
-      padding: 12px;
-      overflow:auto;
-      -webkit-overflow-scrolling: touch;
-      flex: 1 1 auto;
-      background:#fff;
-    }
-
-    .sbSection{
-      border: 1px solid #e2e2e2;
-      border-radius: 16px;
-      padding: 10px;
-      margin-bottom: 10px;
-      background: #fff;
-      box-shadow: inset 0 1px 0 rgba(0,0,0,.03);
-    }
-    .sbSection h3{
-      margin: 0 0 8px 0;
-      font-size: .95rem;
-      color:#111;
-    }
-    .sbRow{
-      display:flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items:center;
-    }
-    .sbBtn{
-      height: 36px;
-      padding: 0 12px;
-      border-radius: 12px;
-      border: 1px solid #d8d8d8;
-      background: white;
-      cursor: pointer;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      font-weight: 650;
-      font-size: .92rem;
-      user-select:none;
-      line-height: 1;
-    }
-    .sbBtn:hover{ background: var(--hover); }
-    .sbBtn.on{
-      border-color:var(--blue);
-      background: rgba(43,124,255,.10);
-      box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
-    }
-    .sbHint{
-      color: var(--muted);
-      font-size: .9rem;
-      line-height: 1.2;
-      margin-top: 6px;
-    }
-
-    /* Transcript popup */
-    #txOverlay{
-      position: fixed;
-      top: max(14px, env(safe-area-inset-top));
-      right: max(14px, env(safe-area-inset-right));
-      z-index: 10050;
-      display: none;
-      background: transparent;
-      transform-origin: top right;
-      -webkit-transform: translateZ(0);
-      transform: translateZ(0);
+      touch-action: none;
     }
     #txOverlay.open{ display: block; }
 
     #txPanel{
-      position: relative;
-      width: min(680px, calc(100vw - 28px));
-      height: min(68vh, 640px);
+      position: absolute;
+      top: max(14px, env(safe-area-inset-top));
+      right: max(14px, env(safe-area-inset-right));
+      width: min(520px, calc(100vw - 28px));
+      height: min(52vh, 520px);
       background: #fff;
       border: 1.5px solid #d6d6d6;
       border-right-color: #bdbdbd;
@@ -834,8 +668,6 @@
       display:flex;
       gap: 8px;
       flex: 0 0 auto;
-      flex-wrap: wrap;
-      justify-content: flex-end;
     }
 
     .txBtn{
@@ -849,10 +681,9 @@
       align-items:center;
       justify-content:center;
       gap: 8px;
-      font-weight: 650;
+      font-weight: 600;
       font-size: .92rem;
       user-select:none;
-      line-height: 1;
     }
     .txBtn:hover{ background: var(--hover); }
     .txBtn:disabled{ opacity: .45; cursor: default; }
@@ -873,108 +704,21 @@
       line-height: 1.05;
     }
 
-    #txSearchRow{
-      display: none;
-      gap: 8px;
-      align-items: center;
-      margin: 0 0 10px 0;
-      padding: 8px;
-      border: 1px solid #e2e2e2;
-      border-radius: 14px;
-      background: #fff;
-      box-shadow: inset 0 1px 0 rgba(0,0,0,.03);
-    }
-    #txSearchRow.on{ display: flex; }
-
-    #txSearchInput{
-      flex: 1 1 auto;
-      min-width: 140px;
-      height: 36px;
-      padding: 0 12px;
-      border: 1px solid #d8d8d8;
-      border-radius: 12px;
-      font-size: .96rem;
-      outline: none;
-    }
-
-    .txNavBtn{
-      width: 50px;
-      height: 42px;
-      border-radius: 14px;
-      border: 1px solid #d8d8d8;
-      background: white;
-      cursor: pointer;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      user-select:none;
-      font-weight: 800;
-      line-height: 1;
-    }
-    .txNavBtn:hover{ background: var(--hover); }
-    .txNavBtn:disabled{ opacity: .45; cursor: default; }
-
-    #txMatchCount{
-      min-width: 86px;
-      text-align: right;
-      color: #404040;
-      font-variant-numeric: tabular-nums;
-      font-size: .92rem;
-      user-select:none;
-    }
-
     #txContent{
       white-space: pre-wrap;
       word-break: break-word;
       font-variant-numeric: tabular-nums;
-      line-height: 1.35;
-      font-size: .92rem;
+      line-height: 1.25;
+      font-size: .98rem;
       margin: 0;
     }
-
-    .txMark{
-      background: rgba(43,124,255,.22);
-      border-radius: 6px;
-      padding: 0 2px;
-    }
-    .txMark.active{
-      background: rgba(245,158,11,.35);
-      box-shadow: 0 0 0 2px rgba(245,158,11,.20);
-    }
-
-    #txResizeHandle{
-      position: absolute;
-      left: 0;
-      bottom: 0;
-      width: 38px;
-      height: 38px;
-      cursor: nwse-resize;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      user-select:none;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: none;
-      background: linear-gradient(135deg, rgba(43,124,255,.0), rgba(43,124,255,.12));
-      border-top-right-radius: 16px;
-    }
-    #txResizeHandle svg{ width: 18px; height: 18px; opacity: .75; }
-
   </style>
 </head>
 
 <body>
   <div id="scrollArea">
     <div id="appScale">
-      <div id="stickyTop">
-      <div class="pageTitle">
-        <span>FSP Audio — Güncel</span>
-        <button id="sidebarOpenBtn" type="button" aria-label="Menü" title="Menü">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>
-          </svg>
-        </button>
-      </div>
+      <h1 class="pageTitle">FSP Audio — Güncel</h1>
 
       <nav class="navRow" aria-label="Sayfalar">
         <a class="navLink" href="https://protokolfsp.github.io/fsp-audio/">Güncel</a>
@@ -1066,56 +810,8 @@
         </div>
       </div>
 
-      </div>
-
-      <div id="listWrap">
-        <div id="list"></div>
-        <div id="status"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Sidebar -->
-  <div id="sbOverlay" aria-hidden="true">
-    <div id="sidebar" role="dialog" aria-label="Menü">
-      <div id="sbHeader">
-        <div id="sbTitle">Menü</div>
-        <button id="sbCloseBtn" type="button" aria-label="Kapat" title="Kapat">
-          ✕
-        </button>
-      </div>
-      <div id="sbBody">
-        <div class="sbSection">
-          <h3>Hızlı</h3>
-          <div class="sbRow">
-            <button id="sbRefreshBtn" class="sbBtn" type="button">Listeyi Yenile</button>
-            <button id="sbZoomResetBtn" class="sbBtn" type="button">Zoom 100%</button>
-          </div>
-          <div class="sbHint">Listeyi yenile: Archive.org metadata tekrar okunur. (refresh parametresi yok)</div>
-        </div>
-
-        <div class="sbSection">
-          <h3>Filtre / Sıralama</h3>
-          <div class="sbRow">
-            <button id="sbFavBtn" class="sbBtn" type="button">Favoriler</button>
-          </div>
-          <div class="sbRow" style="margin-top:8px;">
-            <button id="sbSortDateBtn" class="sbBtn" type="button">Tarih</button>
-            <button id="sbSortDurBtn" class="sbBtn" type="button">Süre</button>
-            <button id="sbSortPlayBtn" class="sbBtn" type="button">Dinlenme</button>
-            <button id="sbSortDlBtn" class="sbBtn" type="button">İndirme</button>
-          </div>
-          <div class="sbHint">Sıralama butonu: modu seçer. Aynı moda tekrar basarsan yön değişir.</div>
-        </div>
-
-        <div class="sbSection">
-          <h3>Transkript</h3>
-          <div class="sbRow">
-            <button id="sbClearTxCacheBtn" class="sbBtn" type="button">TXT Cache Temizle</button>
-          </div>
-          <div class="sbHint">TXT’ler sadece tıklandığında yüklenir. Cache temizle: popup tekrar indirir.</div>
-        </div>
-      </div>
+      <div id="list"></div>
+      <div id="status"></div>
     </div>
   </div>
 
@@ -1152,51 +848,29 @@
       <div id="txHeader">
         <div id="txTitle">Transkript</div>
         <div id="txBtns">
-          <button id="txCopyBtn" class="txBtn" type="button" title="Kopieren">
+          <button id="txCopyBtn" class="txBtn" type="button" title="Kopyala">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <path d="M9 9h10v10H9z"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
             </svg>
-            Kopieren
+            Copy
           </button>
-          <button id="txDownloadBtn" class="txBtn" type="button" title="Download">
+          <button id="txDownloadBtn" class="txBtn" type="button" title="İndir">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/>
             </svg>
             Download
           </button>
-          <button id="txSearchBtn" class="txBtn" type="button" title="Suchen">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <circle cx="11" cy="11" r="6"></circle>
-              <path d="M20 20l-3.5-3.5"></path>
-            </svg>
-            Suchen
-          </button>
-          <button id="txCloseBtn" class="txBtn" type="button" title="Schließen">
+          <button id="txCloseBtn" class="txBtn" type="button" title="Kapat">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
             </svg>
-            Schließen
+            Close
           </button>
         </div>
       </div>
-
       <div id="txBody">
         <div id="txInfo">—</div>
-
-        <div id="txSearchRow" aria-label="Suchen">
-          <input id="txSearchInput" type="text" placeholder="Suchen…" />
-          <button id="txPrevMatchBtn" class="txNavBtn" type="button" title="Vorheriger Treffer">‹</button>
-          <button id="txNextMatchBtn" class="txNavBtn" type="button" title="Nächster Treffer">›</button>
-          <div id="txMatchCount" title="Treffer">0/0</div>
-        </div>
-
         <pre id="txContent"></pre>
-      </div>
-
-      <div id="txResizeHandle" title="Resize" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path d="M7 17l10-10"/><path d="M11 17h6v-6"/>
-        </svg>
       </div>
     </div>
   </div>
@@ -1253,37 +927,15 @@
     const sortDlCountBtn  = document.getElementById("sortDlCountBtn");
     const sortDlCountIcon = document.getElementById("sortDlCountIcon");
 
-    // Sidebar nodes
-    const sidebarOpenBtn = document.getElementById("sidebarOpenBtn");
-    const sbOverlay = document.getElementById("sbOverlay");
-    const sbCloseBtn = document.getElementById("sbCloseBtn");
-    const sbRefreshBtn = document.getElementById("sbRefreshBtn");
-    const sbZoomResetBtn = document.getElementById("sbZoomResetBtn");
-    const sbFavBtn = document.getElementById("sbFavBtn");
-    const sbSortDateBtn = document.getElementById("sbSortDateBtn");
-    const sbSortDurBtn = document.getElementById("sbSortDurBtn");
-    const sbSortPlayBtn = document.getElementById("sbSortPlayBtn");
-    const sbSortDlBtn = document.getElementById("sbSortDlBtn");
-    const sbClearTxCacheBtn = document.getElementById("sbClearTxCacheBtn");
-
     // Transcript popup nodes
     const txOverlay = document.getElementById("txOverlay");
     const txPanel = document.getElementById("txPanel");
-    const txResizeHandle = document.getElementById("txResizeHandle");
     const txTitleEl = document.getElementById("txTitle");
     const txInfoEl = document.getElementById("txInfo");
     const txContentEl = document.getElementById("txContent");
-
     const txCopyBtn = document.getElementById("txCopyBtn");
     const txDownloadBtn = document.getElementById("txDownloadBtn");
-    const txSearchBtn = document.getElementById("txSearchBtn");
     const txCloseBtn = document.getElementById("txCloseBtn");
-
-    const txSearchRow = document.getElementById("txSearchRow");
-    const txSearchInput = document.getElementById("txSearchInput");
-    const txPrevMatchBtn = document.getElementById("txPrevMatchBtn");
-    const txNextMatchBtn = document.getElementById("txNextMatchBtn");
-    const txMatchCountEl = document.getElementById("txMatchCount");
 
     const plyr = new Plyr(playerEl, {
       seekTime: 5,
@@ -1472,9 +1124,7 @@
       itemsCache:   "fsp1.items.cache.s1.v2",
       itemsCacheAt: "fsp1.items.cache.s1.at.v1",
       metaUpdated:  "fsp1.items.meta.updated.s1.v1",
-      uiState:      "fsp1.ui.state.v1",
-
-      txSize: "fsp1.tx.size.v1"
+      uiState:      "fsp1.ui.state.v1"
     };
 
     const loadMap = (k) => { try { return JSON.parse(localStorage.getItem(k) || "{}"); } catch { return {}; } };
@@ -1489,7 +1139,6 @@
 
     let items = [];
     let activeId = null;
-    let selectedId = null;
 
     const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 gün
     let pendingScrollTop = null;
@@ -1500,14 +1149,13 @@
     }
 
     function saveUiState(){
-      saveAny(LS.uiState, {
-        q: (searchEl.value || ""),
-        filterFav: !!filterFav,
-        activeId: (activeId || null),
-        selectedId: (selectedId || null),
-        scrollTop: Number(scrollArea.scrollTop) || 0
-      });
-    });
+      try{
+        saveAny(LS.uiState, {
+          q: (searchEl.value || ""),
+          filterFav: !!filterFav,
+          activeId: (activeId || null),
+          scrollTop: Number(scrollArea.scrollTop) || 0
+        });
       }catch{}
     }
 
@@ -1517,9 +1165,7 @@
       if (typeof s.q === "string") searchEl.value = s.q;
       if (typeof s.filterFav === "boolean") filterFav = s.filterFav;
       if (typeof s.activeId === "string") activeId = s.activeId;
-      if (typeof s.selectedId === "string") selectedId = s.selectedId;
       if (typeof s.scrollTop === "number") pendingScrollTop = s.scrollTop;
-      if (!selectedId) selectedId = activeId;
     }
 
     function restoreScrollIfNeeded(){
@@ -1601,41 +1247,18 @@
 
     function updateOverlayScale(){
       const { vw, vh } = getViewportWH();
-
       if (!useTransformScale){
-        sbOverlay.style.transform = "";
-        sbOverlay.style.width = "100vw";
-        sbOverlay.style.height = "100vh";
-
         txOverlay.style.transform = "";
-        txOverlay.style.width = "";
-        txOverlay.style.height = "";
-        txOverlay.style.transformOrigin = "top right";
+        txOverlay.style.width = "100vw";
+        txOverlay.style.height = "100vh";
         return;
       }
-
       const vwL = toLayoutPx(vw);
       const vhL = toLayoutPx(vh);
-
-      sbOverlay.style.transformOrigin = "top left";
-      sbOverlay.style.transform = `scale(${uiScale})`;
-      sbOverlay.style.width = vwL + "px";
-      sbOverlay.style.height = vhL + "px";
-
-      txOverlay.style.transformOrigin = "top right";
+      txOverlay.style.transformOrigin = "top left";
       txOverlay.style.transform = `scale(${uiScale})`;
-      txOverlay.style.width = "";
-      txOverlay.style.height = "";
-    }
-      const vwL = toLayoutPx(vw);
-      const vhL = toLayoutPx(vh);
-
-      for (const el of [sbOverlay, txOverlay]){
-        el.style.transformOrigin = "top left";
-        el.style.transform = `scale(${uiScale})`;
-        el.style.width = vwL + "px";
-        el.style.height = vhL + "px";
-      }
+      txOverlay.style.width = vwL + "px";
+      txOverlay.style.height = vhL + "px";
     }
 
     function setZoomUI(v){
@@ -1673,7 +1296,6 @@
       setZoomUI(v);
       setTimeout(() => clampPlayerToViewport(), 0);
       updateOverlayScale();
-      clampTxSizeToViewport();
     }
 
     function restoreZoom(){
@@ -1800,7 +1422,6 @@
       while (svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
 
       const ns = "http://www.w3.org/2000/svg";
-
       const mkPath = (d) => {
         const p = document.createElementNS(ns, "path");
         p.setAttribute("d", d);
@@ -1835,12 +1456,6 @@
       if (sortMode === "date") sortDateBtn.classList.add("on");
       if (sortMode === "play") sortPlayBtn.classList.add("on");
       if (sortMode === "download") sortDlCountBtn.classList.add("on");
-
-      sbFavBtn.classList.toggle("on", !!filterFav);
-      sbSortDateBtn.classList.toggle("on", sortMode === "date");
-      sbSortDurBtn.classList.toggle("on", sortMode === "dur");
-      sbSortPlayBtn.classList.toggle("on", sortMode === "play");
-      sbSortDlBtn.classList.toggle("on", sortMode === "download");
     }
 
     sortDurBtn.addEventListener("click", (e) => {
@@ -2000,426 +1615,169 @@
       return `https://archive.org/download/${identifier}/${parts.join("/")}`;
     }
 
-    function replaceExtToTxt(name){
-      const s = (name || "").toString();
-      return s.replace(/\.(m4a|mp3)$/i, ".txt");
+    function audioNameToTxtName(name){
+      return (name || "").toString().replace(/\.(m4a|mp3)$/i, ".txt");
     }
 
-    async function loadItems(){
-      const cached = loadAny(LS.itemsCache);
-      const cachedAt = Number(localStorage.getItem(LS.itemsCacheAt) || "0");
-      const cacheFresh =
-        !FORCE_REFRESH &&
-        Array.isArray(cached) &&
-        cached.length > 0 &&
-        Number.isFinite(cachedAt) &&
-        (Date.now() - cachedAt) < CACHE_TTL_MS;
+    // Transcript popup (lazy fetch + memory cache)
+    const transcriptCache = new Map(); // id -> { text, at }
+    let txCurrentItem = null;
+    let txAbort = null;
 
-      if (cacheFresh){
-        items = cached;
-        statusEl.textContent = "";
-        setSortIcons();
-        render();
-        restoreScrollIfNeeded();
-        scheduleRefreshCounts(50);
-      } else {
-        statusEl.textContent = "Yükleniyor...";
-      }
+    function openTxOverlay(){
+      txOverlay.classList.add("open");
+      txOverlay.setAttribute("aria-hidden", "false");
+      updateOverlayScale();
+    }
+
+    function closeTxOverlay(){
+      if (txAbort) { try{ txAbort.abort(); }catch{} txAbort = null; }
+      txOverlay.classList.remove("open");
+      txOverlay.setAttribute("aria-hidden", "true");
+      txCurrentItem = null;
+      txTitleEl.textContent = "Transkript";
+      txInfoEl.textContent = "—";
+      txContentEl.textContent = "";
+      txCopyBtn.disabled = true;
+      txDownloadBtn.disabled = true;
+    }
+
+    function safeFilenameBase(s){
+      return (s || "transkript").toString().replace(/[\\/:*?"<>|]+/g, "_").trim() || "transkript";
+    }
+
+    async function fetchTextWithTimeout(url, ms, signal){
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), ms);
+      const onAbort = () => ctrl.abort();
+      if (signal) signal.addEventListener("abort", onAbort, { once: true });
 
       try{
-        const metaUrl = `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}`;
-        const res = await fetch(metaUrl, { cache: FORCE_REFRESH ? "no-store" : "no-cache" });
-        if (!res.ok) throw new Error("IA metadata okunamadı");
-        const j = await res.json();
+        const res = await fetch(url, { mode: "cors", cache: "no-store", signal: ctrl.signal });
+        if (!res.ok) throw new Error("fetch failed");
+        return await res.text();
+      } finally {
+        clearTimeout(t);
+        if (signal) signal.removeEventListener("abort", onAbort);
+      }
+    }
 
-        const newUpdated = String(
-          j?.item_lastupdated ||
-          j?.item_last_update ||
-          j?.updated ||
-          j?.metadata?.updateddate ||
-          j?.metadata?.publicdate ||
-          ""
-        );
-        const oldUpdated = String(localStorage.getItem(LS.metaUpdated) || "");
+    async function showTranscriptForItem(it){
+      if (!(it && it.hasTxt && it.txtUrl)){
+        statusEl.textContent = "Transkript bulunamadı.";
+        return;
+      }
 
-        if (cacheFresh && newUpdated && oldUpdated && newUpdated === oldUpdated){
-          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
+      txCurrentItem = it;
+      trackTranscriptOpen(it);
+
+      openTxOverlay();
+      txTitleEl.textContent = it.title || "Transkript";
+      txInfoEl.textContent = "Yükleniyor...";
+      txContentEl.textContent = "";
+      txCopyBtn.disabled = true;
+      txDownloadBtn.disabled = false;
+
+      const filename =
+        (it.txtName || "").split("/").pop() ||
+        safeFilenameBase(it.title) + ".txt";
+
+      txDownloadBtn.onclick = (e) => {
+        e.stopPropagation();
+        forceDownload(it.txtUrl, filename);
+        trackTranscriptDownload(it, filename);
+      };
+
+      const cached = transcriptCache.get(it.id);
+      if (cached && typeof cached.text === "string" && cached.text.length){
+        txInfoEl.textContent = "Hazır";
+        txContentEl.textContent = cached.text;
+        txCopyBtn.disabled = false;
+        return;
+      }
+
+      if (txAbort) { try{ txAbort.abort(); }catch{} }
+      txAbort = new AbortController();
+
+      try{
+        const proxied = makeProxyUrl(it.txtUrl, filename);
+        const text = await fetchTextWithTimeout(proxied, 12000, txAbort.signal);
+
+        if (txCurrentItem?.id !== it.id) return;
+
+        const trimmed = (text || "").replace(/\r\n/g, "\n");
+        transcriptCache.set(it.id, { text: trimmed, at: Date.now() });
+
+        txInfoEl.textContent = "Hazır";
+        txContentEl.textContent = trimmed;
+        txCopyBtn.disabled = false;
+      }catch(err){
+        if (err && err.name === "AbortError") return;
+        if (txCurrentItem?.id !== it.id) return;
+        txInfoEl.textContent = "Transkript yüklenemedi.";
+        txContentEl.textContent = "";
+        txCopyBtn.disabled = true;
+      }
+    }
+
+    async function copyTranscriptToClipboard(){
+      const text = (txContentEl.textContent || "");
+      if (!text) return;
+
+      try{
+        if (navigator.clipboard && navigator.clipboard.writeText){
+          await navigator.clipboard.writeText(text);
+          txInfoEl.textContent = "Kopyalandı ✅";
+          setTimeout(() => {
+            if (txOverlay.classList.contains("open")) txInfoEl.textContent = "Hazır";
+          }, 900);
           return;
         }
-
-        const files = Array.isArray(j.files) ? j.files : [];
-        const txtLookup = new Map();
-        for (const f of files){
-          const nm = (f?.name || "").toString();
-          if (!nm) continue;
-          if (nm.toLowerCase().endsWith(".txt")){
-            txtLookup.set(nm.toLowerCase(), nm);
-          }
-        }
-
-        const list = files
-          .filter(f => {
-            const name = (f.name || "").toLowerCase();
-            if (!(name.endsWith(".m4a") || name.endsWith(".mp3"))) return false;
-            if (!("source" in f)) return true;
-            return (String(f.source).toLowerCase() === "original");
-          })
-          .map((f, idx) => {
-            const name = f.name || "";
-            const title = (f.title || "").trim() || decodeURIComponentSafe(name.split("/").pop() || name);
-            const url = buildDownloadUrl(IA_IDENTIFIER_1, name);
-            const localId = name || url || (title + "#" + idx);
-            const id = "S1|" + localId;
-
-            const txtCandidateLower = replaceExtToTxt(name).toLowerCase();
-            const txtName = txtLookup.get(txtCandidateLower) || "";
-            const txtUrl = txtName ? buildDownloadUrl(IA_IDENTIFIER_1, txtName) : "";
-
-            return { id, title, name, url, src: "S1", txtName, txtUrl };
-          });
-
-        const newFp = itemsFingerprint(list);
-        const oldFp = itemsFingerprint(items);
-        const shouldUpdate = !cacheFresh || (newFp && newFp !== oldFp);
-
-        if (shouldUpdate){
-          items = list;
-          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
-          localStorage.setItem(LS.itemsCache, JSON.stringify(items));
-          if (newUpdated) localStorage.setItem(LS.metaUpdated, newUpdated);
-
-          statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
-          setSortIcons();
-          render();
-          restoreScrollIfNeeded();
-          scheduleRefreshCounts(100);
-        } else {
-          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
-          if (newUpdated) localStorage.setItem(LS.metaUpdated, newUpdated);
-        }
-      }catch(err){
-        console.error(err);
-        if (!cacheFresh) statusEl.textContent = "Liste yüklenemedi.";
-      }
-    }
-
-    function getVisibleItems(){
-      const q = foldTR((searchEl.value || "").trim());
-
-      let arr = items.filter(it => {
-        if (q && !foldTR(it.title).includes(q)) return false;
-        if (filterFav && !favs[it.id]) return false;
-        return true;
-      });
-
-      if (sortMode === "dur"){
-        const dir = (durSortDir === "asc") ? 1 : -1;
-        arr.sort((a,b) => {
-          const ha = (durs[a.id] > 0);
-          const hb = (durs[b.id] > 0);
-          if (ha !== hb) return ha ? -1 : 1;
-          if (ha && hb){
-            const da = durs[a.id];
-            const db = durs[b.id];
-            if (da !== db) return (da - db) * dir;
-          }
-          return a.title.localeCompare(b.title, "tr");
-        });
-      } else if (sortMode === "date"){
-        const dir = (dateSortDir === "asc") ? 1 : -1;
-        arr.sort((a,b) => {
-          const ta = parseEndDate(a);
-          const tb = parseEndDate(b);
-          const ha = (ta !== null);
-          const hb = (tb !== null);
-          if (ha !== hb) return ha ? -1 : 1;
-          if (ha && hb && ta !== tb) return (ta - tb) * dir;
-          return a.title.localeCompare(b.title, "tr");
-        });
-      } else if (sortMode === "play"){
-        const dir = (playSortDir === "asc") ? 1 : -1;
-        arr.sort((a,b) => {
-          const ca = Number(globalPlayCounts[a.id]) || 0;
-          const cb = Number(globalPlayCounts[b.id]) || 0;
-          if (ca !== cb) return (ca - cb) * dir;
-          return a.title.localeCompare(b.title, "tr");
-        });
-      } else if (sortMode === "download"){
-        const dir = (dlSortDir === "asc") ? 1 : -1;
-        arr.sort((a,b) => {
-          const ca = Number(globalDownloadCounts[a.id]) || 0;
-          const cb = Number(globalDownloadCounts[b.id]) || 0;
-          if (ca !== cb) return (ca - cb) * dir;
-          return a.title.localeCompare(b.title, "tr");
-        });
-      } else {
-        arr.sort((a,b) => a.title.localeCompare(b.title, "tr"));
-      }
-
-      return arr;
-    }
-
-    function iconButton(kind, on, title){
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "iconBtn" + (on ? " on" : "");
-      btn.title = title;
-      btn.dataset.kind = kind;
-
-      if (kind === "star"){
-        btn.setAttribute("aria-pressed", String(!!on));
-        btn.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="${on ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
-          </svg>`;
-      } else if (kind === "download"){
-        btn.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M12 3v12"/>
-            <path d="M7 10l5 5 5-5"/>
-            <path d="M5 21h14"/>
-          </svg>`;
-      } else if (kind === "txt"){
-        btn.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M4 4h16v16H4z"/>
-            <path d="M7 9h10"/>
-            <path d="M7 13h10"/>
-            <path d="M7 17h6"/>
-          </svg>`;
-      }
-
-      return btn;
-    }
-
-    function render(){
-      const visible = getVisibleItems();
-      metaEl.textContent = `Görünən: ${visible.length} / Toplam: ${items.length}`;
-
-      filterFavBtn.classList.toggle("on", filterFav);
-      filterFavBtn.setAttribute("aria-pressed",  String(filterFav));
-
-      setSortIcons();
-
-      listEl.innerHTML = "";
-
-      const toMeasure = (sortMode === "dur") ? items : visible;
-      for (const it of toMeasure){
-        if (!(durs[it.id] > 0)) requestDuration(it);
-      }
-
-      for (const it of visible){
-        const row = document.createElement("div");
-        row.className = "itemRow" + (it.id === activeId ? " active" : "") + (it.id === selectedId ? " selected" : "");
-
-        const title = document.createElement("div");
-        title.className = "title";
-        title.innerHTML = highlightDisease(it.title);
-        title.addEventListener("click", (e) => {
-          e.stopPropagation();
-          playById(it.id);
-        });
-
-        const dur = document.createElement("div");
-        dur.className = "dur";
-        dur.textContent = (durs[it.id] > 0) ? fmtDur(durs[it.id]) : "…";
-
-        const playCount = document.createElement("div");
-        playCount.className = "countCell";
-        playCount.textContent = String(Number(globalPlayCounts[it.id]) || 0);
-
-        const favBtn = iconButton("star", !!favs[it.id], "Favori");
-        const dlBtn  = iconButton("download", false, "İndir");
-
-        const dlCount = document.createElement("div");
-        dlCount.className = "countCell";
-        dlCount.textContent = String(Number(globalDownloadCounts[it.id]) || 0);
-
-        const hasTxt = !!(it.txtUrl && it.txtName);
-        const txBtn = iconButton("txt", false, hasTxt ? "TXT" : "TXT yok");
-        txBtn.disabled = !hasTxt;
-
-        favBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (selectedId !== it.id) selectedId = it.id;
-          favs[it.id] = !favs[it.id];
-          saveMap(LS.favs, favs);
-          render();
-        });
-
-        dlBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (selectedId !== it.id){ selectedId = it.id; render(); }
-          const filename =
-            (it.name || it.file || "").split("/").pop() ||
-            (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
-
-          forceDownload(it.url, filename);
-
-          setTimeout(() => {
-            bumpLocalGlobalCount("download", it.id);
-            sendHit("download", it);
-            scheduleRefreshCounts(1200);
-            trackAudioDownload(it, filename);
-            render();
-          }, 0);
-        });
-
-        txBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (txBtn.disabled) return;
-          if (selectedId !== it.id){ selectedId = it.id; render(); }
-          openTranscriptFor(it).catch(() => {});
-        });
-
-        for (const b of [favBtn, dlBtn, txBtn]){
-          b.addEventListener("pointerup", (e) => e.stopPropagation());
-          b.addEventListener("pointerdown", (e) => e.stopPropagation());
-        }
-
-        row.appendChild(title);
-        row.appendChild(dur);
-        row.appendChild(playCount);
-        row.appendChild(favBtn);
-        row.appendChild(dlBtn);
-        row.appendChild(dlCount);
-        row.appendChild(txBtn);
-
-        row.addEventListener("click", () => {
-          if (selectedId !== it.id){
-            selectedId = it.id;
-            render();
-          }
-        });
-listEl.appendChild(row);
-      }
-    }
-
-    function playById(id){
-      const visible = getVisibleItems();
-      const idx = visible.findIndex(x => x.id === id);
-      if (idx === -1) return;
-      playAtVisibleIndex(idx);
-    }
-
-    function setMediaSource(url, mime){
-      while (playerEl.firstChild) playerEl.removeChild(playerEl.firstChild);
-      const s = document.createElement("source");
-      s.src = url;
-      if (mime) s.type = mime;
-      playerEl.appendChild(s);
-      playerEl.load();
-    }
-
-    function playAtVisibleIndex(idx){
-      const visible = getVisibleItems();
-      const it = visible[idx];
-      if (!it) return;
-
-      armPlayGate(it);
-      trackAudioPlay(it);
-
-      statusEl.textContent = "";
-      activeId = it.id;
-      selectedId = it.id;
-      fpTitle.textContent = it.title;
-      render();
-
-      const url = it.url;
-      const mime = guessMime(url);
-      const currentSpeed = SPEEDS[speedIndex] || 1;
+      }catch{}
 
       try{
-        plyr.speed = currentSpeed;
-        setMediaSource(url, mime);
-        const p = plyr.play();
-        if (p && typeof p.catch === "function"){
-          p.catch(() => {
-            statusEl.textContent = "Oynatma engellendi. Player içindeki ▶︎ tuşuna bas.";
-          });
-        }
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "true");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        ta.style.top = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        txInfoEl.textContent = "Kopyalandı ✅";
         setTimeout(() => {
-          if (playerEl && playerEl.paused) {
-            statusEl.textContent = statusEl.textContent || "Oynatma başlamadı. Player içindeki ▶︎ tuşuna bas.";
-          }
+          if (txOverlay.classList.contains("open")) txInfoEl.textContent = "Hazır";
         }, 900);
       }catch{
-        statusEl.textContent = "Player başlatılamadı.";
+        txInfoEl.textContent = "Kopyalama başarısız.";
       }
     }
 
-    function playPrev(){
-      const visible = getVisibleItems();
-      if (!visible.length) return;
-      let idx = visible.findIndex(x => x.id === activeId);
-      if (idx === -1) idx = 0;
-      idx = (idx - 1 + visible.length) % visible.length;
-      playAtVisibleIndex(idx);
-    }
+    txCopyBtn.addEventListener("click", (e) => { e.stopPropagation(); copyTranscriptToClipboard().catch(()=>{}); });
+    txCloseBtn.addEventListener("click", (e) => { e.stopPropagation(); closeTxOverlay(); });
 
-    function playNext(){
-      const visible = getVisibleItems();
-      if (!visible.length) return;
-      let idx = visible.findIndex(x => x.id === activeId);
-      if (idx === -1) idx = 0;
-      idx = (idx + 1) % visible.length;
-      playAtVisibleIndex(idx);
-    }
+    // panel içi tıklamalar kapanmayı tetiklemesin
+    txPanel.addEventListener("pointerdown", (e) => e.stopPropagation(), { capture: true });
 
-    prevBtn.addEventListener("click", playPrev);
-    nextBtn.addEventListener("click", playNext);
-    plyr.on("ended", () => { setTimeout(() => playNext(), 0); });
-
-    function isTypingTarget(){
-      const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
-      return (tag === "input" || tag === "textarea");
-    }
+    // Arka plana dokununca kapat
+    txOverlay.addEventListener("pointerdown", (e) => {
+      if (e.target === txOverlay){
+        e.preventDefault();
+        e.stopPropagation();
+        closeTxOverlay();
+      }
+    }, { capture: true });
 
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape"){
-        if (txOverlay.classList.contains("open")){
-          e.preventDefault();
-          closeTranscript();
-          return;
-        }
-        if (sbOverlay.classList.contains("open")){
-          e.preventDefault();
-          closeSidebar();
-          return;
-        }
+      if (e.key === "Escape" && txOverlay.classList.contains("open")){
+        e.preventDefault();
+        closeTxOverlay();
       }
-
-      if (isTypingTarget()) return;
-
-      if (e.code === "Space"){
-        e.preventDefault();
-        plyr.togglePlay();
-      } else if (e.code === "ArrowLeft"){
-        e.preventDefault();
-        playPrev();
-      } else if (e.code === "ArrowRight"){
-        e.preventDefault();
-        playNext();
-      }
-    });
-
-    filterFavBtn.addEventListener("click", () => { filterFav = !filterFav; render(); });
-
-    resetBtn.addEventListener("click", () => {
-      filterFav = false;
-      searchEl.value = "";
-
-      sortMode = "date";
-      dateSortDir = "desc";
-      localStorage.setItem(LS.sortMode, sortMode);
-      localStorage.setItem(LS.sortDirDate, dateSortDir);
-
-      setSortIcons();
-      render();
     });
 
     const SEARCH_DEBOUNCE_MS = 900;
-
     let searchTimer = null;
     let lastSentTermNorm = "";
 
@@ -2616,18 +1974,15 @@ listEl.appendChild(row);
     window.addEventListener("resize", () => {
       clampPlayerToViewport();
       updateOverlayScale();
-      clampTxSizeToViewport();
     });
     window.addEventListener("orientationchange", () => setTimeout(() => {
       clampPlayerToViewport();
       updateOverlayScale();
-      clampTxSizeToViewport();
     }, 150));
     if (window.visualViewport){
       window.visualViewport.addEventListener("resize", () => {
         clampPlayerToViewport();
         updateOverlayScale();
-        clampTxSizeToViewport();
       });
     }
 
@@ -2658,442 +2013,400 @@ listEl.appendChild(row);
       });
     })();
 
-    // Sidebar behavior
-    function openSidebar(){
-      sbOverlay.classList.add("open");
-      sbOverlay.setAttribute("aria-hidden", "false");
-      updateOverlayScale();
-      setSortIcons();
-    }
-    function closeSidebar(){
-      sbOverlay.classList.remove("open");
-      sbOverlay.setAttribute("aria-hidden", "true");
-    }
-    sidebarOpenBtn.addEventListener("click", (e) => { e.stopPropagation(); openSidebar(); });
-    sbCloseBtn.addEventListener("click", (e) => { e.stopPropagation(); closeSidebar(); });
-    sbOverlay.addEventListener("click", (e) => {
-      if (e.target === sbOverlay) closeSidebar();
-    });
-    document.getElementById("sidebar").addEventListener("click", (e) => e.stopPropagation());
+    async function loadItems(){
+      const cached = loadAny(LS.itemsCache);
+      const cachedAt = Number(localStorage.getItem(LS.itemsCacheAt) || "0");
+      const cacheFresh =
+        !FORCE_REFRESH &&
+        Array.isArray(cached) &&
+        cached.length > 0 &&
+        Number.isFinite(cachedAt) &&
+        (Date.now() - cachedAt) < CACHE_TTL_MS;
 
-    sbRefreshBtn.addEventListener("click", async () => {
-      const old = localStorage.getItem(LS.itemsCacheAt) || "0";
-      localStorage.setItem(LS.itemsCacheAt, "0");
-      try{
-        await loadItems();
-      }finally{
-        if (items.length) statusEl.textContent = "";
-        else statusEl.textContent = "Kayıt bulunamadı.";
-        if (old) localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
-      }
-    });
-
-    sbZoomResetBtn.addEventListener("click", () => resetZoom100());
-
-    sbFavBtn.addEventListener("click", () => { filterFav = !filterFav; setSortIcons(); render(); });
-
-    function clickSort(kind){
-      if (kind === "date"){
-        if (sortMode !== "date") sortMode = "date";
-        else dateSortDir = (dateSortDir === "asc") ? "desc" : "asc";
-        localStorage.setItem(LS.sortMode, sortMode);
-        localStorage.setItem(LS.sortDirDate, dateSortDir);
-      } else if (kind === "dur"){
-        if (sortMode !== "dur") sortMode = "dur";
-        else durSortDir = (durSortDir === "asc") ? "desc" : "asc";
-        localStorage.setItem(LS.sortMode, sortMode);
-        localStorage.setItem(LS.sortDirDur, durSortDir);
-      } else if (kind === "play"){
-        if (sortMode !== "play") sortMode = "play";
-        else playSortDir = (playSortDir === "asc") ? "desc" : "asc";
-        localStorage.setItem(LS.sortMode, sortMode);
-        localStorage.setItem(LS.sortDirPlay, playSortDir);
-      } else if (kind === "download"){
-        if (sortMode !== "download") sortMode = "download";
-        else dlSortDir = (dlSortDir === "asc") ? "desc" : "asc";
-        localStorage.setItem(LS.sortMode, sortMode);
-        localStorage.setItem(LS.sortDirDl, dlSortDir);
-      }
-      setSortIcons();
-      render();
-    }
-
-    sbSortDateBtn.addEventListener("click", () => clickSort("date"));
-    sbSortDurBtn.addEventListener("click", () => clickSort("dur"));
-    sbSortPlayBtn.addEventListener("click", () => clickSort("play"));
-    sbSortDlBtn.addEventListener("click", () => clickSort("download"));
-
-    // Transcript logic
-    let txOpen = false;
-    let txCurrent = null;
-    let txPlainText = "";
-    let txMatches = [];
-    let txActiveMatch = -1;
-    let txSearchTimer = null;
-
-    const txCache = new Map(); // id -> { text, at }
-    const TX_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-
-    function clearTxSearchUI(){
-      txMatches = [];
-      txActiveMatch = -1;
-      txMatchCountEl.textContent = "0/0";
-      txPrevMatchBtn.disabled = true;
-      txNextMatchBtn.disabled = true;
-      txContentEl.textContent = txPlainText || "";
-    }
-
-    function clampTxSizeToViewport(){
-      const { vw, vh } = getViewportWH();
-      const vwL = toLayoutPx(vw);
-      const vhL = toLayoutPx(vh);
-
-      const margin = 28;
-      const maxW = Math.max(360, vwL - margin);
-      const maxH = Math.max(260, vhL - margin);
-
-      const minW = 420;
-      const minH = 300;
-
-      const saved = loadAny(LS.txSize);
-      let w = 0, h = 0;
-
-      if (saved && typeof saved.w === "number" && typeof saved.h === "number" && saved.w >= minW && saved.h >= minH){
-        w = saved.w;
-        h = saved.h;
+      if (cacheFresh){
+        items = cached;
+        statusEl.textContent = "";
+        setSortIcons();
+        render();
+        restoreScrollIfNeeded();
+        scheduleRefreshCounts(50);
       } else {
-        w = Math.min(680, maxW);
-        h = Math.min(Math.max(420, Math.round(vhL * 0.62)), 640, maxH);
+        statusEl.textContent = "Yükleniyor...";
       }
 
-      w = Math.min(maxW, Math.max(minW, w));
-      h = Math.min(maxH, Math.max(minH, h));
-
-      txPanel.style.width = w + "px";
-      txPanel.style.height = h + "px";
-      saveAny(LS.txSize, { w, h });
-    }
-
-
-      const { vw, vh } = getViewportWH();
-      const vwL = toLayoutPx(vw);
-      const vhL = toLayoutPx(vh);
-
-      const margin = 28;
-      const maxW = Math.max(280, vwL - margin);
-      const maxH = Math.max(220, vhL - margin);
-
-      const curW = txPanel.offsetWidth;
-      const curH = txPanel.offsetHeight;
-
-      const w = Math.min(maxW, Math.max(300, curW));
-      const h = Math.min(maxH, Math.max(240, curH));
-
-      txPanel.style.width = w + "px";
-      txPanel.style.height = h + "px";
-
-      saveAny(LS.txSize, { w, h });
-    }
-
-    function openTranscript(){
-      txOpen = true;
-      txOverlay.classList.add("open");
-      txOverlay.setAttribute("aria-hidden", "false");
-      updateOverlayScale();
-      clampTxSizeToViewport();
-    }
-
-    function closeTranscript(){
-      txOpen = false;
-      txOverlay.classList.remove("open");
-      txOverlay.setAttribute("aria-hidden", "true");
-      txSearchRow.classList.remove("on");
-    }
-
-    txCloseBtn.addEventListener("click", () => closeTranscript());
-
-    function escapeForRegex(s){
-      return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    }
-
-    function buildHighlightedHtml(text, ranges, activeIdx){
-      if (!ranges.length) return escHtml(text);
-      const parts = [];
-      let last = 0;
-      for (let i=0; i<ranges.length; i++){
-        const r = ranges[i];
-        const a = Math.max(0, r[0]);
-        const b = Math.max(a, r[1]);
-        if (a > last) parts.push(escHtml(text.slice(last, a)));
-        const cls = (i === activeIdx) ? "txMark active" : "txMark";
-        parts.push(`<span class="${cls}" data-mi="${i}">${escHtml(text.slice(a, b))}</span>`);
-        last = b;
-      }
-      if (last < text.length) parts.push(escHtml(text.slice(last)));
-      return parts.join("");
-    }
-
-    function computeMatches(text, q){
-      const out = [];
-      if (!q) return out;
-      const re = new RegExp(escapeForRegex(q), "gi");
-      let m;
-      while ((m = re.exec(text))){
-        const a = m.index;
-        const b = a + (m[0] || "").length;
-        if (b > a) out.push([a, b]);
-        if (out.length >= 2000) break;
-        if (m[0].length === 0) re.lastIndex++;
-      }
-      return out;
-    }
-
-    function applyTxSearch(){
-      const q = (txSearchInput.value || "").trim();
-      if (!q){
-        clearTxSearchUI();
-        return;
-      }
-      txMatches = computeMatches(txPlainText, q);
-      txActiveMatch = txMatches.length ? 0 : -1;
-
-      txPrevMatchBtn.disabled = txMatches.length < 2;
-      txNextMatchBtn.disabled = txMatches.length < 2;
-
-      txMatchCountEl.textContent = txMatches.length ? `1/${txMatches.length}` : `0/0`;
-
-      txContentEl.innerHTML = buildHighlightedHtml(txPlainText, txMatches, txActiveMatch);
-
-      if (txMatches.length){
-        setTimeout(() => scrollToActiveMatch(), 0);
-      }
-    }
-
-    function scrollToActiveMatch(){
-      const el = txContentEl.querySelector(".txMark.active");
-      if (!el) return;
       try{
-        el.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
-      }catch{
-        el.scrollIntoView();
-      }
-    }
+        const metaUrl = `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}`;
+        const res = await fetch(metaUrl, { cache: FORCE_REFRESH ? "no-store" : "no-cache" });
+        if (!res.ok) throw new Error("IA metadata okunamadı");
+        const j = await res.json();
 
-    function setActiveMatch(idx){
-      if (!txMatches.length) return;
-      txActiveMatch = ((idx % txMatches.length) + txMatches.length) % txMatches.length;
-      txMatchCountEl.textContent = `${txActiveMatch + 1}/${txMatches.length}`;
+        const newUpdated = String(
+          j?.item_lastupdated ||
+          j?.item_last_update ||
+          j?.updated ||
+          j?.metadata?.updateddate ||
+          j?.metadata?.publicdate ||
+          ""
+        );
 
-      const old = txContentEl.querySelector(".txMark.active");
-      if (old) old.classList.remove("active");
-      const next = txContentEl.querySelector(`.txMark[data-mi="${txActiveMatch}"]`);
-      if (next){
-        next.classList.add("active");
-        scrollToActiveMatch();
-      }else{
-        txContentEl.innerHTML = buildHighlightedHtml(txPlainText, txMatches, txActiveMatch);
-        setTimeout(() => scrollToActiveMatch(), 0);
-      }
-    }
-
-    txSearchBtn.addEventListener("click", () => {
-      const on = txSearchRow.classList.toggle("on");
-      if (on){
-        txSearchInput.focus();
-        txSearchInput.select();
-      }
-    });
-
-    txSearchInput.addEventListener("input", () => {
-      clearTimeout(txSearchTimer);
-      txSearchTimer = setTimeout(applyTxSearch, 180);
-    });
-
-    txSearchInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter"){
-        e.preventDefault();
-        if (!txMatches.length){
-          applyTxSearch();
+        const oldUpdated = String(localStorage.getItem(LS.metaUpdated) || "");
+        if (cacheFresh && newUpdated && oldUpdated && newUpdated === oldUpdated){
+          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
           return;
         }
-        if (e.shiftKey) setActiveMatch(txActiveMatch - 1);
-        else setActiveMatch(txActiveMatch + 1);
-      } else if (e.key === "Escape"){
-        e.preventDefault();
-        txSearchRow.classList.remove("on");
+
+        const files = Array.isArray(j.files) ? j.files : [];
+
+        const txtSet = new Set(
+          files
+            .map(f => String(f?.name || "").toLowerCase())
+            .filter(n => n.endsWith(".txt"))
+        );
+
+        const list = files
+          .filter(f => {
+            const name = (f.name || "").toLowerCase();
+            if (!(name.endsWith(".m4a") || name.endsWith(".mp3"))) return false;
+            if (!("source" in f)) return true;
+            return (String(f.source).toLowerCase() === "original");
+          })
+          .map((f, idx) => {
+            const name = f.name || "";
+            const title = (f.title || "").trim() || decodeURIComponentSafe(name.split("/").pop() || name);
+            const url = buildDownloadUrl(IA_IDENTIFIER_1, name);
+            const localId = name || url || (title + "#" + idx);
+            const id = "S1|" + localId;
+
+            const txtName = audioNameToTxtName(name);
+            const txtUrl  = buildDownloadUrl(IA_IDENTIFIER_1, txtName);
+            const hasTxt  = txtSet.has(String(txtName || "").toLowerCase());
+
+            return { id, title, name, url, txtName, txtUrl, hasTxt, src: "S1" };
+          });
+
+        const newFp = itemsFingerprint(list);
+        const oldFp = itemsFingerprint(items);
+        const shouldUpdate = !cacheFresh || (newFp && newFp !== oldFp);
+
+        if (shouldUpdate){
+          items = list;
+          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
+          localStorage.setItem(LS.itemsCache, JSON.stringify(items));
+          if (newUpdated) localStorage.setItem(LS.metaUpdated, newUpdated);
+
+          statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
+          setSortIcons();
+          render();
+          restoreScrollIfNeeded();
+          scheduleRefreshCounts(100);
+        } else {
+          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
+          if (newUpdated) localStorage.setItem(LS.metaUpdated, newUpdated);
+        }
+      }catch(err){
+        console.error(err);
+        if (!cacheFresh) statusEl.textContent = "Liste yüklenemedi.";
       }
-    });
+    }
 
-    txPrevMatchBtn.addEventListener("click", () => setActiveMatch(txActiveMatch - 1));
-    txNextMatchBtn.addEventListener("click", () => setActiveMatch(txActiveMatch + 1));
+    function getVisibleItems(){
+      const q = foldTR((searchEl.value || "").trim());
 
-    async function copyToClipboard(text){
-      if (!text) return false;
-      try{
-        await navigator.clipboard.writeText(text);
+      let arr = items.filter(it => {
+        if (q && !foldTR(it.title).includes(q)) return false;
+        if (filterFav && !favs[it.id]) return false;
         return true;
-      }catch{}
-      try{
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.left = "-9999px";
-        ta.style.top = "-9999px";
-        document.body.appendChild(ta);
-        ta.focus();
-        ta.select();
-        const ok = document.execCommand("copy");
-        ta.remove();
-        return !!ok;
-      }catch{
-        return false;
+      });
+
+      if (sortMode === "dur"){
+        const dir = (durSortDir === "asc") ? 1 : -1;
+        arr.sort((a,b) => {
+          const ha = (durs[a.id] > 0);
+          const hb = (durs[b.id] > 0);
+          if (ha !== hb) return ha ? -1 : 1;
+          if (ha && hb){
+            const da = durs[a.id];
+            const db = durs[b.id];
+            if (da !== db) return (da - db) * dir;
+          }
+          return a.title.localeCompare(b.title, "tr");
+        });
+      } else if (sortMode === "date"){
+        const dir = (dateSortDir === "asc") ? 1 : -1;
+        arr.sort((a,b) => {
+          const ta = parseEndDate(a);
+          const tb = parseEndDate(b);
+          const ha = (ta !== null);
+          const hb = (tb !== null);
+          if (ha !== hb) return ha ? -1 : 1;
+          if (ha && hb && ta !== tb) return (ta - tb) * dir;
+          return a.title.localeCompare(b.title, "tr");
+        });
+      } else if (sortMode === "play"){
+        const dir = (playSortDir === "asc") ? 1 : -1;
+        arr.sort((a,b) => {
+          const ca = Number(globalPlayCounts[a.id]) || 0;
+          const cb = Number(globalPlayCounts[b.id]) || 0;
+          if (ca !== cb) return (ca - cb) * dir;
+          return a.title.localeCompare(b.title, "tr");
+        });
+      } else if (sortMode === "download"){
+        const dir = (dlSortDir === "asc") ? 1 : -1;
+        arr.sort((a,b) => {
+          const ca = Number(globalDownloadCounts[a.id]) || 0;
+          const cb = Number(globalDownloadCounts[b.id]) || 0;
+          if (ca !== cb) return (ca - cb) * dir;
+          return a.title.localeCompare(b.title, "tr");
+        });
+      } else {
+        arr.sort((a,b) => a.title.localeCompare(b.title, "tr"));
+      }
+
+      return arr;
+    }
+
+    function iconButton(kind, on, title){
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "iconBtn" + (on ? " on" : "");
+      btn.title = title;
+      btn.dataset.kind = kind;
+
+      if (kind === "star"){
+        btn.setAttribute("aria-pressed", String(!!on));
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="${on ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
+          </svg>`;
+      } else if (kind === "download"){
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 3v12"/>
+            <path d="M7 10l5 5 5-5"/>
+            <path d="M5 21h14"/>
+          </svg>`;
+      } else if (kind === "txt"){
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <path d="M14 2v6h6"/>
+            <path d="M8 13h8"/><path d="M8 17h8"/>
+          </svg>`;
+      }
+
+      return btn;
+    }
+
+    function render(){
+      const visible = getVisibleItems();
+      metaEl.textContent = `Görünən: ${visible.length} / Toplam: ${items.length}`;
+
+      filterFavBtn.classList.toggle("on", filterFav);
+      filterFavBtn.setAttribute("aria-pressed",  String(filterFav));
+
+      listEl.innerHTML = "";
+
+      const toMeasure = (sortMode === "dur") ? items : visible;
+      for (const it of toMeasure){
+        if (!(durs[it.id] > 0)) requestDuration(it);
+      }
+
+      for (const it of visible){
+        const row = document.createElement("div");
+        row.className = "itemRow" + (it.id === activeId ? " active" : "");
+
+        const title = document.createElement("div");
+        title.className = "title";
+        title.innerHTML = highlightDisease(it.title);
+
+        const dur = document.createElement("div");
+        dur.className = "dur";
+        dur.textContent = (durs[it.id] > 0) ? fmtDur(durs[it.id]) : "…";
+
+        const playCount = document.createElement("div");
+        playCount.className = "countCell";
+        playCount.textContent = String(Number(globalPlayCounts[it.id]) || 0);
+
+        const favBtn = iconButton("star", !!favs[it.id], "Favori");
+        const dlBtn  = iconButton("download", false, "İndir");
+
+        const dlCount = document.createElement("div");
+        dlCount.className = "countCell";
+        dlCount.textContent = String(Number(globalDownloadCounts[it.id]) || 0);
+
+        const txtBtn = iconButton("txt", false, "Transkript aç (.txt)");
+        txtBtn.disabled = !(it.hasTxt && it.txtUrl);
+
+        favBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          favs[it.id] = !favs[it.id];
+          saveMap(LS.favs, favs);
+          render();
+        });
+
+        dlBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const filename =
+            (it.name || it.file || "").split("/").pop() ||
+            safeFilenameBase(it.title) + ".m4a";
+
+          forceDownload(it.url, filename);
+
+          setTimeout(() => {
+            bumpLocalGlobalCount("download", it.id);
+            sendHit("download", it);
+            scheduleRefreshCounts(1200);
+            trackAudioDownload(it, filename);
+            render();
+          }, 0);
+        });
+
+        txtBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          showTranscriptForItem(it).catch(() => {});
+        });
+
+        for (const b of [favBtn, dlBtn, txtBtn]){
+          b.addEventListener("pointerup", (e) => e.stopPropagation());
+          b.addEventListener("pointerdown", (e) => e.stopPropagation());
+        }
+
+        row.appendChild(title);
+        row.appendChild(dur);
+        row.appendChild(playCount);
+        row.appendChild(favBtn);
+        row.appendChild(dlBtn);
+        row.appendChild(dlCount);
+        row.appendChild(txtBtn);
+
+        row.addEventListener("click", () => playById(it.id));
+        listEl.appendChild(row);
       }
     }
 
-    txCopyBtn.addEventListener("click", async () => {
-      const ok = await copyToClipboard(txPlainText);
-      txInfoEl.textContent = ok ? "Kopiert." : "Kopieren fehlgeschlagen.";
-      setTimeout(() => {
-        if (txCurrent) updateTxInfo(txCurrent);
-      }, 1200);
-    });
-
-    txDownloadBtn.addEventListener("click", () => {
-      if (!txCurrent || !txCurrent.txtUrl) return;
-      const filename = (txCurrent.txtName || "").split("/").pop() || "transkript.txt";
-      forceDownload(txCurrent.txtUrl, filename);
-      trackTranscriptDownload(txCurrent, filename);
-    });
-
-    function updateTxInfo(it){
-      const file = (it?.txtName || "").split("/").pop() || "—";
-      txInfoEl.textContent = file ? `TXT: ${file}` : "—";
+    function playById(id){
+      const visible = getVisibleItems();
+      const idx = visible.findIndex(x => x.id === id);
+      if (idx === -1) return;
+      playAtVisibleIndex(idx);
     }
 
-    async function fetchTranscriptText(it){
-      const cached = txCache.get(it.id);
-      if (cached && (Date.now() - cached.at) < TX_CACHE_TTL_MS) return cached.text;
-
-      const res = await fetch(it.txtUrl, { cache: "no-cache" });
-      if (!res.ok) throw new Error("txt fetch failed");
-      const text = await res.text();
-      txCache.set(it.id, { text, at: Date.now() });
-      return text;
+    function setMediaSource(url, mime){
+      while (playerEl.firstChild) playerEl.removeChild(playerEl.firstChild);
+      const s = document.createElement("source");
+      s.src = url;
+      if (mime) s.type = mime;
+      playerEl.appendChild(s);
+      playerEl.load();
     }
 
-    async function openTranscriptFor(it){
-      if (!it || !it.txtUrl) return;
-      txCurrent = it;
-      openTranscript();
-      trackTranscriptOpen(it);
+    function playAtVisibleIndex(idx){
+      const visible = getVisibleItems();
+      const it = visible[idx];
+      if (!it) return;
 
-      txTitleEl.textContent = it.title || "Transkript";
-      updateTxInfo(it);
+      armPlayGate(it);
+      trackAudioPlay(it);
 
-      txCopyBtn.disabled = true;
-      txDownloadBtn.disabled = false;
-      txContentEl.textContent = "Yükleniyor…";
-      txPlainText = "";
-      clearTxSearchUI();
+      statusEl.textContent = "";
+      activeId = it.id;
+      fpTitle.textContent = it.title;
+      render();
+
+      const url = it.url;
+      const mime = guessMime(url);
+      const currentSpeed = SPEEDS[speedIndex] || 1;
 
       try{
-        const t = await fetchTranscriptText(it);
-        txPlainText = t || "";
-        txCopyBtn.disabled = !txPlainText;
-        clearTxSearchUI();
+        plyr.speed = currentSpeed;
+        setMediaSource(url, mime);
+        const p = plyr.play();
+        if (p && typeof p.catch === "function"){
+          p.catch(() => {
+            statusEl.textContent = "Oynatma engellendi. Player içindeki ▶︎ tuşuna bas.";
+          });
+        }
+        setTimeout(() => {
+          if (playerEl && playerEl.paused) {
+            statusEl.textContent = statusEl.textContent || "Oynatma başlamadı. Player içindeki ▶︎ tuşuna bas.";
+          }
+        }, 900);
       }catch{
-        txContentEl.textContent = "TXT yüklenemedi.";
-        txCopyBtn.disabled = true;
+        statusEl.textContent = "Player başlatılamadı.";
       }
     }
 
-    sbClearTxCacheBtn.addEventListener("click", () => {
-      txCache.clear();
-      txInfoEl.textContent = "TXT Cache temizlendi.";
-      setTimeout(() => {
-        if (txCurrent) updateTxInfo(txCurrent);
-      }, 1200);
-    });
-
-    // Transcript overlay should NOT close on background click.
-    txOverlay.addEventListener("click", () => {});
-    txPanel.addEventListener("click", (e) => e.stopPropagation());
-
-    // Resizable transcript panel
-    let txResizing = false;
-    let txResizeStartX = 0, txResizeStartY = 0;
-    let txResizeStartW = 0, txResizeStartH = 0;
-
-    function saveTxSize(w, h){
-      saveAny(LS.txSize, { w, h });
+    function playPrev(){
+      const visible = getVisibleItems();
+      if (!visible.length) return;
+      let idx = visible.findIndex(x => x.id === activeId);
+      if (idx === -1) idx = 0;
+      idx = (idx - 1 + visible.length) % visible.length;
+      playAtVisibleIndex(idx);
     }
 
-    function clampTxSize(w, h){
-      const { vw, vh } = getViewportWH();
-      const vwL = toLayoutPx(vw);
-      const vhL = toLayoutPx(vh);
-
-      const margin = 28;
-      const maxW = Math.max(360, vwL - margin);
-      const maxH = Math.max(260, vhL - margin);
-
-      const minW = 420;
-      const minH = 300;
-
-      const cw = Math.min(maxW, Math.max(minW, w));
-      const ch = Math.min(maxH, Math.max(minH, h));
-      return { w: cw, h: ch };
+    function playNext(){
+      const visible = getVisibleItems();
+      if (!visible.length) return;
+      let idx = visible.findIndex(x => x.id === activeId);
+      if (idx === -1) idx = 0;
+      idx = (idx + 1) % visible.length;
+      playAtVisibleIndex(idx);
     }
 
-    txResizeHandle.addEventListener("pointerdown", (e) => {
-      if (!txOpen) return;
-      txResizing = true;
-      txResizeStartX = e.clientX;
-      txResizeStartY = e.clientY;
-      txResizeStartW = txPanel.offsetWidth;
-      txResizeStartH = txPanel.offsetHeight;
-      txResizeHandle.setPointerCapture(e.pointerId);
-      e.preventDefault();
-      e.stopPropagation();
+    prevBtn.addEventListener("click", playPrev);
+    nextBtn.addEventListener("click", playNext);
+    plyr.on("ended", () => { setTimeout(() => playNext(), 0); });
+
+    document.addEventListener("keydown", (e) => {
+      const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
+      const inTyping = (tag === "input" || tag === "textarea");
+      if (inTyping) return;
+
+      if (e.code === "Space"){
+        e.preventDefault();
+        plyr.togglePlay();
+      } else if (e.code === "ArrowLeft"){
+        e.preventDefault();
+        playPrev();
+      } else if (e.code === "ArrowRight"){
+        e.preventDefault();
+        playNext();
+      }
     });
 
-    txResizeHandle.addEventListener("pointermove", (e) => {
-      if (!txResizing) return;
+    filterFavBtn.addEventListener("click", () => { filterFav = !filterFav; render(); });
 
-      const dxClient = e.clientX - txResizeStartX;
-      const dyClient = e.clientY - txResizeStartY;
+    resetBtn.addEventListener("click", () => {
+      filterFav = false;
+      searchEl.value = "";
 
-      const dx = useTransformScale ? (dxClient / uiScale) : dxClient;
-      const dy = useTransformScale ? (dyClient / uiScale) : dyClient;
+      sortMode = "date";
+      dateSortDir = "desc";
+      localStorage.setItem(LS.sortMode, sortMode);
+      localStorage.setItem(LS.sortDirDate, dateSortDir);
 
-      const w = txResizeStartW - dx; // handle is bottom-left
-      const h = txResizeStartH + dy;
-
-      const cl = clampTxSize(w, h);
-      txPanel.style.width = cl.w + "px";
-      txPanel.style.height = cl.h + "px";
-      saveTxSize(cl.w, cl.h);
+      setSortIcons();
+      render();
     });
 
-    function endTxResize(pointerId){
-      if (!txResizing) return;
-      txResizing = false;
-      try{ txResizeHandle.releasePointerCapture(pointerId); }catch{}
-      clampTxSizeToViewport();
-    }
+    (function setActiveNav(){
+      const here = location.href.replace(/\/$/, "");
+      document.querySelectorAll(".navRow .navLink").forEach(a => {
+        a.classList.remove("on");
+        const u = (a.getAttribute("href") || "").replace(/\/$/, "");
+        if (!u) return;
+        if (here === u || here.startsWith(u + "/")) a.classList.add("on");
+      });
+    })();
 
-    txResizeHandle.addEventListener("pointerup", (e) => endTxResize(e.pointerId));
-    txResizeHandle.addEventListener("pointercancel", (e) => endTxResize(e.pointerId));
-
-    // Init
     setSortIcons();
     restoreUiState();
-    if (!selectedId) selectedId = activeId;
     restorePlayerPos();
     restoreSpeed();
     restoreZoom();
-    updateOverlayScale();
     setTimeout(clampPlayerToViewport, 0);
+    setTimeout(updateOverlayScale, 0);
     loadItems();
   </script>
 </body>
