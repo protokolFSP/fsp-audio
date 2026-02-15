@@ -45,6 +45,7 @@
       --greenGlow: 0 0 0 4px rgba(22,163,74,.22), 0 10px 22px rgba(22,163,74,.10);
 
       --orange:#f59e0b;
+      --orangeGlow: 0 0 0 4px rgba(245,158,11,.20), 0 10px 22px rgba(245,158,11,.10);
     }
 
     html, body{
@@ -78,15 +79,16 @@
       will-change: transform;
     }
 
+    /* == Header like 21–23 == */
     .pageTitle{
-      font-size: 1.6rem;
-      font-weight: 700;
+      font-size: 1.7rem;
+      font-weight: 800;
       color: #0b5fff;
       background: #f1f5ff;
       padding: 12px 16px;
       border-radius: 14px;
       margin-bottom: 14px;
-      display: none;
+      display: flex; /* was: none */
       align-items:center;
       justify-content: space-between;
       gap: 10px;
@@ -263,18 +265,10 @@
       line-height: 1.05;
     }
 
-    /* 7 column layout:
-       1) title
-       2) duration
-       3) play count
-       4) fav
-       5) download
-       6) download count
-       7) transcript (txt)
-    */
+    /* 6 column layout (TXT column removed from list; now in player) */
     .headerRow, .itemRow{
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 8ch 54px 36px 36px 54px 36px;
+      grid-template-columns: minmax(0, 1fr) 8ch 54px 36px 36px 54px;
       align-items: center;
       column-gap: 8px;
     }
@@ -303,13 +297,6 @@
       align-items:center;
       justify-content:center;
       user-select:none;
-    }
-
-    .txtHead{
-      font-size: .85rem;
-      color: var(--muted);
-      user-select:none;
-      line-height: 1;
     }
 
     .sortBtn{
@@ -416,7 +403,7 @@
 
     @media (max-width: 680px){
       #scrollArea{ padding: 14px; }
-      .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 46px 34px 34px 46px 34px; }
+      .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 46px 34px 34px 46px; }
       .title{
         white-space: nowrap;
         overflow: hidden;
@@ -445,27 +432,12 @@
     .iconBtn:disabled{ opacity: .35; cursor: default; }
     .iconBtn:disabled:hover{ background: white; }
 
-    .iconBtn.txtMissing{
-      opacity: .22 !important;
-      filter: grayscale(1);
-      border-style: dashed;
-    }
-
     .iconBtn.on{
       border-color: var(--blue);
       background: rgba(43,124,255,.10);
       box-shadow: var(--blueGlow);
     }
     .iconBtn svg{ width: 14px; height: 14px; opacity: .9; }
-
-    /* TXT icon: blue tendency */
-    .iconBtn[data-kind="txt"]:not(.txtMissing){
-      border-color: rgba(43,124,255,.55);
-      background: rgba(43,124,255,.08);
-    }
-    .iconBtn[data-kind="txt"]:not(.txtMissing):hover{ background: rgba(43,124,255,.14); }
-    .iconBtn[data-kind="txt"] svg{ stroke: var(--blue); }
-
 
     .filterBtn{
       width: 30px;
@@ -659,7 +631,9 @@
       #fpHeaderRight{
         width: 100%;
         justify-content: flex-end;
+        flex-wrap: wrap;
       }
+      #search{ font-size: 16px; }
     }
 
     .diseaseName{
@@ -791,7 +765,6 @@
     }
 
     /* Transcript popup */
-
     #txPanel{
       position: fixed;
       z-index: 10050;
@@ -813,7 +786,6 @@
       flex-direction: column;
       touch-action: none;
     }
-
     #txPanel.open{ display: flex; }
 
     #txHeader{
@@ -968,7 +940,6 @@
       }
       #txBtns{ width: 100%; justify-content: flex-end; }
       .txBtn{ height: 34px; padding: 0 10px; font-size: .9rem; }
-      #search{ font-size: 16px; }
       #txSearchInput{ font-size: 16px; }
     }
 
@@ -998,7 +969,7 @@
     }
     #txResizeHandle svg{ width: 22px; height: 22px; opacity: .88; }
 
-    /* Captions: player üstünde, max 6 satır */
+    /* Captions */
     .miniBtn.on{
       border-color: var(--blue);
       background: rgba(43,124,255,.10);
@@ -1007,7 +978,7 @@
     #captions{
       margin: 0;
       padding: 10px 12px;
-      padding-bottom: calc(10px + .55em); /* alt satır kesilmesin */
+      padding-bottom: calc(10px + .55em);
       border-radius: 12px;
       border: 2px solid #d3d3d3;
       background: #fafafa;
@@ -1017,8 +988,9 @@
       overflow: hidden;
       max-height: calc(1.25em * var(--capLines) + 34px);
       box-shadow: 0 10px 22px rgba(0,0,0,.06);
+      cursor: pointer;
     }
-    #captions.isEmpty{ color: var(--muted); }
+    #captions.isEmpty{ color: var(--muted); cursor: default; }
     #captions.hidden{ display:none; }
 
     #captionsDock{
@@ -1053,20 +1025,32 @@
     }
     .ccModeBtn.on .btnMark{ color: var(--orange); }
     .ccModeBtn:not(.on) .btnMark{ color: #404040; }
-    /* CC + E button styling */
-    #ccBtn, #expBtn{
-      border-color: var(--blue);
+
+    /* TXT toggle button in player header */
+    #fpTxtBtn{
+      width: auto;
+      min-width: 56px;
+      padding: 0 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(245,158,11,.55);
+      background: rgba(245,158,11,.10);
+      box-shadow: 0 0 0 3px rgba(245,158,11,.10) inset;
     }
-    #ccBtn .btnMark, #expBtn .btnMark{
-      font-weight: 800;
-      font-size: 17px;
+    #fpTxtBtn .btnMark{
+      font-weight: 900;
       letter-spacing: .5px;
+      font-size: 16px;
+      color: #b45309;
       line-height: 1;
     }
-    #ccBtn.on .btnMark, #expBtn.on .btnMark{ color: var(--orange); }
-    #ccBtn:not(.on) .btnMark, #expBtn:not(.on) .btnMark{ color: #404040; }
+    #fpTxtBtn:hover{ background: rgba(245,158,11,.16); }
+    #fpTxtBtn.on{
+      border-color: rgba(43,124,255,.70);
+      background: rgba(43,124,255,.12);
+      box-shadow: var(--blueGlow);
+    }
+    #fpTxtBtn.on .btnMark{ color: #0b5fff; }
 
-  </style>
   </style>
 </head>
 
@@ -1167,10 +1151,6 @@
               <svg id="sortDlCountIcon" class="dirIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"></svg>
             </button>
           </div>
-
-          <div class="headIconCell">
-            <span class="txtHead" title="Transkript">TXT</span>
-          </div>
         </div>
       </div>
 
@@ -1240,7 +1220,11 @@
           <span class="btnMark">CCx</span>
         </button>
 
-<div id="speedWrap" class="speedWrap" aria-label="Hız">
+        <button id="fpTxtBtn" class="miniBtn" type="button" title="Transkript (TXT)" aria-label="Transkript (TXT)">
+          <span class="btnMark">TXT</span>
+        </button>
+
+        <div id="speedWrap" class="speedWrap" aria-label="Hız">
           <button id="slowBtn" class="speedCtlBtn" type="button" title="Yavaşlat (🐢)">🐢</button>
           <div id="speedValue" class="speedValue on" title="Oynatma hızı">1×</div>
           <button id="fastBtn" class="speedCtlBtn" type="button" title="Hızlandır (🐇)">🐇</button>
@@ -1264,61 +1248,67 @@
   </div>
 
   <!-- Transcript popup -->
-    <div id="txPanel" role="dialog" aria-label="Transkript" aria-hidden="true">
-      <div id="txHeader">
-        <div id="txTitle">Transkript</div>
-        <div id="txBtns">
-          <button id="txCopyBtn" class="txBtn" type="button" title="Kopieren">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M9 9h10v10H9z"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            Kopieren
-          </button>
-          <button id="txDownloadBtn" class="txBtn" type="button" title="Download">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/>
-            </svg>
-            Download
-          </button>
-          <button id="txSearchBtn" class="txBtn" type="button" title="Suchen">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <circle cx="11" cy="11" r="6"></circle>
-              <path d="M20 20l-3.5-3.5"></path>
-            </svg>
-            Suchen
-          </button>
-          <button id="txCloseBtn" class="txBtn" type="button" title="Schließen">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
-            </svg>
-            Schließen
-          </button>
-        </div>
-      </div>
-
-      <div id="txBody">
-        <div id="txInfo">—</div>
-
-        <div id="txSearchRow" aria-label="Suchen">
-          <input id="txSearchInput" type="text" placeholder="Suchen…" />
-          <button id="txPrevMatchBtn" class="txNavBtn" type="button" title="Vorheriger Treffer">‹</button>
-          <button id="txNextMatchBtn" class="txNavBtn" type="button" title="Nächster Treffer">›</button>
-          <div id="txMatchCount" title="Treffer">0/0</div>
-        </div>
-
-        <pre id="txContent"></pre>
-      </div>
-
-      <div id="txResizeHandle" title="Resize" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path d="M7 17l10-10"/><path d="M11 17h6v-6"/>
-        </svg>
+  <div id="txPanel" role="dialog" aria-label="Transkript" aria-hidden="true">
+    <div id="txHeader">
+      <div id="txTitle">Transkript</div>
+      <div id="txBtns">
+        <button id="txCopyBtn" class="txBtn" type="button" title="Kopieren">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M9 9h10v10H9z"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          Kopieren
+        </button>
+        <button id="txDownloadBtn" class="txBtn" type="button" title="Download">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/>
+          </svg>
+          Download
+        </button>
+        <button id="txSearchBtn" class="txBtn" type="button" title="Suchen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="6"></circle>
+            <path d="M20 20l-3.5-3.5"></path>
+          </svg>
+          Suchen
+        </button>
+        <button id="txCloseBtn" class="txBtn" type="button" title="Schließen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+          </svg>
+          Schließen
+        </button>
       </div>
     </div>
+
+    <div id="txBody">
+      <div id="txInfo">—</div>
+
+      <div id="txSearchRow" aria-label="Suchen">
+        <input id="txSearchInput" type="text" placeholder="Suchen…" />
+        <button id="txPrevMatchBtn" class="txNavBtn" type="button" title="Vorheriger Treffer">‹</button>
+        <button id="txNextMatchBtn" class="txNavBtn" type="button" title="Nächster Treffer">›</button>
+        <div id="txMatchCount" title="Treffer">0/0</div>
+      </div>
+
+      <pre id="txContent"></pre>
+    </div>
+
+    <div id="txResizeHandle" title="Resize" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M7 17l10-10"/><path d="M11 17h6v-6"/>
+      </svg>
+    </div>
+  </div>
 
   <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
   <script>
+    /* === ORIGINAL SCRIPT (same logic), ONLY minimal edits:
+       - TXT moved to player button
+       - captions click -> replay segment
+       - page title shown
+    */
+
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
     const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
@@ -1333,10 +1323,9 @@
       "https://cdn.jsdelivr.net/gh/protokolFSP/FSPtranskript@main/transcripts/"
     ];
 
-    // TXT transkriptler aynı repo klasöründe.
     const TXT_BASES = SRT_BASES;
     const CAPTION_MAX_LINES = 6;
-    const CAPTION_TARGET_LINES = 3; // cc modu hedef
+    const CAPTION_TARGET_LINES = 3;
     const CAPTION_MAX_LINES_9 = 9;
     const CAPTION_MAX_LINES_13 = 13;
 
@@ -1376,9 +1365,13 @@
     const slowBtn = document.getElementById("slowBtn");
     const fastBtn = document.getElementById("fastBtn");
     const speedValueEl = document.getElementById("speedValue");
+
     const ccSmallBtn = document.getElementById("ccSmallBtn");
     const ccMedBtn   = document.getElementById("ccMedBtn");
     const ccXBtn     = document.getElementById("ccXBtn");
+
+    const fpTxtBtn   = document.getElementById("fpTxtBtn");
+
     const captionsDock = document.getElementById("captionsDock");
     const captionsEl = document.getElementById("captions");
 
@@ -1619,7 +1612,6 @@
       uiState:      "fsp1.ui.state.v1",
 
       txSize: "fsp1.tx.size.v1",
-
       txPos:  "fsp1.tx.pos.v1"
     };
 
@@ -1637,7 +1629,7 @@
     let activeId = null;
     let selectedId = null;
 
-    const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 gün
+    const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
     let pendingScrollTop = null;
 
     function itemsFingerprint(list){
@@ -1734,32 +1726,32 @@
     let uiScale = 1;
     let useTransformScale = false;
 
-const TX_DEFAULT_SIZE = { w: 720, h: 600 };
-const TX_MIN_SIZE = { w: 280, h: 220 };
+    const TX_DEFAULT_SIZE = { w: 720, h: 600 };
+    const TX_MIN_SIZE = { w: 280, h: 220 };
 
-const IOS_MIN_INPUT_PX = 16;
+    const IOS_MIN_INPUT_PX = 16;
 
-function isIOSWebKit(){
-  const ua = navigator.userAgent || "";
-  const isAppleTouch = /iP(ad|hone|od)/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  const isWebKit = /WebKit/.test(ua) && !/Edg|OPR/.test(ua);
-  return isAppleTouch && isWebKit;
-}
-
-function updateSearchNoZoomFontSizes(){
-  if (!isIOSWebKit()) return;
-  const scale = Math.max(0.01, uiScale);
-  const required = Math.ceil(IOS_MIN_INPUT_PX / scale);
-  const inputs = [document.getElementById("search"), document.getElementById("txSearchInput")].filter(Boolean);
-  for (const el of inputs){
-    if (!el.dataset.baseFontPx){
-      const base = parseFloat(getComputedStyle(el).fontSize || "16");
-      el.dataset.baseFontPx = String(Number.isFinite(base) ? base : 16);
+    function isIOSWebKit(){
+      const ua = navigator.userAgent || "";
+      const isAppleTouch = /iP(ad|hone|od)/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      const isWebKit = /WebKit/.test(ua) && !/Edg|OPR/.test(ua);
+      return isAppleTouch && isWebKit;
     }
-    const basePx = parseFloat(el.dataset.baseFontPx) || IOS_MIN_INPUT_PX;
-    el.style.fontSize = Math.max(basePx, required) + "px";
-  }
-}
+
+    function updateSearchNoZoomFontSizes(){
+      if (!isIOSWebKit()) return;
+      const scale = Math.max(0.01, uiScale);
+      const required = Math.ceil(IOS_MIN_INPUT_PX / scale);
+      const inputs = [document.getElementById("search"), document.getElementById("txSearchInput")].filter(Boolean);
+      for (const el of inputs){
+        if (!el.dataset.baseFontPx){
+          const base = parseFloat(getComputedStyle(el).fontSize || "16");
+          el.dataset.baseFontPx = String(Number.isFinite(base) ? base : 16);
+        }
+        const basePx = parseFloat(el.dataset.baseFontPx) || IOS_MIN_INPUT_PX;
+        el.style.fontSize = Math.max(basePx, required) + "px";
+      }
+    }
 
     function getViewportWH(){
       const vv = window.visualViewport;
@@ -1944,23 +1936,20 @@ function updateSearchNoZoomFontSizes(){
       try { return decodeURIComponent(s); } catch { return s; }
     }
 
-
-    // ---- SRT Captions (repo: protokolFSP/FSPtranskript) ----
+    // ---- SRT Captions ----
     const CAPTION_MODES = ["cc", "CC", "CCx"];
 
     function readCaptionMode(){
       const raw = localStorage.getItem(LS.captionsMode) || "";
       if (CAPTION_MODES.includes(raw)) return raw;
-
-      // migration: eski sürümlerde captionsOn/captionsExpanded vardı
       const oldOn = (localStorage.getItem("fsp1.captions.on.v1") !== "0");
       const oldExp = (localStorage.getItem("fsp1.captions.expanded.v1") === "1");
       if (oldOn) return oldExp ? "CC" : "cc";
       return "cc";
     }
 
-    let captionMode = readCaptionMode(); // "cc" | "CC" | "CCx" | off(null)
-    const srtCache = new Map(); // item.id -> cues[]
+    let captionMode = readCaptionMode();
+    const srtCache = new Map();
     let srtCtrl = null;
     let activeCues = [];
     let lastCueIdx = -1;
@@ -2096,29 +2085,35 @@ function updateSearchNoZoomFontSizes(){
         let p = idx - 1;
         const stack = [];
         while (p >= 0 && preLines < preTarget){
-          const t = cues[p]?.text || "";
+          const c = cues[p];
+          const t = c?.text || "";
           const n = countLinesText(t);
           if (n > 0){
-            stack.push({ role: "context", isActive: false, text: t });
+            stack.push({ role: "context", isActive: false, text: t, start: c.start, end: c.end });
             preLines += n;
           }
           p--;
         }
         stack.reverse().forEach(x => parts.push(x));
       } else if (idx > 0){
-        parts.push({ role: "context", isActive: false, text: cues[idx - 1]?.text || "" });
+        const c = cues[idx - 1];
+        parts.push({ role: "context", isActive: false, text: c?.text || "", start: c.start, end: c.end });
       }
 
-      parts.push({ role: "active", isActive: true, text: cues[idx]?.text || "" });
+      {
+        const c = cues[idx];
+        parts.push({ role: "active", isActive: true, text: c?.text || "", start: c.start, end: c.end });
+      }
 
       let total = parts.reduce((a,p) => a + countLinesText(p.text), 0);
       let nidx = idx + 1;
 
       while (total < target && nidx < cues.length){
-        const t = cues[nidx]?.text || "";
+        const c = cues[nidx];
+        const t = c?.text || "";
         const n = countLinesText(t);
         if (n > 0){
-          parts.push({ role: "context", isActive: false, text: t });
+          parts.push({ role: "context", isActive: false, text: t, start: c.start, end: c.end });
           total += n;
         }
         nidx++;
@@ -2151,6 +2146,31 @@ function updateSearchNoZoomFontSizes(){
       return { lines: sliced, activeStart: newActiveStart, activeEnd: newActiveEnd };
     }
 
+    // segment replay support
+    let segEndTime = null;
+    function armSegmentEnd(end){
+      segEndTime = (Number.isFinite(end) ? end : null);
+    }
+    function maybeStopAtSegmentEnd(){
+      if (segEndTime == null) return;
+      const t = Number(playerEl.currentTime) || 0;
+      if (t >= (segEndTime - 0.03)){
+        segEndTime = null;
+        try{ plyr.pause(); }catch{}
+      }
+    }
+    playerEl.addEventListener("timeupdate", maybeStopAtSegmentEnd);
+
+    function playSegment(start, end){
+      if (!Number.isFinite(start) || !Number.isFinite(end) || !(end > start)) return;
+      try{
+        armSegmentEnd(end);
+        playerEl.currentTime = Math.max(0, start + 0.01);
+        const p = plyr.play();
+        if (p && typeof p.catch === "function") p.catch(()=>{});
+      }catch{}
+    }
+
     function renderCaptionLines(lines){
       if (!captionsEl) return;
       if (!isCaptionsOn()) { captionsEl.innerHTML = ""; return; }
@@ -2175,7 +2195,10 @@ function updateSearchNoZoomFontSizes(){
         const opacity = isActive ? 1 : Math.max(0.20, 0.92 - (dist * 0.12));
         const weight = isActive ? 750 : 500;
 
-        out.push(`<span style="opacity:${opacity.toFixed(2)};font-weight:${weight}">${escapeHtml(ln.text)}</span>`);
+        const ds = Number.isFinite(ln.start) ? ` data-start="${ln.start}"` : "";
+        const de = Number.isFinite(ln.end) ? ` data-end="${ln.end}"` : "";
+
+        out.push(`<span class="capLine" style="opacity:${opacity.toFixed(2)};font-weight:${weight}"${ds}${de}>${escapeHtml(ln.text)}</span>`);
       }
 
       const html = out.join("<br>");
@@ -2199,7 +2222,6 @@ function updateSearchNoZoomFontSizes(){
       const t = Number(playerEl?.currentTime) || 0;
       const idx = findCueIdx(activeCues, t);
 
-      // Sessizlikte kutu kaybolmasın: önceki caption kalsın.
       if (idx === -1){
         if (lastCueIdx === -1) renderCaptionInfo("…");
         return;
@@ -2212,7 +2234,7 @@ function updateSearchNoZoomFontSizes(){
       const flat = [];
       for (const p of parts){
         for (const line of splitCaptionLines(p.text)){
-          flat.push({ text: line, isActive: !!p.isActive });
+          flat.push({ text: line, isActive: !!p.isActive, start: p.start, end: p.end });
         }
       }
 
@@ -2220,6 +2242,20 @@ function updateSearchNoZoomFontSizes(){
     }
 
     if (playerEl) playerEl.addEventListener("timeupdate", onCaptionsTimeupdate);
+
+    // click on captions => replay clicked sentence-block (works for cc/CC/CCx)
+    captionsEl.addEventListener("click", (e) => {
+      if (!isCaptionsOn()) return;
+      if (!activeCues.length) return;
+      const span = e.target && e.target.closest ? e.target.closest(".capLine") : null;
+      if (!span) return;
+
+      const s = Number(span.getAttribute("data-start"));
+      const en = Number(span.getAttribute("data-end"));
+      if (Number.isFinite(s) && Number.isFinite(en) && en > s){
+        playSegment(s, en);
+      }
+    });
 
     function buildSrtNameCandidates(it){
       const rawName = (it?.name || "").split("/").pop() || "";
@@ -2292,7 +2328,6 @@ function updateSearchNoZoomFontSizes(){
       return { urls, triedNames: names };
     }
 
-
     async function buildSrtUrlsForItem(it){
       const names = buildSrtNameCandidates(it);
       const urls = [];
@@ -2356,7 +2391,7 @@ function updateSearchNoZoomFontSizes(){
 
     function setModeOrToggle(nextMode){
       if (captionMode === nextMode){
-        captionMode = null; // off
+        captionMode = null;
         localStorage.setItem(LS.captionsMode, "");
       } else {
         captionMode = nextMode;
@@ -2386,6 +2421,7 @@ function updateSearchNoZoomFontSizes(){
         setModeOrToggle("CCx");
       });
     }
+
     function parseEndDate(item){
       const raw0 = (item.name || item.file || item.title || "").toString();
       let s;
@@ -2500,7 +2536,7 @@ function updateSearchNoZoomFontSizes(){
       render();
     });
 
-    // Sticky docking (fixes Safari/transform zoom + keeps visible)
+    // Sticky docking
     let stickyStartTop = null;
     let stickyDocked = false;
     let stickyHomeParent = null;
@@ -2580,7 +2616,6 @@ function updateSearchNoZoomFontSizes(){
       }
 
       if (!needDock){
-        // Use native sticky
         if (stickyDocked) undockStickyBar();
         return;
       }
@@ -2888,14 +2923,6 @@ function updateSearchNoZoomFontSizes(){
             <path d="M7 10l5 5 5-5"/>
             <path d="M5 21h14"/>
           </svg>`;
-      } else if (kind === "txt"){
-        btn.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M4 4h16v16H4z"/>
-            <path d="M7 9h10"/>
-            <path d="M7 13h10"/>
-            <path d="M7 17h6"/>
-          </svg>`;
       }
 
       return btn;
@@ -2940,11 +2967,6 @@ function updateSearchNoZoomFontSizes(){
         dlCount.className = "countCell";
         dlCount.textContent = String(Number(globalDownloadCounts[it.id]) || 0);
 
-        const hasTxt = !!(it.txtUrl || it.txtName);
-        const txBtn = iconButton("txt", false, hasTxt ? "TXT" : "TXT yok");
-        txBtn.disabled = !hasTxt;
-        if (!hasTxt) txBtn.classList.add("txtMissing");
-
         favBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           selectedId = it.id;
@@ -2972,14 +2994,7 @@ function updateSearchNoZoomFontSizes(){
           }, 0);
         });
 
-        txBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          selectedId = it.id;
-          render();
-          openTranscriptFor(it).catch(() => {});
-        });
-
-        for (const b of [favBtn, dlBtn, txBtn]){
+        for (const b of [favBtn, dlBtn]){
           b.addEventListener("pointerup", (e) => e.stopPropagation());
           b.addEventListener("pointerdown", (e) => e.stopPropagation());
         }
@@ -2990,9 +3005,7 @@ function updateSearchNoZoomFontSizes(){
         row.appendChild(favBtn);
         row.appendChild(dlBtn);
         row.appendChild(dlCount);
-        row.appendChild(txBtn);
 
-        // Only click on title starts playback; other columns only select.
         row.addEventListener("click", (e) => {
           const inTitle = !!(e.target && e.target.closest && e.target.closest(".title"));
           if (!inTitle){
@@ -3189,7 +3202,6 @@ function updateSearchNoZoomFontSizes(){
         let x = s.x;
         let y = s.y;
 
-        // Backward-compat: older builds stored unscaled coords in transform-scale mode.
         if (s.ver !== 2 && useTransformScale){
           x = x * uiScale;
           y = y * uiScale;
@@ -3228,7 +3240,7 @@ function updateSearchNoZoomFontSizes(){
 
       const keepX = Math.max(70, Math.min(w - 16, 180));
       const keepY = Math.max(56, Math.min(h - 16, 120));
-      const capH = (typeof isCaptionsOn === "function" && isCaptionsOn() && captionsEl && !captionsEl.classList.contains("hidden"))
+      const capH = (isCaptionsOn() && captionsEl && !captionsEl.classList.contains("hidden"))
         ? captionsEl.getBoundingClientRect().height
         : 0;
 
@@ -3431,7 +3443,6 @@ function updateSearchNoZoomFontSizes(){
     });
 
     sbZoomResetBtn.addEventListener("click", () => resetZoom100());
-
     sbFavBtn.addEventListener("click", () => { filterFav = !filterFav; setSortIcons(); render(); });
 
     function clickSort(kind){
@@ -3473,7 +3484,7 @@ function updateSearchNoZoomFontSizes(){
     let txActiveMatch = -1;
     let txSearchTimer = null;
 
-    const txCache = new Map(); // id -> { text, at }
+    const txCache = new Map();
     const TX_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
     function clearTxSearchUI(){
@@ -3573,6 +3584,12 @@ function updateSearchNoZoomFontSizes(){
       saveTxPos(cl.top, cl.right);
     }
 
+    function setTxtBtnUi(){
+      if (!fpTxtBtn) return;
+      fpTxtBtn.classList.toggle("on", !!txOpen);
+      fpTxtBtn.setAttribute("aria-pressed", String(!!txOpen));
+    }
+
     function openTranscript(){
       txOpen = true;
       txPanel.classList.add("open");
@@ -3582,6 +3599,7 @@ function updateSearchNoZoomFontSizes(){
       restoreTxPos();
       clampTxSizeToViewport();
       clampTxPosToViewport();
+      setTxtBtnUi();
     }
 
     function closeTranscript(){
@@ -3589,6 +3607,7 @@ function updateSearchNoZoomFontSizes(){
       txPanel.classList.remove("open");
       txPanel.setAttribute("aria-hidden", "true");
       txSearchRow.classList.remove("on");
+      setTxtBtnUi();
     }
 
     txCloseBtn.addEventListener("click", () => closeTranscript());
@@ -3759,7 +3778,6 @@ function updateSearchNoZoomFontSizes(){
       const urls = [];
       const seen = new Set();
 
-      // First try the currently assigned URL (if any), then fall back to candidates.
       for (const u of [it?.txtUrl, ...(built?.urls || [])]){
         const uu = String(u || "").trim();
         if (!uu) continue;
@@ -3775,7 +3793,6 @@ function updateSearchNoZoomFontSizes(){
           if (!res.ok) throw new Error("txt fetch failed: " + res.status);
           const text = await res.text();
 
-          // Update to the working source so Download uses the correct file.
           try{
             const u = new URL(url, location.href);
             const fn = decodeURIComponentSafe((u.pathname || "").split("/").pop() || "");
@@ -3820,6 +3837,31 @@ function updateSearchNoZoomFontSizes(){
       }
     }
 
+    function toggleTranscriptFromPlayer(){
+      if (txOpen){
+        closeTranscript();
+        return;
+      }
+      const it = items.find(x => x.id === activeId) || items.find(x => x.id === selectedId) || null;
+      if (!it){
+        // still open empty panel (so second click closes)
+        openTranscript();
+        txTitleEl.textContent = "Transkript";
+        txInfoEl.textContent = "—";
+        txPlainText = "";
+        txContentEl.textContent = "Bir kayıt seç...";
+        txCopyBtn.disabled = true;
+        txDownloadBtn.disabled = true;
+        return;
+      }
+      openTranscriptFor(it).catch(()=>{});
+    }
+
+    fpTxtBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleTranscriptFromPlayer();
+    });
+
     sbClearTxCacheBtn.addEventListener("click", () => {
       txCache.clear();
       txInfoEl.textContent = "TXT Cache temizlendi.";
@@ -3828,60 +3870,59 @@ function updateSearchNoZoomFontSizes(){
       }, 1200);
     });
 
-    // Transcript overlay should NOT close on background click.
     txPanel.addEventListener("click", (e) => e.stopPropagation());
 
-// Draggable transcript panel (floating)
-const TX_DRAG_IGNORE_SELECTOR = "button, a, input, textarea, select, option";
-function shouldStartTxDrag(target){
-  return !(target && target.closest && target.closest(TX_DRAG_IGNORE_SELECTOR));
-}
+    // Draggable transcript panel
+    const TX_DRAG_IGNORE_SELECTOR = "button, a, input, textarea, select, option";
+    function shouldStartTxDrag(target){
+      return !(target && target.closest && target.closest(TX_DRAG_IGNORE_SELECTOR));
+    }
 
-let txDragging = false;
-let txDragStartX = 0, txDragStartY = 0;
-let txDragStartTop = 0, txDragStartRight = 0;
+    let txDragging = false;
+    let txDragStartX = 0, txDragStartY = 0;
+    let txDragStartTop = 0, txDragStartRight = 0;
 
-txHeader.addEventListener("pointerdown", (e) => {
-  if (!txOpen) return;
-  if (!shouldStartTxDrag(e.target)) return;
+    txHeader.addEventListener("pointerdown", (e) => {
+      if (!txOpen) return;
+      if (!shouldStartTxDrag(e.target)) return;
 
-  txDragging = true;
-  txHeader.setPointerCapture(e.pointerId);
-  txHeader.style.cursor = "grabbing";
+      txDragging = true;
+      txHeader.setPointerCapture(e.pointerId);
+      txHeader.style.cursor = "grabbing";
 
-  txDragStartX = e.clientX;
-  txDragStartY = e.clientY;
+      txDragStartX = e.clientX;
+      txDragStartY = e.clientY;
 
-  const cur = getTxPosPx();
-  txDragStartTop = cur.top;
-  txDragStartRight = cur.right;
+      const cur = getTxPosPx();
+      txDragStartTop = cur.top;
+      txDragStartRight = cur.right;
 
-  e.preventDefault();
-  e.stopPropagation();
-});
+      e.preventDefault();
+      e.stopPropagation();
+    });
 
-txHeader.addEventListener("pointermove", (e) => {
-  if (!txDragging) return;
+    txHeader.addEventListener("pointermove", (e) => {
+      if (!txDragging) return;
 
-  const dx = e.clientX - txDragStartX;
-  const dy = e.clientY - txDragStartY;
+      const dx = e.clientX - txDragStartX;
+      const dy = e.clientY - txDragStartY;
 
-  const cl = clampTxPosCandidate(txDragStartTop + dy, txDragStartRight - dx);
-  setTxPosPx(cl.top, cl.right);
+      const cl = clampTxPosCandidate(txDragStartTop + dy, txDragStartRight - dx);
+      setTxPosPx(cl.top, cl.right);
 
-  e.preventDefault();
-});
+      e.preventDefault();
+    });
 
-function endTxDrag(pointerId){
-  if (!txDragging) return;
-  txDragging = false;
-  txHeader.style.cursor = "grab";
-  try{ txHeader.releasePointerCapture(pointerId); }catch{}
-  clampTxPosToViewport();
-}
+    function endTxDrag(pointerId){
+      if (!txDragging) return;
+      txDragging = false;
+      txHeader.style.cursor = "grab";
+      try{ txHeader.releasePointerCapture(pointerId); }catch{}
+      clampTxPosToViewport();
+    }
 
-txHeader.addEventListener("pointerup", (e) => endTxDrag(e.pointerId));
-txHeader.addEventListener("pointercancel", (e) => endTxDrag(e.pointerId));
+    txHeader.addEventListener("pointerup", (e) => endTxDrag(e.pointerId));
+    txHeader.addEventListener("pointercancel", (e) => endTxDrag(e.pointerId));
 
     // Resizable transcript panel
     let txResizing = false;
@@ -3930,7 +3971,7 @@ txHeader.addEventListener("pointercancel", (e) => endTxDrag(e.pointerId));
       const dx = useTransformScale ? (dxClient / uiScale) : dxClient;
       const dy = useTransformScale ? (dyClient / uiScale) : dyClient;
 
-      const w = txResizeStartW - dx; // handle is bottom-left
+      const w = txResizeStartW - dx;
       const h = txResizeStartH + dy;
 
       const cl = clampTxSize(w, h);
@@ -3958,6 +3999,8 @@ txHeader.addEventListener("pointercancel", (e) => endTxDrag(e.pointerId));
     restoreZoom();
     setCaptionUi();
     updateOverlayScale();
+    setTxtBtnUi();
+
     requestAnimationFrame(() => {
       measureStickyStartTop();
       updateSticky(true);
@@ -3991,7 +4034,8 @@ txHeader.addEventListener("pointercancel", (e) => endTxDrag(e.pointerId));
       async function worker(){
         while (q.length){
           const it = q.shift();
-          const urls = buildSrtUrlsForItem(it);
+          const built = await buildSrtUrlsForItem(it);
+          const urls = built.urls || [];
           let ok = false;
           for (const u of urls){
             if (await headOk(u)){ ok = true; break; }
@@ -4017,4 +4061,3 @@ txHeader.addEventListener("pointercancel", (e) => endTxDrag(e.pointerId));
   </script>
 </body>
 </html>
-
