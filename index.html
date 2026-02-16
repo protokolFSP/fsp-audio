@@ -1672,7 +1672,9 @@
       if (document.visibilityState === "hidden") saveUiState();
     });
 
-    let sortMode = localStorage.getItem(LS.sortMode) || "date";
+    const ALLOWED_SORT = new Set(["title","date","dur","play","download"]);
+let sortMode = localStorage.getItem(LS.sortMode) || "date";
+if (!ALLOWED_SORT.has(sortMode)) sortMode = "date";
     let durSortDir  = (localStorage.getItem(LS.sortDirDur) === "desc") ? "desc" : "asc";
     let dateSortDir = (localStorage.getItem(LS.sortDirDate) === "asc") ? "asc" : "desc";
     let playSortDir = (localStorage.getItem(LS.sortDirPlay) === "asc") ? "asc" : "desc";
@@ -3176,7 +3178,7 @@ function playSegment(start, end){
       filterFav = false;
       searchEl.value = "";
 
-      sortMode = "date";
+      sortMode = "title";
       dateSortDir = "desc";
       localStorage.setItem(LS.sortMode, sortMode);
       localStorage.setItem(LS.sortDirDate, dateSortDir);
