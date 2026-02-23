@@ -4031,6 +4031,147 @@ function playSegment(start, end){
     txResizeHandle.addEventListener("pointerup", (e) => endTxResize(e.pointerId));
     txResizeHandle.addEventListener("pointercancel", (e) => endTxResize(e.pointerId));
 
+    /* =========================================================
+   FSPneu (S2) + FSPab26 transcripts + şehir/eyalet önek filtresi
+   - Mevcut fonksiyon gövdeleri değişmez.
+   - Sadece wrapper/ek fonksiyonlar ekler.
+   ========================================================= */
+
+const IA_IDENTIFIER_2 = "FSPneu";
+const IA2_SRC = "S2";
+const IA2_TX_SUBDIR = "FSPab26";
+
+const IA2_BLOCK_PREFIXES = [
+  "Dusseldorf", "Düsseldorf",
+  "Stuttgart",
+  "Rheutlingen", "Reutlingen",
+  "Sachsen",
+  "Hessen"
+];
+
+function __ia2EnsureSlashEnd(s){
+  s = String(s || "");
+  return s.endsWith("/") ? s : (s + "/");
+}
+
+function __ia2BasesWithSubdir(bases, subdir){
+  const sd = String(subdir || "").replace(/^\/+|\/+$/g, "");
+  return (bases || []).map(b => __ia2EnsureSlashEnd(b) + sd + "/");
+}
+
+const __IA2_SRT_BASES = __ia2BasesWithSubdir(SRT_BASES, IA2_TX_SUBDIR);
+const __IA2_TXT_BASES = __ia2BasesWithSubdir(TXT_BASES, IA2_TX_SUBDIR);
+
+function __ia2IsBlockedByPrefix(fileName){
+  let base = (fileName || "").toString();
+  base = base.split("/").pop() || base;
+  base = decodeURIComponentSafe(base);
+  base = base.replace(/\.(m4a|mp3)$/i, "").trim();
+
+  // "A " / "A_" / "A-" varsa şehir kontrolünde yok say
+  base = base.replace(/^A[\s_-]+/i, "").trim();
+
+  const folded = foldTR(base);
+  for (const p of IA2_BLOCK_PREFIXES){
+    const c = foldTR(p);
+    if (folded.startsWith(c)){
+      const next = folded.slice(c.length, c.length + 1);
+      if (!next || /[\s\-_0-9.:]/.test(next)) return true;
+    }
+  }
+  return false;
+}
+
+function __ia2MakeItemsFromFiles(files){
+  return (files || [])
+    .filter(f => typeof f?.name === "string")
+    .filter(f => {
+      const name = String(f.name).toLowerCase();
+      if (!name.endsWith(".m4a")) return false; // sadece m4a
+      if (!("source" in f)) return true;
+      return String(f.source || "").toLowerCase() === "original";
+    })
+    .filter(f => !__ia2IsBlockedByPrefix(f.name))
+    .map((f, idx) => {
+      const name = f.name || "";
+      const title = (String(f.title || "").trim()) || decodeURIComponentSafe(name.split("/").pop() || name);
+      const url = buildDownloadUrl(IA_IDENTIFIER_2, name);
+      const localId = name || url || (title + "#" + idx);
+      const id = IA2_SRC + "|" + localId;
+
+      const txtCandidates = buildTxtNameCandidates({ name });
+      const txtName = (txtCandidates && txtCandidates.length) ? txtCandidates[0] : replaceExtToTxt(name);
+      const txtUrl = txtName ? (__IA2_TXT_BASES[0] + encodeURIComponent(txtName)) : "";
+
+      return { id, title, name, url, src: IA2_SRC, txtName, txtUrl };
+    });
+}
+
+// S2 için SRT/TXT aramasını FSPab26 altına yönlendir (S1 bozulmaz)
+const __orig_buildSrtUrlsForItem = buildSrtUrlsForItem;
+buildSrtUrlsForItem = async function(it){
+  if (it && it.src === IA2_SRC){
+    const names = buildSrtNameCandidates(it);
+    const urls = [];
+    for (const name of names){
+      for (const base of __IA2_SRT_BASES){
+        urls.push(base + encodeURIComponent(name));
+      }
+    }
+    return { urls, triedNames: names };
+  }
+  return __orig_buildSrtUrlsForItem(it);
+};
+
+const __orig_buildTxtUrlsForItem = buildTxtUrlsForItem;
+buildTxtUrlsForItem = async function(it){
+  if (it && it.src === IA2_SRC){
+    const names = buildTxtNameCandidates(it);
+    const urls = [];
+    for (const name of names){
+      for (const base of __IA2_TXT_BASES){
+        urls.push(base + encodeURIComponent(name));
+      }
+    }
+    return { urls, triedNames: names };
+  }
+  return __orig_buildTxtUrlsForItem(it);
+};
+
+async function __ia2MergeFspneuIntoItems(){
+  const metaUrl = `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_2)}`;
+  const res = await fetch(metaUrl, { cache: FORCE_REFRESH ? "no-store" : "no-cache" });
+  if (!res.ok) throw new Error("FSPneu metadata okunamadı: " + res.status);
+
+  const j = await res.json();
+  const files = Array.isArray(j.files) ? j.files : [];
+
+  const s2List = __ia2MakeItemsFromFiles(files);
+
+  // S2 kayıtlarını her yenilemede tekrar kur
+  const keep = items.filter(it => it?.src !== IA2_SRC);
+  items = keep.concat(s2List);
+
+  // cache güncelle (opsiyonel ama faydalı)
+  try{
+    localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
+    localStorage.setItem(LS.itemsCache, JSON.stringify(items));
+  }catch{}
+
+  statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
+  setSortIcons();
+  render();
+  scheduleRefreshCounts(100);
+}
+
+// loadItems gövdesine dokunmadan wrapper (mevcut çağrı aynı kalır)
+const __orig_loadItems = loadItems;
+loadItems = async function(){
+  await __orig_loadItems();
+  try{ await __ia2MergeFspneuIntoItems(); }catch(e){ console.warn(e); }
+};
+
+/* ======================= END FSPneu ADDON ======================= */
     // Init
     setSortIcons();
     restoreUiState();
