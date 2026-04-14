@@ -20,9 +20,9 @@
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    const __isDebug = new URLSearchParams(location.search).has('debug');
-    gtag('config', 'G-TNRQ49C157', { debug_mode: __isDebug, send_page_view: true });
+    gtag("js", new Date());
+    const __isDebug = new URLSearchParams(location.search).has("debug");
+    gtag("config", "G-TNRQ49C157", { debug_mode: __isDebug, send_page_view: true });
   </script>
 
   <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
@@ -91,6 +91,24 @@
       align-items:center;
       justify-content: space-between;
       gap: 10px;
+    }
+    .pageTitleMain{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:0;
+    }
+    .buildMeta{
+      font-size: .82rem;
+      font-weight: 750;
+      color: #3563c9;
+      background: rgba(43,124,255,.10);
+      border: 1px solid rgba(43,124,255,.18);
+      border-radius: 999px;
+      padding: 5px 10px;
+      line-height: 1;
+      align-self: flex-start;
+      white-space: nowrap;
     }
 
     #sidebarOpenBtn{
@@ -459,7 +477,7 @@
       position: fixed;
       left: max(18px, env(safe-area-inset-left));
       bottom: max(18px, env(safe-area-inset-bottom));
-      width: min(720px, calc(100vw - 36px));
+      width: min(760px, calc(100vw - 36px));
       background: white;
       border: 1.5px solid #d6d6d6;
       border-right-color: #bdbdbd;
@@ -527,6 +545,8 @@
       align-items:center;
       gap: 8px;
       flex: 0 0 auto;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
     .miniBtn{
@@ -539,6 +559,7 @@
       display:flex;
       align-items:center;
       justify-content:center;
+      transition: border-color .15s ease, background .15s ease, box-shadow .15s ease, transform .15s ease;
     }
     .miniBtn:hover{ background: var(--hover); }
     .miniBtn svg{ width:16px; height:16px; }
@@ -620,9 +641,9 @@
       #fpHeaderRight{
         width: 100%;
         justify-content: flex-end;
-        flex-wrap: wrap;
       }
       #search{ font-size: 16px; }
+      .buildMeta{ font-size: .78rem; }
     }
 
     .diseaseName{
@@ -738,6 +759,7 @@
       font-size: .92rem;
       user-select:none;
       line-height: 1;
+      transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
     }
     .sbBtn:hover{ background: var(--hover); }
     .sbBtn.on{
@@ -961,6 +983,7 @@
       background: rgba(43,124,255,.10);
       box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
     }
+
     #captions{
       margin: 0;
       padding: 10px 12px;
@@ -1037,9 +1060,10 @@
 
     #skipDrawerBtn{
       width:auto;
-      min-width:60px;
+      min-width:64px;
       padding:0 12px;
       border-radius:12px;
+      border-color: rgba(22,163,74,.50);
     }
     #skipDrawerBtn .btnMark{
       font-weight:900;
@@ -1051,6 +1075,19 @@
       border-color: var(--green);
       background: rgba(22,163,74,.12);
       box-shadow: var(--greenGlow);
+    }
+    #skipDrawerBtn.breathing{
+      animation: skipBreath 1.8s ease-in-out infinite;
+    }
+    @keyframes skipBreath{
+      0%,100%{
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(22,163,74,.18), 0 0 0 3px rgba(22,163,74,.10) inset;
+      }
+      50%{
+        transform: scale(1.04);
+        box-shadow: 0 0 0 10px rgba(22,163,74,0), 0 0 0 3px rgba(22,163,74,.16) inset, 0 0 14px rgba(22,163,74,.16);
+      }
     }
 
     .skipDrawer{
@@ -1089,18 +1126,26 @@
     .skipHint{
       color: var(--muted);
       font-size: .88rem;
-      line-height: 1.2;
+      line-height: 1.25;
       margin-top: 4px;
     }
+    .skipEngineLabel{
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(22,163,74,.26);
+      background: rgba(22,163,74,.08);
+      color: #166534;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size: .86rem;
+      font-weight: 800;
+      line-height: 1;
+    }
     @keyframes skipDrawerIn{
-      from{
-        opacity:0;
-        transform:translateY(-6px);
-      }
-      to{
-        opacity:1;
-        transform:translateY(0);
-      }
+      from{ opacity:0; transform:translateY(-6px); }
+      to{ opacity:1; transform:translateY(0); }
     }
   </style>
 </head>
@@ -1109,7 +1154,10 @@
   <div id="scrollArea">
     <div id="appScale">
       <div class="pageTitle">
-        <span>FSP Audio — Güncel</span>
+        <div class="pageTitleMain">
+          <span>FSP Audio — Güncel</span>
+          <div id="buildMeta" class="buildMeta">v1.79 · Güncelleme: 14.04.2026</div>
+        </div>
         <button id="sidebarOpenBtn" type="button" aria-label="Menü" title="Menü">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>
@@ -1208,7 +1256,6 @@
       </div>
 
       <div id="stickyBarPh" aria-hidden="true"></div>
-
       <div id="list"></div>
       <div id="status"></div>
     </div>
@@ -1227,7 +1274,7 @@
             <button id="sbRefreshBtn" class="sbBtn" type="button">Listeyi Yenile</button>
             <button id="sbZoomResetBtn" class="sbBtn" type="button">Zoom 100%</button>
           </div>
-          <div class="sbHint">Listeyi yenile: Archive.org metadata tekrar okunur. (refresh parametresi yok)</div>
+          <div class="sbHint">Listeyi yenile: Archive.org metadata tekrar okunur.</div>
         </div>
 
         <div class="sbSection">
@@ -1241,7 +1288,7 @@
             <button id="sbSortPlayBtn" class="sbBtn" type="button">Dinlenme</button>
             <button id="sbSortDlBtn" class="sbBtn" type="button">İndirme</button>
           </div>
-          <div class="sbHint">Sıralama butonu: modu seçer. Aynı moda tekrar basarsan yön değişir.</div>
+          <div class="sbHint">Aynı sıralama moduna tekrar basınca yön değişir.</div>
         </div>
 
         <div class="sbSection">
@@ -1249,7 +1296,7 @@
           <div class="sbRow">
             <button id="sbClearTxCacheBtn" class="sbBtn" type="button">TXT Cache Temizle</button>
           </div>
-          <div class="sbHint">TXT’ler sadece tıklandığında yüklenir. Cache temizle: popup tekrar indirir.</div>
+          <div class="sbHint">TXT sadece açılınca yüklenir.</div>
         </div>
       </div>
     </div>
@@ -1259,6 +1306,7 @@
     <div id="captionsDock" aria-label="Altyazılar">
       <div id="captions" class="isEmpty" aria-live="polite">Bir kayıt seç...</div>
     </div>
+
     <div id="fpHeader" title="Sürükle">
       <div id="fpTitle">Bir kayıt seç...</div>
       <div id="fpHeaderRight">
@@ -1298,26 +1346,30 @@
         </button>
       </div>
     </div>
+
     <div id="fpBody">
-      <audio id="player" class="js-player" controls preload="metadata"></audio>
+      <audio id="player" class="js-player" controls preload="metadata" crossorigin="anonymous"></audio>
     </div>
 
     <div id="skipDrawer" class="skipDrawer" hidden>
       <div class="skipDrawerInner">
         <div class="skipRow">
           <button id="skipEnableBtn" class="sbBtn" type="button">Sessiz atlama: Kapalı</button>
+          <span id="skipEngineLabel" class="skipEngineLabel">Hybrid</span>
         </div>
 
         <div class="skipRow">
           <button id="skipModeLight" class="sbBtn" type="button">Hafif</button>
-          <button id="skipModeBalanced" class="sbBtn on" type="button">Dengeli</button>
+          <button id="skipModeBalanced" class="sbBtn" type="button">Dengeli</button>
           <button id="skipModeAggressive" class="sbBtn" type="button">Agresif</button>
+          <button id="skipModeUltra" class="sbBtn" type="button">Ultra</button>
+          <button id="skipModeMax" class="sbBtn" type="button">Max</button>
         </div>
 
         <div class="skipRow skipRangeRow">
           <label for="skipMinGapRange">Min. sessizlik</label>
-          <input id="skipMinGapRange" type="range" min="0.5" max="3.0" step="0.1" value="1.2" />
-          <span id="skipMinGapValue">1.2s</span>
+          <input id="skipMinGapRange" type="range" min="0.3" max="3.0" step="0.1" value="1.4" />
+          <span id="skipMinGapValue">1.4s</span>
         </div>
 
         <div class="skipRow skipRangeRow">
@@ -1326,8 +1378,8 @@
           <span id="skipFadeValue">120ms</span>
         </div>
 
-        <div class="skipHint">
-          SRT varsa konuşma boşluklarına göre atla. Yoksa ses analizine düş.
+        <div class="skipHint" id="skipHint">
+          Hybrid: SRT boşluğu aday alır, sesi doğrular, güvenliyse atlar.
         </div>
       </div>
     </div>
@@ -1388,13 +1440,12 @@
   <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
   <script>
+    const BUILD_VERSION = "v1.79";
+    const BUILD_UPDATED = "14.04.2026";
+
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
     const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
-    const SRT_INDEX_API = "https://api.github.com/repos/protokolFSP/FSPtranskript/contents/transcripts?ref=main";
-    const SRT_INDEX_TTL_MS = 24 * 60 * 60 * 1000;
-    const SRT_INDEX_LS_KEY = "fsp1.srt.index.v1";
-    const SRT_INDEX_LS_AT  = "fsp1.srt.index.at.v1";
 
     const SRT_BASES = [
       "https://protokolfsp.github.io/FSPtranskript/transcripts/",
@@ -1421,60 +1472,60 @@
     })();
 
     const scrollArea = document.getElementById("scrollArea");
-    const listEl   = document.getElementById("list");
+    const listEl = document.getElementById("list");
     const searchEl = document.getElementById("search");
-    const metaEl   = document.getElementById("meta");
+    const metaEl = document.getElementById("meta");
     const statusEl = document.getElementById("status");
-
     const stickyBar = document.getElementById("stickyBar");
-    const stickyPh  = document.getElementById("stickyBarPh");
-
+    const stickyPh = document.getElementById("stickyBarPh");
     const appScaleEl = document.getElementById("appScale");
     const zoomOutBtn = document.getElementById("zoomOutBtn");
-    const zoomInBtn  = document.getElementById("zoomInBtn");
+    const zoomInBtn = document.getElementById("zoomInBtn");
+
+    const buildMetaEl = document.getElementById("buildMeta");
 
     const fp = document.getElementById("floatingPlayer");
     const fpHeader = document.getElementById("fpHeader");
     const fpTitle = document.getElementById("fpTitle");
-
     const playerEl = document.getElementById("player");
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
-
     const slowBtn = document.getElementById("slowBtn");
     const fastBtn = document.getElementById("fastBtn");
     const speedValueEl = document.getElementById("speedValue");
 
     const ccSmallBtn = document.getElementById("ccSmallBtn");
-    const ccMedBtn   = document.getElementById("ccMedBtn");
-    const ccXBtn     = document.getElementById("ccXBtn");
+    const ccMedBtn = document.getElementById("ccMedBtn");
+    const ccXBtn = document.getElementById("ccXBtn");
+    const fpTxtBtn = document.getElementById("fpTxtBtn");
 
-    const fpTxtBtn   = document.getElementById("fpTxtBtn");
     const skipDrawerBtn = document.getElementById("skipDrawerBtn");
     const skipDrawer = document.getElementById("skipDrawer");
     const skipEnableBtn = document.getElementById("skipEnableBtn");
+    const skipEngineLabel = document.getElementById("skipEngineLabel");
     const skipModeLight = document.getElementById("skipModeLight");
     const skipModeBalanced = document.getElementById("skipModeBalanced");
     const skipModeAggressive = document.getElementById("skipModeAggressive");
+    const skipModeUltra = document.getElementById("skipModeUltra");
+    const skipModeMax = document.getElementById("skipModeMax");
     const skipMinGapRange = document.getElementById("skipMinGapRange");
     const skipMinGapValue = document.getElementById("skipMinGapValue");
     const skipFadeRange = document.getElementById("skipFadeRange");
     const skipFadeValue = document.getElementById("skipFadeValue");
+    const skipHintEl = document.getElementById("skipHint");
 
     const captionsDock = document.getElementById("captionsDock");
     const captionsEl = document.getElementById("captions");
 
-    const filterFavBtn  = document.getElementById("filterFav");
-    const resetBtn      = document.getElementById("resetBtn");
-
-    const sortDurBtn  = document.getElementById("sortDurBtn");
+    const filterFavBtn = document.getElementById("filterFav");
+    const resetBtn = document.getElementById("resetBtn");
+    const sortDurBtn = document.getElementById("sortDurBtn");
     const sortDurIcon = document.getElementById("sortDurIcon");
-    const sortDateBtn  = document.getElementById("sortDateBtn");
+    const sortDateBtn = document.getElementById("sortDateBtn");
     const sortDateIcon = document.getElementById("sortDateIcon");
-
-    const sortPlayBtn  = document.getElementById("sortPlayBtn");
+    const sortPlayBtn = document.getElementById("sortPlayBtn");
     const sortPlayIcon = document.getElementById("sortPlayIcon");
-    const sortDlCountBtn  = document.getElementById("sortDlCountBtn");
+    const sortDlCountBtn = document.getElementById("sortDlCountBtn");
     const sortDlCountIcon = document.getElementById("sortDlCountIcon");
 
     const sidebarOpenBtn = document.getElementById("sidebarOpenBtn");
@@ -1496,12 +1547,10 @@
     const txInfoEl = document.getElementById("txInfo");
     const txContentEl = document.getElementById("txContent");
     const txBodyEl = document.getElementById("txBody");
-
     const txCopyBtn = document.getElementById("txCopyBtn");
     const txDownloadBtn = document.getElementById("txDownloadBtn");
     const txSearchBtn = document.getElementById("txSearchBtn");
     const txCloseBtn = document.getElementById("txCloseBtn");
-
     const txSearchRow = document.getElementById("txSearchRow");
     const txSearchInput = document.getElementById("txSearchInput");
     const txPrevMatchBtn = document.getElementById("txPrevMatchBtn");
@@ -1510,8 +1559,10 @@
 
     const plyr = new Plyr(playerEl, {
       seekTime: 6.5,
-      controls: ["rewind","play","fast-forward","progress","current-time","duration","mute","volume"]
+      controls: ["rewind", "play", "fast-forward", "progress", "current-time", "duration", "mute", "volume"]
     });
+
+    if (buildMetaEl) buildMetaEl.textContent = `${BUILD_VERSION} · Güncelleme: ${BUILD_UPDATED}`;
 
     function gaEvent(name, params = {}) {
       try {
@@ -1519,6 +1570,7 @@
         gtag("event", name, { ...params, page_path: location.pathname });
       } catch {}
     }
+
     function trackAudioPlay(it) {
       gaEvent("audio_play", {
         audio_id: it.id,
@@ -1527,6 +1579,7 @@
         src: it.src || "S1"
       });
     }
+
     function trackAudioDownload(it, filename) {
       gaEvent("audio_download", {
         audio_id: it.id,
@@ -1535,6 +1588,7 @@
         src: it.src || "S1"
       });
     }
+
     function trackTranscriptOpen(it){
       gaEvent("transcript_open", {
         audio_id: it.id,
@@ -1543,6 +1597,7 @@
         src: it.src || "S1"
       });
     }
+
     function trackTranscriptDownload(it, filename){
       gaEvent("transcript_download", {
         audio_id: it.id,
@@ -1557,7 +1612,7 @@
 
     function chunk(arr, size){
       const out = [];
-      for (let i=0; i<arr.length; i+=size) out.push(arr.slice(i, i+size));
+      for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
       return out;
     }
 
@@ -1592,27 +1647,21 @@
 
       const ids = items.map(it => it.id);
       const parts = chunk(ids, 200);
-
       const playAll = {};
       const dlAll = {};
 
       for (const part of parts){
-        const [p, d] = await Promise.all([
-          fetchCounts("play", part),
-          fetchCounts("download", part),
-        ]);
+        const [p, d] = await Promise.all([fetchCounts("play", part), fetchCounts("download", part)]);
         Object.assign(playAll, p);
         Object.assign(dlAll, d);
       }
 
       const playHas = Object.keys(playAll).length > 0;
-      const dlHas   = Object.keys(dlAll).length > 0;
-
+      const dlHas = Object.keys(dlAll).length > 0;
       if (!playHas && !dlHas) return;
 
       if (playHas) globalPlayCounts = playAll;
-      if (dlHas)   globalDownloadCounts = dlAll;
-
+      if (dlHas) globalDownloadCounts = dlAll;
       render();
     }
 
@@ -1629,10 +1678,7 @@
         const data = JSON.stringify(payload);
 
         if (IS_SAFARI && navigator.sendBeacon){
-          const ok = navigator.sendBeacon(
-            url,
-            new Blob([data], { type: "text/plain;charset=utf-8" })
-          );
+          const ok = navigator.sendBeacon(url, new Blob([data], { type: "text/plain;charset=utf-8" }));
           if (ok) return;
         }
 
@@ -1651,53 +1697,54 @@
 
     function bumpLocalGlobalCount(type, id){
       if (!id) return;
-      if (type === "play"){
-        globalPlayCounts[id] = (Number(globalPlayCounts[id]) || 0) + 1;
-      } else {
-        globalDownloadCounts[id] = (Number(globalDownloadCounts[id]) || 0) + 1;
-      }
+      if (type === "play") globalPlayCounts[id] = (Number(globalPlayCounts[id]) || 0) + 1;
+      else globalDownloadCounts[id] = (Number(globalDownloadCounts[id]) || 0) + 1;
     }
 
     let playGate = { id: null, armed: false, sent: false };
+
     function armPlayGate(it){
       playGate = { id: it?.id || null, armed: true, sent: false };
     }
+
     function trySendPlayOnPlaying(){
       if (!playGate.armed || playGate.sent || !playGate.id) return;
       if (!playerEl || playerEl.paused) return;
 
       playGate.sent = true;
-      const it = items.find(x => x.id === playGate.id) || { id: playGate.id, title:"", name:"" };
+      const it = items.find(x => x.id === playGate.id) || { id: playGate.id, title: "", name: "" };
       bumpLocalGlobalCount("play", it.id);
       sendHit("play", it);
       scheduleRefreshCounts(1200);
       render();
     }
-    playerEl.addEventListener("playing", trySendPlayOnPlaying);
 
+    playerEl.addEventListener("playing", trySendPlayOnPlaying);
     playerEl.addEventListener("error", () => {
       const code = playerEl?.error?.code;
       statusEl.textContent = "Audio hata: " + (code || "bilinmiyor");
     });
 
     const LS = {
-      favs:  "fsp1.favs.v1",
-      pos:   "fsp1.fp.pos.v1",
-      durs:  "fsp1.durs.v1",
+      favs: "fsp1.favs.v1",
+      pos: "fsp1.fp.pos.v1",
+      durs: "fsp1.durs.v1",
       sortMode: "fsp1.sort.mode.v2",
       sortDirDur: "fsp1.sort.dur.dir.v1",
       sortDirDate: "fsp1.sort.date.dir.v1",
       sortDirPlay: "fsp1.sort.play.dir.v1",
-      sortDirDl:   "fsp1.sort.dl.dir.v1",
+      sortDirDl: "fsp1.sort.dl.dir.v1",
       speed: "fsp1.speed.v1",
-      zoom:  "fsp1.ui.zoom.v1",
+      zoom: "fsp1.ui.zoom.v1",
       captionsMode: "fsp1.captions.mode.v1",
-      itemsCache:   "fsp1.items.cache.s1.v2",
+      itemsCache: "fsp1.items.cache.s1.v2",
       itemsCacheAt: "fsp1.items.cache.s1.at.v1",
-      metaUpdated:  "fsp1.items.meta.updated.s1.v1",
-      uiState:      "fsp1.ui.state.v1",
+      metaUpdated: "fsp1.items.meta.updated.s1.v1",
+      uiState: "fsp1.ui.state.v1",
       txSize: "fsp1.tx.size.v1",
-      txPos:  "fsp1.tx.pos.v1"
+      txPos: "fsp1.tx.pos.v1",
+      skipSettings: "fsp1.skip.settings.v1",
+      skipDrawerOpen: "fsp1.skip.drawer.open.v1"
     };
 
     const loadMap = (k) => { try { return JSON.parse(localStorage.getItem(k) || "{}"); } catch { return {}; } };
@@ -1705,10 +1752,10 @@
     const loadAny = (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } };
     const saveAny = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
-    let favs  = loadMap(LS.favs);
-    let durs  = loadMap(LS.durs);
+    let favs = loadMap(LS.favs);
+    let durs = loadMap(LS.durs);
 
-    let filterFav  = false;
+    let filterFav = false;
     let items = [];
     let activeId = null;
     let selectedId = null;
@@ -1724,10 +1771,10 @@
     function saveUiState(){
       try{
         saveAny(LS.uiState, {
-          q: (searchEl.value || ""),
+          q: searchEl.value || "",
           filterFav: !!filterFav,
-          activeId: (activeId || null),
-          selectedId: (selectedId || null),
+          activeId: activeId || null,
+          selectedId: selectedId || null,
           scrollTop: Number(scrollArea.scrollTop) || 0
         });
       }catch{}
@@ -1756,13 +1803,13 @@
       if (document.visibilityState === "hidden") saveUiState();
     });
 
-    const ALLOWED_SORT = new Set(["title","date","dur","play","download"]);
+    const ALLOWED_SORT = new Set(["title", "date", "dur", "play", "download"]);
     let sortMode = localStorage.getItem(LS.sortMode) || "date";
     if (!ALLOWED_SORT.has(sortMode)) sortMode = "date";
-    let durSortDir  = (localStorage.getItem(LS.sortDirDur) === "desc") ? "desc" : "asc";
+    let durSortDir = (localStorage.getItem(LS.sortDirDur) === "desc") ? "desc" : "asc";
     let dateSortDir = (localStorage.getItem(LS.sortDirDate) === "asc") ? "asc" : "desc";
     let playSortDir = (localStorage.getItem(LS.sortDirPlay) === "asc") ? "asc" : "desc";
-    let dlSortDir   = (localStorage.getItem(LS.sortDirDl) === "asc") ? "asc" : "desc";
+    let dlSortDir = (localStorage.getItem(LS.sortDirDl) === "asc") ? "asc" : "desc";
 
     if (!localStorage.getItem(LS.sortMode)) localStorage.setItem(LS.sortMode, sortMode);
     if (!localStorage.getItem(LS.sortDirDate)) localStorage.setItem(LS.sortDirDate, dateSortDir);
@@ -1774,7 +1821,7 @@
 
     function fmtSpeed(v){
       const s = (Math.round(v * 100) / 100).toString();
-      return s.replace(/\.0+$/,"") + "×";
+      return s.replace(/\.0+$/, "") + "×";
     }
 
     function setSpeedUI(v){
@@ -1814,7 +1861,6 @@
 
     const TX_DEFAULT_SIZE = { w: 720, h: 600 };
     const TX_MIN_SIZE = { w: 280, h: 220 };
-
     const IOS_MIN_INPUT_PX = 16;
 
     function isIOSWebKit(){
@@ -1828,7 +1874,7 @@
       if (!isIOSWebKit()) return;
       const scale = Math.max(0.01, uiScale);
       const required = Math.ceil(IOS_MIN_INPUT_PX / scale);
-      const inputs = [document.getElementById("search"), document.getElementById("txSearchInput")].filter(Boolean);
+      const inputs = [searchEl, txSearchInput].filter(Boolean);
       for (const el of inputs){
         if (!el.dataset.baseFontPx){
           const base = parseFloat(getComputedStyle(el).fontSize || "16");
@@ -1841,7 +1887,7 @@
 
     function getViewportWH(){
       const vv = window.visualViewport;
-      const vw = (vv && vv.width)  ? vv.width  : window.innerWidth;
+      const vw = (vv && vv.width) ? vv.width : window.innerWidth;
       const vh = (vv && vv.height) ? vv.height : window.innerHeight;
       return { vw, vh };
     }
@@ -1855,7 +1901,6 @@
         sbOverlay.style.transform = "";
         sbOverlay.style.width = "100vw";
         sbOverlay.style.height = "100vh";
-
         txPanel.style.transform = "";
         txPanel.style.transformOrigin = "top right";
         return;
@@ -1877,13 +1922,11 @@
     function setZoomUI(v){
       const pct = Math.round(v * 100) + "%";
       zoomOutBtn.disabled = (zoomIndex <= 0);
-      zoomInBtn.disabled  = (zoomIndex >= ZOOMS.length - 1);
-
+      zoomInBtn.disabled = (zoomIndex >= ZOOMS.length - 1);
       zoomOutBtn.classList.toggle("enabled", !zoomOutBtn.disabled);
       zoomInBtn.classList.toggle("enabled", !zoomInBtn.disabled);
-
       zoomOutBtn.title = `Küçült (${pct})`;
-      zoomInBtn.title  = `Büyüt (${pct})`;
+      zoomInBtn.title = `Büyüt (${pct})`;
       zoomOutBtn.setAttribute("aria-label", `Küçült (${pct})`);
       zoomInBtn.setAttribute("aria-label", `Büyüt (${pct})`);
     }
@@ -1892,7 +1935,6 @@
       zoomIndex = Math.max(0, Math.min(ZOOMS.length - 1, idx));
       const v = ZOOMS[zoomIndex];
       uiScale = v;
-
       useTransformScale = !(window.CSS && CSS.supports && CSS.supports("zoom", "1"));
 
       if (!useTransformScale){
@@ -1906,7 +1948,6 @@
       }
 
       restorePlayerPos();
-
       localStorage.setItem(LS.zoom, String(v));
       setZoomUI(v);
 
@@ -1960,18 +2001,17 @@
     }
 
     searchEl.addEventListener("focus", () => { setTypingMode(true); setMomentumScroll(scrollArea, true); });
-    searchEl.addEventListener("blur",  () => { setTypingMode(false); setMomentumScroll(scrollArea, false); });
-
+    searchEl.addEventListener("blur", () => { setTypingMode(false); setMomentumScroll(scrollArea, false); });
     txSearchInput.addEventListener("focus", () => setMomentumScroll(txBodyEl, true));
-    txSearchInput.addEventListener("blur",  () => setMomentumScroll(txBodyEl, false));
+    txSearchInput.addEventListener("blur", () => setMomentumScroll(txBodyEl, false));
 
     function escHtml(s){
       return (s ?? "").toString()
-        .replace(/&/g,"&amp;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;")
-        .replace(/"/g,"&quot;")
-        .replace(/'/g,"&#39;");
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
     }
 
     function highlightDisease(title){
@@ -2023,13 +2063,9 @@
     }
 
     const CAPTION_MODES = ["cc", "CC", "CCx"];
-
     function readCaptionMode(){
       const raw = localStorage.getItem(LS.captionsMode) || "";
       if (CAPTION_MODES.includes(raw)) return raw;
-      const oldOn = (localStorage.getItem("fsp1.captions.on.v1") !== "0");
-      const oldExp = (localStorage.getItem("fsp1.captions.expanded.v1") === "1");
-      if (oldOn) return oldExp ? "CC" : "cc";
       return "cc";
     }
 
@@ -2055,7 +2091,6 @@
 
     function setCaptionUi(){
       const on = isCaptionsOn();
-
       const setBtn = (btn, active) => {
         if (!btn) return;
         btn.classList.toggle("on", !!active);
@@ -2063,8 +2098,8 @@
       };
 
       setBtn(ccSmallBtn, captionMode === "cc");
-      setBtn(ccMedBtn,   captionMode === "CC");
-      setBtn(ccXBtn,     captionMode === "CCx");
+      setBtn(ccMedBtn, captionMode === "CC");
+      setBtn(ccXBtn, captionMode === "CCx");
 
       if (captionsEl){
         captionsEl.classList.toggle("hidden", !on);
@@ -2091,7 +2126,7 @@
       if (!m) return null;
       const hh = Number(m[1]), mm = Number(m[2]), ss = Number(m[3]);
       const frac = Number(m[4] || "0");
-      if (![hh,mm,ss,frac].every(Number.isFinite)) return null;
+      if (![hh, mm, ss, frac].every(Number.isFinite)) return null;
       return hh * 3600 + mm * 60 + ss + frac;
     }
 
@@ -2099,15 +2134,14 @@
       let t = (srtText || "").replace(/^\uFEFF/, "");
       t = t.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
       const blocks = t.split(/\n{2,}/g);
-
       const cues = [];
+
       for (const block of blocks){
         const lines = block.split("\n").map(x => x.trimEnd()).filter(x => x.trim().length > 0);
         if (!lines.length) continue;
 
         let timeIdx = 0;
         if (/^\d+$/.test(lines[0].trim()) && lines.length >= 2) timeIdx = 1;
-
         const timeLine = lines[timeIdx] || "";
         const tm = timeLine.match(/(.+?)\s*-->\s*(.+)/);
         if (!tm) continue;
@@ -2122,7 +2156,7 @@
         cues.push({ start, end, text });
       }
 
-      cues.sort((a,b) => a.start - b.start);
+      cues.sort((a, b) => a.start - b.start);
       return cues;
     }
 
@@ -2139,13 +2173,20 @@
       return -1;
     }
 
-    function escapeHtml(s){
-      return (s ?? "").toString()
-        .replace(/&/g,"&amp;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;")
-        .replace(/"/g,"&quot;")
-        .replace(/'/g,"&#39;");
+    function findPrevCueIdx(cues, t){
+      let idx = -1;
+      for (let i = 0; i < cues.length; i++){
+        if (cues[i].end <= t) idx = i;
+        else break;
+      }
+      return idx;
+    }
+
+    function findNextCueIdx(cues, t){
+      for (let i = 0; i < cues.length; i++){
+        if (cues[i].start > t) return i;
+      }
+      return -1;
     }
 
     function splitCaptionLines(text){
@@ -2190,7 +2231,7 @@
         parts.push({ role: "active", isActive: true, text: c?.text || "", start: c.start, end: c.end });
       }
 
-      let total = parts.reduce((a,p) => a + countLinesText(p.text), 0);
+      let total = parts.reduce((a, p) => a + countLinesText(p.text), 0);
       let nidx = idx + 1;
 
       while (total < target && nidx < cues.length){
@@ -2205,106 +2246,6 @@
       }
 
       return parts;
-    }
-
-    let segEndTime = null;
-    let segResumeAfter = false;
-    let segResumeTime = null;
-
-    function armSegmentEnd(end, resumeAfter, resumeTime){
-      segEndTime = (Number.isFinite(end) ? end : null);
-      segResumeAfter = !!resumeAfter;
-      segResumeTime = (Number.isFinite(resumeTime) ? resumeTime : null);
-    }
-
-    function maybeStopAtSegmentEnd(){
-      if (segEndTime == null) return;
-
-      const t = Number(playerEl.currentTime) || 0;
-      if (t < (segEndTime - 0.03)) return;
-
-      const resumeAfter = segResumeAfter;
-      const resumeTime = segResumeTime;
-
-      segEndTime = null;
-      segResumeAfter = false;
-      segResumeTime = null;
-
-      if (resumeAfter){
-        try{
-          const dur = Number(playerEl.duration);
-          const target = Number.isFinite(resumeTime) ? resumeTime : (t + 0.01);
-          const safeTarget = Number.isFinite(dur) && dur > 0
-            ? Math.min(Math.max(0, target), Math.max(0, dur - 0.05))
-            : Math.max(0, target);
-
-          playerEl.currentTime = safeTarget;
-          const p = plyr.play();
-          if (p && typeof p.catch === "function") p.catch(()=>{});
-          return;
-        }catch{}
-      }
-
-      try{ plyr.pause(); }catch{}
-    }
-
-    playerEl.addEventListener("timeupdate", maybeStopAtSegmentEnd);
-
-    function playSegment(start, end){
-      if (!Number.isFinite(start) || !Number.isFinite(end) || !(end > start)) return;
-      const resumeAfter = !playerEl.paused;
-      const resumeTime = end + 0.01;
-
-      try{
-        armSegmentEnd(end, resumeAfter, resumeTime);
-        playerEl.currentTime = Math.max(0, start + 0.01);
-        const p = plyr.play();
-        if (p && typeof p.catch === "function") p.catch(()=>{});
-      }catch{}
-    }
-
-    function renderCaptionLines(lines){
-      if (!captionsEl) return;
-      if (!isCaptionsOn()) { captionsEl.innerHTML = ""; return; }
-
-      const maxLines = getCaptionMaxLines();
-      captionsEl.style.setProperty("--capLines", String(maxLines));
-
-      const { lines: trimmed, activeStart, activeEnd } = trimLinesAroundActive(lines, maxLines);
-
-      const out = [];
-      for (let i = 0; i < trimmed.length; i++){
-        const ln = trimmed[i];
-        const isActive = !!ln.isActive;
-
-        let dist = 0;
-        if (!isActive){
-          if (i < activeStart) dist = activeStart - i;
-          else if (i > activeEnd) dist = i - activeEnd;
-          else dist = 1;
-        }
-
-        const opacity = isActive ? 1 : Math.max(0.20, 0.92 - (dist * 0.12));
-        const weight = isActive ? 750 : 500;
-
-        const ds = Number.isFinite(ln.start) ? ` data-start="${ln.start}"` : "";
-        const de = Number.isFinite(ln.end) ? ` data-end="${ln.end}"` : "";
-
-        out.push(`<span class="capLine" style="opacity:${opacity.toFixed(2)};font-weight:${weight}"${ds}${de}>${escapeHtml(ln.text)}</span>`);
-      }
-
-      const html = out.join("<br>");
-      captionsEl.innerHTML = html || "…";
-      captionsEl.classList.toggle("isEmpty", !html);
-      setTimeout(() => clampPlayerToViewport(), 0);
-    }
-
-    function renderCaptionInfo(text){
-      if (!captionsEl) return;
-      if (!isCaptionsOn()) { captionsEl.innerHTML = ""; return; }
-      captionsEl.textContent = text || "…";
-      captionsEl.classList.add("isEmpty");
-      setTimeout(() => clampPlayerToViewport(), 0);
     }
 
     function trimLinesAroundActive(lines, maxLines){
@@ -2331,6 +2272,104 @@
       return { lines: sliced, activeStart: newActiveStart, activeEnd: newActiveEnd };
     }
 
+    let segEndTime = null;
+    let segResumeAfter = false;
+    let segResumeTime = null;
+
+    function armSegmentEnd(end, resumeAfter, resumeTime){
+      segEndTime = (Number.isFinite(end) ? end : null);
+      segResumeAfter = !!resumeAfter;
+      segResumeTime = (Number.isFinite(resumeTime) ? resumeTime : null);
+    }
+
+    function maybeStopAtSegmentEnd(){
+      if (segEndTime == null) return;
+
+      const t = Number(playerEl.currentTime) || 0;
+      if (t < (segEndTime - 0.03)) return;
+
+      const resumeAfter = segResumeAfter;
+      const resumeTime = segResumeTime;
+      segEndTime = null;
+      segResumeAfter = false;
+      segResumeTime = null;
+
+      if (resumeAfter){
+        try{
+          const dur = Number(playerEl.duration);
+          const target = Number.isFinite(resumeTime) ? resumeTime : (t + 0.01);
+          const safeTarget = Number.isFinite(dur) && dur > 0
+            ? Math.min(Math.max(0, target), Math.max(0, dur - 0.05))
+            : Math.max(0, target);
+
+          playerEl.currentTime = safeTarget;
+          const p = plyr.play();
+          if (p && typeof p.catch === "function") p.catch(()=>{});
+          return;
+        }catch{}
+      }
+
+      try{ plyr.pause(); }catch{}
+    }
+
+    playerEl.addEventListener("timeupdate", maybeStopAtSegmentEnd);
+
+    function playSegment(start, end){
+      if (!Number.isFinite(start) || !Number.isFinite(end) || !(end > start)) return;
+
+      const resumeAfter = !playerEl.paused;
+      const resumeTime = end + 0.01;
+
+      try{
+        armSegmentEnd(end, resumeAfter, resumeTime);
+        playerEl.currentTime = Math.max(0, start + 0.01);
+        const p = plyr.play();
+        if (p && typeof p.catch === "function") p.catch(()=>{});
+      }catch{}
+    }
+
+    function renderCaptionLines(lines){
+      if (!captionsEl) return;
+      if (!isCaptionsOn()) { captionsEl.innerHTML = ""; return; }
+
+      const maxLines = getCaptionMaxLines();
+      captionsEl.style.setProperty("--capLines", String(maxLines));
+      const { lines: trimmed, activeStart, activeEnd } = trimLinesAroundActive(lines, maxLines);
+
+      const out = [];
+      for (let i = 0; i < trimmed.length; i++){
+        const ln = trimmed[i];
+        const isActive = !!ln.isActive;
+
+        let dist = 0;
+        if (!isActive){
+          if (i < activeStart) dist = activeStart - i;
+          else if (i > activeEnd) dist = i - activeEnd;
+          else dist = 1;
+        }
+
+        const opacity = isActive ? 1 : Math.max(0.20, 0.92 - (dist * 0.12));
+        const weight = isActive ? 750 : 500;
+        const ds = Number.isFinite(ln.start) ? ` data-start="${ln.start}"` : "";
+        const de = Number.isFinite(ln.end) ? ` data-end="${ln.end}"` : "";
+
+        out.push(`<span class="capLine" style="opacity:${opacity.toFixed(2)};font-weight:${weight}"${ds}${de}>${escHtml(ln.text)}</span>`);
+      }
+
+      const html = out.join("<br>");
+      captionsEl.innerHTML = html || "…";
+      captionsEl.classList.toggle("isEmpty", !html);
+      setTimeout(() => clampPlayerToViewport(), 0);
+    }
+
+    function renderCaptionInfo(text){
+      if (!captionsEl) return;
+      if (!isCaptionsOn()) { captionsEl.innerHTML = ""; return; }
+      captionsEl.textContent = text || "…";
+      captionsEl.classList.add("isEmpty");
+      setTimeout(() => clampPlayerToViewport(), 0);
+    }
+
     function onCaptionsTimeupdate(){
       if (!isCaptionsOn()) return;
       if (!activeCues.length) return;
@@ -2353,23 +2392,19 @@
           flat.push({ text: line, isActive: !!p.isActive, start: p.start, end: p.end });
         }
       }
-
       renderCaptionLines(flat);
     }
 
-    if (playerEl) playerEl.addEventListener("timeupdate", onCaptionsTimeupdate);
+    playerEl.addEventListener("timeupdate", onCaptionsTimeupdate);
 
     captionsEl.addEventListener("click", (e) => {
       if (!isCaptionsOn()) return;
       if (!activeCues.length) return;
       const span = e.target && e.target.closest ? e.target.closest(".capLine") : null;
       if (!span) return;
-
       const s = Number(span.getAttribute("data-start"));
       const en = Number(span.getAttribute("data-end"));
-      if (Number.isFinite(s) && Number.isFinite(en) && en > s){
-        playSegment(s, en);
-      }
+      if (Number.isFinite(s) && Number.isFinite(en) && en > s) playSegment(s, en);
     });
 
     function buildSrtNameCandidates(it){
@@ -2377,25 +2412,24 @@
       const decoded = decodeURIComponentSafe(rawName);
 
       const baseDecoded = decoded.replace(/\.(m4a|mp3)$/i, ".srt");
-      const baseRaw     = rawName.replace(/\.(m4a|mp3)$/i, ".srt");
+      const baseRaw = rawName.replace(/\.(m4a|mp3)$/i, ".srt");
 
       const hasA = /^A\s+/i.test(baseDecoded);
       const aDecoded = hasA ? baseDecoded : ("A " + baseDecoded);
-      const aRaw     = hasA ? baseRaw     : ("A " + baseRaw);
+      const aRaw = hasA ? baseRaw : ("A " + baseRaw);
       const aUDecoded = hasA ? baseDecoded : ("A_" + baseDecoded);
-      const aURaw     = hasA ? baseRaw     : ("A_" + baseRaw);
+      const aURaw = hasA ? baseRaw : ("A_" + baseRaw);
       const aDDecoded = hasA ? baseDecoded : ("A-" + baseDecoded);
-      const aDRaw     = hasA ? baseRaw     : ("A-" + baseRaw);
+      const aDRaw = hasA ? baseRaw : ("A-" + baseRaw);
 
-      const altDecoded  = decoded + ".srt";
-      const altRaw      = rawName + ".srt";
+      const altDecoded = decoded + ".srt";
+      const altRaw = rawName + ".srt";
 
       const seen = new Set();
       const out = [];
       for (const n of [baseDecoded, baseRaw, aDecoded, aRaw, aUDecoded, aURaw, aDDecoded, aDRaw, altDecoded, altRaw]){
         const nn = String(n || "").trim();
-        if (!nn) continue;
-        if (seen.has(nn)) continue;
+        if (!nn || seen.has(nn)) continue;
         seen.add(nn);
         out.push(nn);
       }
@@ -2407,25 +2441,24 @@
       const decoded = decodeURIComponentSafe(rawName);
 
       const baseDecoded = decoded.replace(/\.(m4a|mp3)$/i, ".txt");
-      const baseRaw     = rawName.replace(/\.(m4a|mp3)$/i, ".txt");
+      const baseRaw = rawName.replace(/\.(m4a|mp3)$/i, ".txt");
 
       const hasA = /^A\s+/i.test(baseDecoded);
-      const aDecoded  = hasA ? baseDecoded : ("A " + baseDecoded);
-      const aRaw      = hasA ? baseRaw     : ("A " + baseRaw);
+      const aDecoded = hasA ? baseDecoded : ("A " + baseDecoded);
+      const aRaw = hasA ? baseRaw : ("A " + baseRaw);
       const aUDecoded = hasA ? baseDecoded : ("A_" + baseDecoded);
-      const aURaw     = hasA ? baseRaw     : ("A_" + baseRaw);
+      const aURaw = hasA ? baseRaw : ("A_" + baseRaw);
       const aDDecoded = hasA ? baseDecoded : ("A-" + baseDecoded);
-      const aDRaw     = hasA ? baseRaw     : ("A-" + baseRaw);
+      const aDRaw = hasA ? baseRaw : ("A-" + baseRaw);
 
       const altDecoded = decoded + ".txt";
-      const altRaw     = rawName + ".txt";
+      const altRaw = rawName + ".txt";
 
       const seen = new Set();
       const out = [];
       for (const n of [baseDecoded, baseRaw, aDecoded, aRaw, aUDecoded, aURaw, aDDecoded, aDRaw, altDecoded, altRaw]){
         const nn = String(n || "").trim();
-        if (!nn) continue;
-        if (seen.has(nn)) continue;
+        if (!nn || seen.has(nn)) continue;
         seen.add(nn);
         out.push(nn);
       }
@@ -2457,18 +2490,24 @@
     async function loadSrtForItem(it){
       activeCues = [];
       lastCueIdx = -1;
+      skipState.lastSrtItemId = null;
+      skipState.lastGapKey = "";
 
-      if (!isCaptionsOn()) return renderCaptionInfo("");
+      if (!isCaptionsOn() && !skipSettings.enabled) return renderCaptionInfo("");
       if (!it) return renderCaptionInfo("Bir kayıt seç...");
 
       const cached = srtCache.get(it.id);
       if (cached){
         activeCues = cached;
-        renderCaptionInfo("…");
-        return onCaptionsTimeupdate();
+        skipState.lastSrtItemId = it.id;
+        if (isCaptionsOn()){
+          renderCaptionInfo("…");
+          onCaptionsTimeupdate();
+        }
+        return;
       }
 
-      renderCaptionInfo("Altyazı yükleniyor…");
+      if (isCaptionsOn()) renderCaptionInfo("Altyazı yükleniyor…");
 
       try { if (srtCtrl) srtCtrl.abort(); } catch {}
       srtCtrl = new AbortController();
@@ -2486,20 +2525,29 @@
           if (!res.ok) continue;
           const body = await res.text();
           const parsed = parseSrtToCues(body);
-          if (parsed && parsed.length){ cues = parsed; break; }
+          if (parsed && parsed.length){
+            cues = parsed;
+            break;
+          }
         }
         if (!cues) throw new Error("srt not found");
 
         srtCache.set(it.id, cues);
         activeCues = cues;
-        renderCaptionInfo("…");
-        onCaptionsTimeupdate();
+        skipState.lastSrtItemId = it.id;
+
+        if (isCaptionsOn()){
+          renderCaptionInfo("…");
+          onCaptionsTimeupdate();
+        }
       }catch(err){
         if (err && err.name === "AbortError") return;
-        if (SRT_DEBUG){
-          renderCaptionInfo("SRT yok. Denenen isimler: " + (triedNames.join(" | ") || "-") + "\nSon URL: " + lastUrl);
-        } else {
-          renderCaptionInfo("Bu kayıtta altyazı yok.");
+        if (isCaptionsOn()){
+          if (SRT_DEBUG){
+            renderCaptionInfo("SRT yok. Denenen isimler: " + (triedNames.join(" | ") || "-") + "\nSon URL: " + lastUrl);
+          } else {
+            renderCaptionInfo("Bu kayıtta altyazı yok.");
+          }
         }
       }
     }
@@ -2515,27 +2563,12 @@
       setCaptionUi();
 
       const it = items.find(x => x.id === activeId);
-      if (isCaptionsOn() && it) loadSrtForItem(it).catch(()=>{});
+      if (it) loadSrtForItem(it).catch(()=>{});
     }
 
-    if (ccSmallBtn){
-      ccSmallBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        setModeOrToggle("cc");
-      });
-    }
-    if (ccMedBtn){
-      ccMedBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        setModeOrToggle("CC");
-      });
-    }
-    if (ccXBtn){
-      ccXBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        setModeOrToggle("CCx");
-      });
-    }
+    ccSmallBtn.addEventListener("click", (e) => { e.stopPropagation(); setModeOrToggle("cc"); });
+    ccMedBtn.addEventListener("click", (e) => { e.stopPropagation(); setModeOrToggle("CC"); });
+    ccXBtn.addEventListener("click", (e) => { e.stopPropagation(); setModeOrToggle("CCx"); });
 
     function parseEndDate(item){
       const raw0 = (item.name || item.file || item.title || "").toString();
@@ -2563,12 +2596,11 @@
       return t;
     }
 
-    function setArrowIcon(svgEl, isAsc) {
+    function setArrowIcon(svgEl, isAsc){
       if (!svgEl) return;
       while (svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
 
       const ns = "http://www.w3.org/2000/svg";
-
       const mkPath = (d) => {
         const p = document.createElementNS(ns, "path");
         p.setAttribute("d", d);
@@ -2583,7 +2615,6 @@
       svgEl.setAttribute("viewBox", "0 0 24 24");
       svgEl.setAttribute("aria-hidden", "true");
       svgEl.setAttribute("focusable", "false");
-
       svgEl.appendChild(mkPath(isAsc ? "M12 19V5" : "M12 5v14"));
       svgEl.appendChild(mkPath(isAsc ? "M7 10l5-5 5 5" : "M7 14l5 5 5-5"));
     }
@@ -2656,10 +2687,9 @@
     let stickyHomeParent = null;
 
     function measureStickyStartTop(){
-      if (!stickyBar) return;
-      if (stickyDocked) return;
+      if (!stickyBar || stickyDocked) return;
       const barRect = stickyBar.getBoundingClientRect();
-      const scRect  = scrollArea.getBoundingClientRect();
+      const scRect = scrollArea.getBoundingClientRect();
       stickyStartTop = (barRect.top - scRect.top) + scrollArea.scrollTop;
     }
 
@@ -2701,7 +2731,7 @@
       const rect = scrollArea.getBoundingClientRect();
       const pad = getScrollAreaPadding();
       const left = rect.left + pad.pl;
-      const top  = rect.top + pad.pt;
+      const top = rect.top + pad.pt;
       const width = Math.max(260, rect.width - pad.pl - pad.pr);
 
       stickyBar.style.position = "fixed";
@@ -2709,12 +2739,12 @@
 
       if (useTransformScale){
         stickyBar.style.left = (left / uiScale) + "px";
-        stickyBar.style.top  = (top  / uiScale) + "px";
+        stickyBar.style.top = (top / uiScale) + "px";
         stickyBar.style.width = (width / uiScale) + "px";
         stickyBar.style.transform = `scale(${uiScale})`;
       } else {
         stickyBar.style.left = left + "px";
-        stickyBar.style.top  = top + "px";
+        stickyBar.style.top = top + "px";
         stickyBar.style.width = width + "px";
         stickyBar.style.transform = "";
       }
@@ -2722,12 +2752,9 @@
 
     function updateSticky(forceRecalc = false){
       if (!stickyBar) return;
-
       const needDock = (IS_SAFARI || useTransformScale);
 
-      if (forceRecalc && !stickyDocked){
-        requestAnimationFrame(() => measureStickyStartTop());
-      }
+      if (forceRecalc && !stickyDocked) requestAnimationFrame(() => measureStickyStartTop());
 
       if (!needDock){
         if (stickyDocked) undockStickyBar();
@@ -2786,7 +2813,6 @@
         const a = new Audio();
         a.preload = "metadata";
         a.src = it.url;
-
         let done = false;
 
         const cleanup = () => {
@@ -2814,13 +2840,9 @@
         };
 
         const onErr = () => finish(false, new Error("metadata error"));
-
         a.addEventListener("loadedmetadata", onMeta, { once: true });
         a.addEventListener("error", onErr, { once: true });
-
-        setTimeout(() => {
-          if (!done) finish(false, new Error("timeout"));
-        }, 12000);
+        setTimeout(() => { if (!done) finish(false, new Error("timeout")); }, 12000);
       });
     }
 
@@ -2865,8 +2887,7 @@
     }
 
     function replaceExtToTxt(name){
-      const s = (name || "").toString();
-      return s.replace(/\.(m4a|mp3)$/i, ".txt");
+      return String(name || "").replace(/\.(m4a|mp3)$/i, ".txt");
     }
 
     async function loadItems(){
@@ -2912,13 +2933,12 @@
         }
 
         const files = Array.isArray(j.files) ? j.files : [];
-
         const list = files
           .filter(f => {
             const name = (f.name || "").toLowerCase();
             if (!(name.endsWith(".m4a") || name.endsWith(".mp3"))) return false;
             if (!("source" in f)) return true;
-            return (String(f.source).toLowerCase() === "original");
+            return String(f.source).toLowerCase() === "original";
           })
           .map((f, idx) => {
             const name = f.name || "";
@@ -2926,11 +2946,9 @@
             const url = buildDownloadUrl(IA_IDENTIFIER_1, name);
             const localId = name || url || (title + "#" + idx);
             const id = "S1|" + localId;
-
             const txtCandidates = buildTxtNameCandidates({ name });
-            const txtName = (txtCandidates && txtCandidates.length) ? txtCandidates[0] : replaceExtToTxt(name);
+            const txtName = txtCandidates.length ? txtCandidates[0] : replaceExtToTxt(name);
             const txtUrl = txtName ? (TXT_BASES[0] + encodeURIComponent(txtName)) : "";
-
             return { id, title, name, url, src: "S1", txtName, txtUrl };
           });
 
@@ -2972,7 +2990,7 @@
 
       if (sortMode === "dur"){
         const dir = (durSortDir === "asc") ? 1 : -1;
-        arr.sort((a,b) => {
+        arr.sort((a, b) => {
           const ha = (durs[a.id] > 0);
           const hb = (durs[b.id] > 0);
           if (ha !== hb) return ha ? -1 : 1;
@@ -2985,7 +3003,7 @@
         });
       } else if (sortMode === "date"){
         const dir = (dateSortDir === "asc") ? 1 : -1;
-        arr.sort((a,b) => {
+        arr.sort((a, b) => {
           const ta = parseEndDate(a);
           const tb = parseEndDate(b);
           const ha = (ta !== null);
@@ -2996,7 +3014,7 @@
         });
       } else if (sortMode === "play"){
         const dir = (playSortDir === "asc") ? 1 : -1;
-        arr.sort((a,b) => {
+        arr.sort((a, b) => {
           const ca = Number(globalPlayCounts[a.id]) || 0;
           const cb = Number(globalPlayCounts[b.id]) || 0;
           if (ca !== cb) return (ca - cb) * dir;
@@ -3004,14 +3022,14 @@
         });
       } else if (sortMode === "download"){
         const dir = (dlSortDir === "asc") ? 1 : -1;
-        arr.sort((a,b) => {
+        arr.sort((a, b) => {
           const ca = Number(globalDownloadCounts[a.id]) || 0;
           const cb = Number(globalDownloadCounts[b.id]) || 0;
           if (ca !== cb) return (ca - cb) * dir;
           return a.title.localeCompare(b.title, "tr");
         });
       } else {
-        arr.sort((a,b) => a.title.localeCompare(b.title, "tr"));
+        arr.sort((a, b) => a.title.localeCompare(b.title, "tr"));
       }
 
       return arr;
@@ -3047,10 +3065,8 @@
       metaEl.textContent = `Görünən: ${visible.length} / Toplam: ${items.length}`;
 
       filterFavBtn.classList.toggle("on", filterFav);
-      filterFavBtn.setAttribute("aria-pressed",  String(filterFav));
-
+      filterFavBtn.setAttribute("aria-pressed", String(filterFav));
       setSortIcons();
-
       listEl.innerHTML = "";
 
       const toMeasure = (sortMode === "dur") ? items : visible;
@@ -3075,7 +3091,7 @@
         playCount.textContent = String(Number(globalPlayCounts[it.id]) || 0);
 
         const favBtn = iconButton("star", !!favs[it.id], "Favori");
-        const dlBtn  = iconButton("download", false, "İndir");
+        const dlBtn = iconButton("download", false, "İndir");
 
         const dlCount = document.createElement("div");
         dlCount.className = "countCell";
@@ -3165,11 +3181,15 @@
       selectedId = it.id;
       fpTitle.textContent = it.title;
       render();
-      if (typeof renderCaptionInfo === "function") renderCaptionInfo("Altyazı yükleniyor…");
+
+      if (typeof renderCaptionInfo === "function" && isCaptionsOn()){
+        renderCaptionInfo("Altyazı yükleniyor…");
+      }
 
       const url = it.url;
       const mime = guessMime(url);
       const currentSpeed = SPEEDS[speedIndex] || 1;
+      resetSkipRuntimeForNewTrack();
 
       try{
         plyr.speed = currentSpeed;
@@ -3251,22 +3271,19 @@
     resetBtn.addEventListener("click", () => {
       filterFav = false;
       searchEl.value = "";
-
       sortMode = "title";
       dateSortDir = "desc";
       localStorage.setItem(LS.sortMode, sortMode);
       localStorage.setItem(LS.sortDirDate, dateSortDir);
-
       setSortIcons();
       render();
     });
 
     const SEARCH_DEBOUNCE_MS = 900;
-
     let searchTimer = null;
     let lastSentTermNorm = "";
 
-    function sendSearchEvent(termRawInput) {
+    function sendSearchEvent(termRawInput){
       const termRaw = (termRawInput || "").trim();
       const termNorm = foldTR(termRaw);
       const visibleCount = getVisibleItems().length;
@@ -3283,14 +3300,12 @@
       if (termNorm === lastSentTermNorm) return;
 
       lastSentTermNorm = termNorm;
-
       const params = { search_term: termNorm, results_count: visibleCount };
       if (__isDebug) params.search_term_raw = termRaw;
-
       gaEvent("search", params);
     }
 
-    function renderAndTrackSearch() {
+    function renderAndTrackSearch(){
       render();
       sendSearchEvent(searchEl.value);
     }
@@ -3299,7 +3314,6 @@
       clearTimeout(searchTimer);
       searchTimer = setTimeout(renderAndTrackSearch, SEARCH_DEBOUNCE_MS);
     });
-
     searchEl.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
       e.preventDefault();
@@ -3322,15 +3336,14 @@
         }
 
         fp.style.left = x + "px";
-        fp.style.top  = y + "px";
+        fp.style.top = y + "px";
         fp.style.bottom = "auto";
-        fp.style.right  = "auto";
-
+        fp.style.right = "auto";
         clampPlayerToViewport();
       }catch{}
     }
 
-    function savePlayerPos(x,y){
+    function savePlayerPos(x, y){
       localStorage.setItem(LS.pos, JSON.stringify({ x, y, ver: 2 }));
     }
 
@@ -3340,7 +3353,7 @@
 
     function getPlayerPosPx(){
       const left = parseFloat(fp.style.left);
-      const top  = parseFloat(fp.style.top);
+      const top = parseFloat(fp.style.top);
       if (Number.isFinite(left) && Number.isFinite(top)) return { left, top };
       const r = getPlayerRect();
       return { left: r.left, top: r.top };
@@ -3351,19 +3364,17 @@
       const r = getPlayerRect();
       const w = r.width;
       const h = r.height;
-
       const keepX = Math.max(70, Math.min(w - 16, 180));
       const keepY = Math.max(56, Math.min(h - 16, 120));
       const capH = (isCaptionsOn() && captionsEl && !captionsEl.classList.contains("hidden"))
         ? captionsEl.getBoundingClientRect().height
         : 0;
-
       const drawerH = (!skipDrawer.hidden) ? skipDrawer.getBoundingClientRect().height : 0;
 
       const minX = -w + keepX;
       const maxX = vw - keepX;
       const minY = -h + keepY + capH;
-      const maxY = vh - keepY - Math.min(drawerH, 120);
+      const maxY = vh - keepY - Math.min(drawerH, 160);
 
       return {
         minX: Math.min(minX, maxX),
@@ -3376,21 +3387,18 @@
     function clampPlayerToViewport(){
       const { minX, maxX, minY, maxY } = getPlayerBoundsPx();
       const cur = getPlayerPosPx();
-
       const nx = Math.min(maxX, Math.max(minX, cur.left));
       const ny = Math.min(maxY, Math.max(minY, cur.top));
 
       fp.style.left = nx + "px";
-      fp.style.top  = ny + "px";
+      fp.style.top = ny + "px";
       fp.style.right = "auto";
       fp.style.bottom = "auto";
-
       savePlayerPos(nx, ny);
     }
 
     const DRAG_IGNORE_SELECTOR =
-      "button, a, input, textarea, select, option, " +
-      ".speedWrap, .speedCtlBtn, .miniBtn, " +
+      "button, a, input, textarea, select, option, .speedWrap, .speedCtlBtn, .miniBtn, " +
       ".plyr__controls, .plyr__control, .plyr__progress, .plyr__seek, .plyr__volume, .plyr__time, .plyr__menu";
 
     function shouldStartDrag(target){
@@ -3403,50 +3411,39 @@
     let moved = false;
     let suppressClickUntil = 0;
 
-    function getCurrentLeftTopLayout(){
-      return getPlayerPosPx();
-    }
-
     fpHeader.addEventListener("pointerdown", (e) => {
       if (!shouldStartDrag(e.target)) return;
 
       dragging = true;
       moved = false;
-
       fpHeader.setPointerCapture(e.pointerId);
       fpHeader.style.cursor = "grabbing";
-
       startClientX = e.clientX;
       startClientY = e.clientY;
 
-      const cur = getCurrentLeftTopLayout();
+      const cur = getPlayerPosPx();
       startLeft = cur.left;
-      startTop  = cur.top;
+      startTop = cur.top;
 
       fp.style.left = startLeft + "px";
-      fp.style.top  = startTop + "px";
+      fp.style.top = startTop + "px";
       fp.style.bottom = "auto";
-      fp.style.right  = "auto";
+      fp.style.right = "auto";
     });
 
     fpHeader.addEventListener("pointermove", (e) => {
       if (!dragging) return;
 
-      const dxClient = e.clientX - startClientX;
-      const dyClient = e.clientY - startClientY;
-
-      const dx = dxClient;
-      const dy = dyClient;
-
-      if (!moved && (Math.abs(dxClient) + Math.abs(dyClient) > 6)) moved = true;
+      const dx = e.clientX - startClientX;
+      const dy = e.clientY - startClientY;
+      if (!moved && (Math.abs(dx) + Math.abs(dy) > 6)) moved = true;
 
       const { minX, maxX, minY, maxY } = getPlayerBoundsPx();
-
       const nx = Math.min(maxX, Math.max(minX, startLeft + dx));
-      const ny = Math.min(maxY, Math.max(minY, startTop  + dy));
+      const ny = Math.min(maxY, Math.max(minY, startTop + dy));
 
       fp.style.left = nx + "px";
-      fp.style.top  = ny + "px";
+      fp.style.top = ny + "px";
       savePlayerPos(nx, ny);
     });
 
@@ -3454,7 +3451,6 @@
       if (!dragging) return;
       dragging = false;
       fpHeader.style.cursor = "grab";
-
       try { fpHeader.releasePointerCapture(pointerId); } catch {}
       clampPlayerToViewport();
 
@@ -3466,7 +3462,6 @@
 
     fpHeader.addEventListener("pointerup", (e) => endDrag(e.pointerId));
     fpHeader.addEventListener("pointercancel", (e) => endDrag(e.pointerId));
-
     fpHeader.addEventListener("click", (e) => {
       if (Date.now() < suppressClickUntil){
         e.preventDefault();
@@ -3511,10 +3506,7 @@
       scrollArea.addEventListener("touchmove", (e) => {
         if (!e.touches || !e.touches.length) return;
         const y = e.touches[0].clientY;
-
-        if (scrollArea.scrollTop <= 0 && y > startY + 4){
-          e.preventDefault();
-        }
+        if (scrollArea.scrollTop <= 0 && y > startY + 4) e.preventDefault();
       }, { passive: false });
     })();
 
@@ -3534,26 +3526,22 @@
       updateOverlayScale();
       setSortIcons();
     }
+
     function closeSidebar(){
       sbOverlay.classList.remove("open");
       sbOverlay.setAttribute("aria-hidden", "true");
     }
+
     sidebarOpenBtn.addEventListener("click", (e) => { e.stopPropagation(); openSidebar(); });
     sbCloseBtn.addEventListener("click", (e) => { e.stopPropagation(); closeSidebar(); });
-    sbOverlay.addEventListener("click", (e) => {
-      if (e.target === sbOverlay) closeSidebar();
-    });
+    sbOverlay.addEventListener("click", (e) => { if (e.target === sbOverlay) closeSidebar(); });
     document.getElementById("sidebar").addEventListener("click", (e) => e.stopPropagation());
 
     sbRefreshBtn.addEventListener("click", async () => {
-      const old = localStorage.getItem(LS.itemsCacheAt) || "0";
       localStorage.setItem(LS.itemsCacheAt, "0");
-      try{
-        await loadItems();
-      }finally{
-        if (items.length) statusEl.textContent = "";
-        else statusEl.textContent = "Kayıt bulunamadı.";
-        if (old) localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
+      try { await loadItems(); }
+      finally {
+        statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
       }
     });
 
@@ -3597,7 +3585,6 @@
     let txMatches = [];
     let txActiveMatch = -1;
     let txSearchTimer = null;
-
     const txCache = new Map();
     const TX_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -3625,14 +3612,11 @@
       const { vw, vh } = getViewportWH();
       const vwL = toLayoutPx(vw);
       const vhL = toLayoutPx(vh);
-
       const margin = 28;
       const maxW = Math.max(TX_MIN_SIZE.w, vwL - margin);
       const maxH = Math.max(TX_MIN_SIZE.h, vhL - margin);
-
       const curW = txPanel.offsetWidth || TX_DEFAULT_SIZE.w;
       const curH = txPanel.offsetHeight || TX_DEFAULT_SIZE.h;
-
       const minW = Math.min(maxW, TX_MIN_SIZE.w);
       const minH = Math.min(maxH, TX_MIN_SIZE.h);
 
@@ -3641,7 +3625,6 @@
 
       txPanel.style.width = w + "px";
       txPanel.style.height = h + "px";
-
       saveAny(LS.txSize, { w, h });
     }
 
@@ -3699,7 +3682,6 @@
     }
 
     function setTxtBtnUi(){
-      if (!fpTxtBtn) return;
       fpTxtBtn.classList.toggle("on", !!txOpen);
       fpTxtBtn.setAttribute("aria-pressed", String(!!txOpen));
     }
@@ -3734,7 +3716,7 @@
       if (!ranges.length) return escHtml(text);
       const parts = [];
       let last = 0;
-      for (let i=0; i<ranges.length; i++){
+      for (let i = 0; i < ranges.length; i++){
         const r = ranges[i];
         const a = Math.max(0, r[0]);
         const b = Math.max(a, r[1]);
@@ -3770,17 +3752,11 @@
       }
       txMatches = computeMatches(txPlainText, q);
       txActiveMatch = txMatches.length ? 0 : -1;
-
       txPrevMatchBtn.disabled = txMatches.length < 2;
       txNextMatchBtn.disabled = txMatches.length < 2;
-
-      txMatchCountEl.textContent = txMatches.length ? `1/${txMatches.length}` : `0/0`;
-
+      txMatchCountEl.textContent = txMatches.length ? `1/${txMatches.length}` : "0/0";
       txContentEl.innerHTML = buildHighlightedHtml(txPlainText, txMatches, txActiveMatch);
-
-      if (txMatches.length){
-        setTimeout(() => scrollToActiveMatch(), 0);
-      }
+      if (txMatches.length) setTimeout(() => scrollToActiveMatch(), 0);
     }
 
     function scrollToActiveMatch(){
@@ -3800,11 +3776,12 @@
 
       const old = txContentEl.querySelector(".txMark.active");
       if (old) old.classList.remove("active");
+
       const next = txContentEl.querySelector(`.txMark[data-mi="${txActiveMatch}"]`);
       if (next){
         next.classList.add("active");
         scrollToActiveMatch();
-      }else{
+      } else {
         txContentEl.innerHTML = buildHighlightedHtml(txPlainText, txMatches, txActiveMatch);
         setTimeout(() => scrollToActiveMatch(), 0);
       }
@@ -3867,9 +3844,7 @@
     txCopyBtn.addEventListener("click", async () => {
       const ok = await copyToClipboard(txPlainText);
       txInfoEl.textContent = ok ? "Kopiert." : "Kopieren fehlgeschlagen.";
-      setTimeout(() => {
-        if (txCurrent) updateTxInfo(txCurrent);
-      }, 1200);
+      setTimeout(() => { if (txCurrent) updateTxInfo(txCurrent); }, 1200);
     });
 
     txDownloadBtn.addEventListener("click", () => {
@@ -3894,8 +3869,7 @@
 
       for (const u of [it?.txtUrl, ...(built?.urls || [])]){
         const uu = String(u || "").trim();
-        if (!uu) continue;
-        if (seen.has(uu)) continue;
+        if (!uu || seen.has(uu)) continue;
         seen.add(uu);
         urls.push(uu);
       }
@@ -3913,7 +3887,6 @@
             if (fn) it.txtName = fn;
           }catch{}
           it.txtUrl = url;
-
           txCache.set(it.id, { text, at: Date.now() });
           return text;
         }catch(err){
@@ -3931,7 +3904,6 @@
 
       txTitleEl.textContent = it.title || "Transkript";
       updateTxInfo(it);
-
       txCopyBtn.disabled = true;
       txDownloadBtn.disabled = true;
       txContentEl.textContent = "Yükleniyor…";
@@ -3978,9 +3950,7 @@
     sbClearTxCacheBtn.addEventListener("click", () => {
       txCache.clear();
       txInfoEl.textContent = "TXT Cache temizlendi.";
-      setTimeout(() => {
-        if (txCurrent) updateTxInfo(txCurrent);
-      }, 1200);
+      setTimeout(() => { if (txCurrent) updateTxInfo(txCurrent); }, 1200);
     });
 
     txPanel.addEventListener("click", (e) => e.stopPropagation());
@@ -3995,13 +3965,10 @@
     let txDragStartTop = 0, txDragStartRight = 0;
 
     txHeader.addEventListener("pointerdown", (e) => {
-      if (!txOpen) return;
-      if (!shouldStartTxDrag(e.target)) return;
-
+      if (!txOpen || !shouldStartTxDrag(e.target)) return;
       txDragging = true;
       txHeader.setPointerCapture(e.pointerId);
       txHeader.style.cursor = "grabbing";
-
       txDragStartX = e.clientX;
       txDragStartY = e.clientY;
 
@@ -4015,13 +3982,10 @@
 
     txHeader.addEventListener("pointermove", (e) => {
       if (!txDragging) return;
-
       const dx = e.clientX - txDragStartX;
       const dy = e.clientY - txDragStartY;
-
       const cl = clampTxPosCandidate(txDragStartTop + dy, txDragStartRight - dx);
       setTxPosPx(cl.top, cl.right);
-
       e.preventDefault();
     });
 
@@ -4029,7 +3993,7 @@
       if (!txDragging) return;
       txDragging = false;
       txHeader.style.cursor = "grab";
-      try{ txHeader.releasePointerCapture(pointerId); }catch{}
+      try { txHeader.releasePointerCapture(pointerId); } catch {}
       clampTxPosToViewport();
     }
 
@@ -4048,17 +4012,16 @@
       const { vw, vh } = getViewportWH();
       const vwL = toLayoutPx(vw);
       const vhL = toLayoutPx(vh);
-
       const margin = 28;
       const maxW = Math.max(TX_MIN_SIZE.w, vwL - margin);
       const maxH = Math.max(TX_MIN_SIZE.h, vhL - margin);
-
       const minW = Math.min(maxW, TX_MIN_SIZE.w);
       const minH = Math.min(maxH, TX_MIN_SIZE.h);
 
-      const cw = Math.min(maxW, Math.max(minW, w));
-      const ch = Math.min(maxH, Math.max(minH, h));
-      return { w: cw, h: ch };
+      return {
+        w: Math.min(maxW, Math.max(minW, w)),
+        h: Math.min(maxH, Math.max(minH, h))
+      };
     }
 
     txResizeHandle.addEventListener("pointerdown", (e) => {
@@ -4075,17 +4038,11 @@
 
     txResizeHandle.addEventListener("pointermove", (e) => {
       if (!txResizing) return;
-
       const dxClient = e.clientX - txResizeStartX;
       const dyClient = e.clientY - txResizeStartY;
-
       const dx = useTransformScale ? (dxClient / uiScale) : dxClient;
       const dy = useTransformScale ? (dyClient / uiScale) : dyClient;
-
-      const w = txResizeStartW - dx;
-      const h = txResizeStartH + dy;
-
-      const cl = clampTxSize(w, h);
+      const cl = clampTxSize(txResizeStartW - dx, txResizeStartH + dy);
       txPanel.style.width = cl.w + "px";
       txPanel.style.height = cl.h + "px";
       saveTxSize(cl.w, cl.h);
@@ -4094,7 +4051,7 @@
     function endTxResize(pointerId){
       if (!txResizing) return;
       txResizing = false;
-      try{ txResizeHandle.releasePointerCapture(pointerId); }catch{}
+      try { txResizeHandle.releasePointerCapture(pointerId); } catch {}
       clampTxSizeToViewport();
       clampTxPosToViewport();
     }
@@ -4105,14 +4062,7 @@
     const IA_IDENTIFIER_2 = "FSPneu";
     const IA2_SRC = "S2";
     const IA2_TX_SUBDIR = "FSPab26";
-
-    const IA2_BLOCK_PREFIXES = [
-      "Dusseldorf", "Düsseldorf",
-      "Stuttgart",
-      "Rheutlingen", "Reutlingen",
-      "Sachsen",
-      "Hessen",  "Karlsruhe"
-    ];
+    const IA2_BLOCK_PREFIXES = ["Dusseldorf", "Düsseldorf", "Stuttgart", "Rheutlingen", "Reutlingen", "Sachsen", "Hessen", "Karlsruhe"];
 
     function __ia2EnsureSlashEnd(s){
       s = String(s || "");
@@ -4163,7 +4113,7 @@
           const id = IA2_SRC + "|" + localId;
 
           const txtCandidates = buildTxtNameCandidates({ name });
-          const txtName = (txtCandidates && txtCandidates.length) ? txtCandidates[0] : replaceExtToTxt(name);
+          const txtName = txtCandidates.length ? txtCandidates[0] : replaceExtToTxt(name);
           const txtUrl = txtName ? (__IA2_TXT_BASES[0] + encodeURIComponent(txtName)) : "";
 
           return { id, title, name, url, src: IA2_SRC, txtName, txtUrl };
@@ -4176,9 +4126,7 @@
         const names = buildSrtNameCandidates(it);
         const urls = [];
         for (const name of names){
-          for (const base of __IA2_SRT_BASES){
-            urls.push(base + encodeURIComponent(name));
-          }
+          for (const base of __IA2_SRT_BASES) urls.push(base + encodeURIComponent(name));
         }
         return { urls, triedNames: names };
       }
@@ -4191,9 +4139,7 @@
         const names = buildTxtNameCandidates(it);
         const urls = [];
         for (const name of names){
-          for (const base of __IA2_TXT_BASES){
-            urls.push(base + encodeURIComponent(name));
-          }
+          for (const base of __IA2_TXT_BASES) urls.push(base + encodeURIComponent(name));
         }
         return { urls, triedNames: names };
       }
@@ -4207,7 +4153,6 @@
 
       const j = await res.json();
       const files = Array.isArray(j.files) ? j.files : [];
-
       const s2List = __ia2MakeItemsFromFiles(files);
       const keep = items.filter(it => it?.src !== IA2_SRC);
       items = keep.concat(s2List);
@@ -4226,69 +4171,138 @@
     const __orig_loadItems = loadItems;
     loadItems = async function(){
       await __orig_loadItems();
-      try{ await __ia2MergeFspneuIntoItems(); }catch(e){ console.warn(e); }
+      try { await __ia2MergeFspneuIntoItems(); } catch (e) { console.warn(e); }
     };
-
-    const LS_SKIP_SETTINGS = "fsp1.skip.settings.v1";
 
     const DEFAULT_SKIP_SETTINGS = {
       enabled: false,
       mode: "balanced",
-      strategy: "srt-first",
-      minGapSec: 1.2,
+      strategy: "hybrid",
+      minGapSec: 1.4,
       fadeMs: 120,
       leadInSec: 0.08,
       maxSkipSec: 12,
-      rmsThreshold: 0.012,
+      rmsThreshold: 0.014,
+      confirmMs: 240,
+      fallbackJumpSec: 1.4,
+      cooldownMs: 650
     };
 
-    function loadSkipSettings() {
-      try {
-        const raw = JSON.parse(localStorage.getItem(LS_SKIP_SETTINGS) || "{}");
+    const skipState = {
+      ctx: null,
+      source: null,
+      analyser: null,
+      data: null,
+      rafId: 0,
+      inited: false,
+      skipInFlight: false,
+      lowSinceAt: 0,
+      lastSkipAt: 0,
+      lastGapKey: "",
+      lastSrtItemId: null,
+      manualSuppressUntil: 0
+    };
+
+    function loadSkipSettings(){
+      try{
+        const raw = JSON.parse(localStorage.getItem(LS.skipSettings) || "{}");
         return { ...DEFAULT_SKIP_SETTINGS, ...raw };
-      } catch {
+      }catch{
         return { ...DEFAULT_SKIP_SETTINGS };
       }
     }
 
-    function saveSkipSettings() {
-      localStorage.setItem(LS_SKIP_SETTINGS, JSON.stringify(skipSettings));
+    function saveSkipSettings(){
+      localStorage.setItem(LS.skipSettings, JSON.stringify(skipSettings));
+    }
+
+    function loadSkipDrawerOpen(){
+      return localStorage.getItem(LS.skipDrawerOpen) === "1";
+    }
+
+    function saveSkipDrawerOpen(isOpen){
+      localStorage.setItem(LS.skipDrawerOpen, isOpen ? "1" : "0");
     }
 
     let skipSettings = loadSkipSettings();
 
-    function applySkipPreset(mode) {
-      if (mode === "light") {
-        skipSettings.mode = "light";
-        skipSettings.minGapSec = 1.8;
-        skipSettings.fadeMs = 140;
-        skipSettings.leadInSec = 0.10;
-        skipSettings.maxSkipSec = 8;
-        skipSettings.rmsThreshold = 0.010;
-      } else if (mode === "aggressive") {
-        skipSettings.mode = "aggressive";
-        skipSettings.minGapSec = 0.8;
-        skipSettings.fadeMs = 80;
-        skipSettings.leadInSec = 0.05;
-        skipSettings.maxSkipSec = 15;
-        skipSettings.rmsThreshold = 0.016;
+    function applySkipPreset(mode){
+      if (mode === "light"){
+        Object.assign(skipSettings, {
+          mode: "light",
+          strategy: "hybrid",
+          minGapSec: 1.8,
+          fadeMs: 140,
+          leadInSec: 0.10,
+          maxSkipSec: 8,
+          rmsThreshold: 0.012,
+          confirmMs: 280,
+          fallbackJumpSec: 1.0,
+          cooldownMs: 700
+        });
+      } else if (mode === "aggressive"){
+        Object.assign(skipSettings, {
+          mode: "aggressive",
+          strategy: "hybrid",
+          minGapSec: 1.0,
+          fadeMs: 90,
+          leadInSec: 0.05,
+          maxSkipSec: 18,
+          rmsThreshold: 0.018,
+          confirmMs: 180,
+          fallbackJumpSec: 1.8,
+          cooldownMs: 520
+        });
+      } else if (mode === "ultra"){
+        Object.assign(skipSettings, {
+          mode: "ultra",
+          strategy: "hybrid",
+          minGapSec: 0.7,
+          fadeMs: 60,
+          leadInSec: 0.04,
+          maxSkipSec: 24,
+          rmsThreshold: 0.022,
+          confirmMs: 130,
+          fallbackJumpSec: 2.2,
+          cooldownMs: 420
+        });
+      } else if (mode === "max"){
+        Object.assign(skipSettings, {
+          mode: "max",
+          strategy: "hybrid",
+          minGapSec: 0.4,
+          fadeMs: 30,
+          leadInSec: 0.02,
+          maxSkipSec: 36,
+          rmsThreshold: 0.028,
+          confirmMs: 90,
+          fallbackJumpSec: 2.8,
+          cooldownMs: 300
+        });
       } else {
-        skipSettings.mode = "balanced";
-        skipSettings.minGapSec = 1.2;
-        skipSettings.fadeMs = 120;
-        skipSettings.leadInSec = 0.08;
-        skipSettings.maxSkipSec = 12;
-        skipSettings.rmsThreshold = 0.012;
+        Object.assign(skipSettings, {
+          mode: "balanced",
+          strategy: "hybrid",
+          minGapSec: 1.4,
+          fadeMs: 120,
+          leadInSec: 0.08,
+          maxSkipSec: 12,
+          rmsThreshold: 0.014,
+          confirmMs: 240,
+          fallbackJumpSec: 1.4,
+          cooldownMs: 650
+        });
       }
 
-      syncSkipUi();
       saveSkipSettings();
+      syncSkipUi();
     }
 
-    function syncSkipUi() {
+    function syncSkipUi(){
       const open = !skipDrawer.hidden;
 
       skipDrawerBtn.classList.toggle("on", open || skipSettings.enabled);
+      skipDrawerBtn.classList.toggle("breathing", !!skipSettings.enabled);
       skipDrawerBtn.setAttribute("aria-expanded", String(open));
 
       skipEnableBtn.textContent = "Sessiz atlama: " + (skipSettings.enabled ? "Açık" : "Kapalı");
@@ -4297,17 +4311,23 @@
       skipModeLight.classList.toggle("on", skipSettings.mode === "light");
       skipModeBalanced.classList.toggle("on", skipSettings.mode === "balanced");
       skipModeAggressive.classList.toggle("on", skipSettings.mode === "aggressive");
+      skipModeUltra.classList.toggle("on", skipSettings.mode === "ultra");
+      skipModeMax.classList.toggle("on", skipSettings.mode === "max");
 
       skipMinGapRange.value = String(skipSettings.minGapSec);
       skipMinGapValue.textContent = `${Number(skipSettings.minGapSec).toFixed(1)}s`;
 
       skipFadeRange.value = String(skipSettings.fadeMs);
       skipFadeValue.textContent = `${Math.round(skipSettings.fadeMs)}ms`;
+
+      skipEngineLabel.textContent = "Hybrid";
+      skipHintEl.textContent = "Hybrid: SRT boşluğu aday alır, sesi doğrular, güvenliyse atlar.";
     }
 
-    function toggleSkipDrawer(force) {
+    function toggleSkipDrawer(force){
       const shouldOpen = typeof force === "boolean" ? force : skipDrawer.hidden;
       skipDrawer.hidden = !shouldOpen;
+      saveSkipDrawerOpen(shouldOpen);
       syncSkipUi();
       setTimeout(() => clampPlayerToViewport(), 0);
     }
@@ -4317,15 +4337,19 @@
       toggleSkipDrawer();
     });
 
-    skipEnableBtn.addEventListener("click", () => {
+    skipEnableBtn.addEventListener("click", async () => {
       skipSettings.enabled = !skipSettings.enabled;
       saveSkipSettings();
       syncSkipUi();
+      if (skipSettings.enabled) await ensureSkipAudioGraph();
+      resetSkipRuntimeForManualAction();
     });
 
     skipModeLight.addEventListener("click", () => applySkipPreset("light"));
     skipModeBalanced.addEventListener("click", () => applySkipPreset("balanced"));
     skipModeAggressive.addEventListener("click", () => applySkipPreset("aggressive"));
+    skipModeUltra.addEventListener("click", () => applySkipPreset("ultra"));
+    skipModeMax.addEventListener("click", () => applySkipPreset("max"));
 
     skipMinGapRange.addEventListener("input", () => {
       skipSettings.minGapSec = Number(skipMinGapRange.value);
@@ -4339,11 +4363,252 @@
       syncSkipUi();
     });
 
-    document.addEventListener("click", (e) => {
-      if (skipDrawer.hidden) return;
-      if (fp.contains(e.target)) return;
-      toggleSkipDrawer(false);
+    function resetSkipRuntimeForNewTrack(){
+      skipState.lowSinceAt = 0;
+      skipState.lastGapKey = "";
+      skipState.skipInFlight = false;
+      skipState.manualSuppressUntil = performance.now() + 1200;
+    }
+
+    function resetSkipRuntimeForManualAction(){
+      skipState.lowSinceAt = 0;
+      skipState.lastGapKey = "";
+      skipState.skipInFlight = false;
+      skipState.manualSuppressUntil = performance.now() + 1000;
+    }
+
+    playerEl.addEventListener("seeking", resetSkipRuntimeForManualAction);
+    playerEl.addEventListener("seeked", resetSkipRuntimeForManualAction);
+    playerEl.addEventListener("pause", () => { skipState.lowSinceAt = 0; });
+    playerEl.addEventListener("ended", () => { skipState.lowSinceAt = 0; });
+
+    async function ensureSkipAudioGraph(){
+      if (skipState.inited) {
+        if (skipState.ctx && skipState.ctx.state === "suspended"){
+          try { await skipState.ctx.resume(); } catch {}
+        }
+        if (!skipState.rafId) skipState.rafId = requestAnimationFrame(skipLoop);
+        return true;
+      }
+
+      try{
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return false;
+
+        skipState.ctx = new AudioCtx();
+        skipState.source = skipState.ctx.createMediaElementSource(playerEl);
+        skipState.analyser = skipState.ctx.createAnalyser();
+        skipState.analyser.fftSize = 2048;
+        skipState.analyser.smoothingTimeConstant = 0.18;
+        skipState.data = new Float32Array(skipState.analyser.fftSize);
+
+        skipState.source.connect(skipState.analyser);
+        skipState.analyser.connect(skipState.ctx.destination);
+
+        skipState.inited = true;
+
+        if (skipState.ctx.state === "suspended"){
+          try { await skipState.ctx.resume(); } catch {}
+        }
+
+        if (!skipState.rafId) skipState.rafId = requestAnimationFrame(skipLoop);
+        return true;
+      }catch(err){
+        console.warn("Skip audio graph kurulamadı:", err);
+        return false;
+      }
+    }
+
+    function getCurrentRms(){
+      if (!skipState.analyser || !skipState.data) return null;
+      try{
+        skipState.analyser.getFloatTimeDomainData(skipState.data);
+        let sum = 0;
+        for (let i = 0; i < skipState.data.length; i++){
+          const v = skipState.data[i];
+          sum += v * v;
+        }
+        return Math.sqrt(sum / skipState.data.length);
+      }catch{
+        return null;
+      }
+    }
+
+    function canSkipNow(nowMs){
+      if (!skipSettings.enabled) return false;
+      if (!playerEl || playerEl.paused || playerEl.seeking) return false;
+      if (!Number.isFinite(playerEl.currentTime)) return false;
+      if (!Number.isFinite(playerEl.duration) || playerEl.duration <= 0) return false;
+      if (segEndTime != null) return false;
+      if (skipState.skipInFlight) return false;
+      if (nowMs < skipState.manualSuppressUntil) return false;
+      if ((nowMs - skipState.lastSkipAt) < skipSettings.cooldownMs) return false;
+      if (playerEl.currentTime < 1.2) return false;
+      return true;
+    }
+
+    function getHybridGapCandidate(currentTime){
+      if (!activeCues.length) return null;
+
+      const prevIdx = findPrevCueIdx(activeCues, currentTime);
+      const nextIdx = findNextCueIdx(activeCues, currentTime);
+      if (prevIdx === -1 || nextIdx === -1) return null;
+
+      const prev = activeCues[prevIdx];
+      const next = activeCues[nextIdx];
+      const gapStart = prev.end;
+      const gapEnd = next.start;
+      const gapLen = gapEnd - gapStart;
+
+      if (!(gapLen >= skipSettings.minGapSec)) return null;
+      if (currentTime < gapStart + 0.06) return null;
+
+      const target = Math.min(
+        Math.max(currentTime, next.start - skipSettings.leadInSec),
+        gapStart + skipSettings.maxSkipSec
+      );
+
+      if (!(target > currentTime + 0.10)) return null;
+
+      return {
+        key: `${prevIdx}:${nextIdx}:${gapStart.toFixed(3)}:${gapEnd.toFixed(3)}`,
+        gapStart,
+        gapEnd,
+        gapLen,
+        target
+      };
+    }
+
+    async function fadePlayerVolume(from, to, ms){
+      const duration = Math.max(0, Number(ms) || 0);
+      if (duration <= 0){
+        try { playerEl.volume = Math.max(0, Math.min(1, to)); } catch {}
+        return;
+      }
+
+      const start = performance.now();
+      const diff = to - from;
+
+      return new Promise((resolve) => {
+        function step(now){
+          const p = Math.min(1, (now - start) / duration);
+          const eased = p < 1 ? (1 - Math.pow(1 - p, 3)) : 1;
+          try { playerEl.volume = Math.max(0, Math.min(1, from + diff * eased)); } catch {}
+          if (p < 1) requestAnimationFrame(step);
+          else resolve();
+        }
+        requestAnimationFrame(step);
+      });
+    }
+
+    async function performSkipSeek(targetTime){
+      if (skipState.skipInFlight) return;
+      skipState.skipInFlight = true;
+
+      const originalVol = Number(playerEl.volume);
+      const fadeMs = Math.max(0, Number(skipSettings.fadeMs) || 0);
+      const dur = Number(playerEl.duration) || 0;
+      const safeTarget = Number.isFinite(dur) && dur > 0
+        ? Math.min(Math.max(0, targetTime), Math.max(0, dur - 0.05))
+        : Math.max(0, targetTime);
+
+      try{
+        await fadePlayerVolume(originalVol, Math.max(0, originalVol * 0.18), Math.floor(fadeMs / 2));
+        playerEl.currentTime = safeTarget;
+        skipState.manualSuppressUntil = performance.now() + Math.max(220, fadeMs + 120);
+        await fadePlayerVolume(Math.max(0, originalVol * 0.18), originalVol, Math.ceil(fadeMs / 2));
+      }catch(err){
+        console.warn("Skip seek failed:", err);
+      }finally{
+        skipState.lastSkipAt = performance.now();
+        skipState.skipInFlight = false;
+        skipState.lowSinceAt = 0;
+      }
+    }
+
+    function maybeArmLowRms(nowMs, rms){
+      if (rms == null || rms > skipSettings.rmsThreshold){
+        skipState.lowSinceAt = 0;
+        return false;
+      }
+      if (!skipState.lowSinceAt) skipState.lowSinceAt = nowMs;
+      return (nowMs - skipState.lowSinceAt) >= skipSettings.confirmMs;
+    }
+
+    async function maybeSkipByHybrid(nowMs, currentTime, rms){
+      const gap = getHybridGapCandidate(currentTime);
+      if (!gap){
+        return false;
+      }
+
+      if (gap.key === skipState.lastGapKey){
+        if ((nowMs - skipState.lastSkipAt) < skipSettings.cooldownMs) return false;
+      }
+
+      const lowEnough = maybeArmLowRms(nowMs, rms);
+      if (!lowEnough) return false;
+
+      skipState.lastGapKey = gap.key;
+      await performSkipSeek(gap.target);
+      return true;
+    }
+
+    async function maybeSkipByFallbackAudio(nowMs, currentTime, rms){
+      const lowEnough = maybeArmLowRms(nowMs, rms);
+      if (!lowEnough) return false;
+
+      const jump = Math.min(skipSettings.maxSkipSec, Math.max(0.6, skipSettings.fallbackJumpSec));
+      const target = currentTime + jump;
+      await performSkipSeek(target);
+      return true;
+    }
+
+    async function skipLoop(){
+      skipState.rafId = 0;
+      const nowMs = performance.now();
+
+      if (skipSettings.enabled && skipState.ctx && skipState.ctx.state === "suspended"){
+        try { await skipState.ctx.resume(); } catch {}
+      }
+
+      if (canSkipNow(nowMs)){
+        const currentTime = Number(playerEl.currentTime) || 0;
+        const rms = getCurrentRms();
+
+        let skipped = false;
+        if (skipSettings.strategy === "hybrid"){
+          skipped = await maybeSkipByHybrid(nowMs, currentTime, rms);
+          if (!skipped && !activeCues.length){
+            skipped = await maybeSkipByFallbackAudio(nowMs, currentTime, rms);
+          }
+        } else {
+          skipped = await maybeSkipByFallbackAudio(nowMs, currentTime, rms);
+        }
+
+        if (!skipped && (rms == null || rms > skipSettings.rmsThreshold)){
+          skipState.lowSinceAt = 0;
+        }
+      }
+
+      skipState.rafId = requestAnimationFrame(skipLoop);
+    }
+
+    playerEl.addEventListener("play", async () => {
+      if (skipSettings.enabled) await ensureSkipAudioGraph();
     });
+
+    function isSkipAvailable(){
+      return !!window.AudioContext || !!window.webkitAudioContext;
+    }
+
+    function setSkipStatusText(){
+      if (!skipSettings.enabled) return;
+      if (!isSkipAvailable()){
+        statusEl.textContent = "Sessizlik atlama bu tarayıcıda desteklenmiyor.";
+      }
+    }
+
+    const SEARCH_NODE_DEBOUNCE = 0;
 
     setSortIcons();
     restoreUiState();
@@ -4353,7 +4618,9 @@
     setCaptionUi();
     updateOverlayScale();
     setTxtBtnUi();
+    skipDrawer.hidden = !loadSkipDrawerOpen();
     syncSkipUi();
+    setSkipStatusText();
 
     requestAnimationFrame(() => {
       measureStickyStartTop();
@@ -4365,10 +4632,8 @@
 
       const maxN = Math.min(items.length, 350);
       const subset = items.slice(0, maxN);
-
       let missing = 0;
       let checked = 0;
-
       const concurrency = 8;
       const q = subset.slice();
 
@@ -4378,7 +4643,7 @@
           if (r.ok) return true;
         }catch{}
         try{
-          const r = await fetch(url, { method: "GET", cache: "no-store", headers: { "range": "bytes=0-1" } });
+          const r = await fetch(url, { method: "GET", cache: "no-store", headers: { range: "bytes=0-1" } });
           return r.ok;
         }catch{
           return false;
@@ -4409,7 +4674,7 @@
       statusEl.textContent = `SRT kontrol bitti: ${checked}/${maxN} (eksik: ${missing})`;
     }
 
-    setTimeout(clampPlayerToViewport, 0);
+    setTimeout(clampPlayerToViewport, SEARCH_NODE_DEBOUNCE);
     loadItems();
     setTimeout(() => checkSrtAvailability().catch(()=>{}), 1200);
   </script>
