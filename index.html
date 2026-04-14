@@ -79,7 +79,6 @@
       will-change: transform;
     }
 
-    /* == Header like 21–23 == */
     .pageTitle{
       font-size: 1.7rem;
       font-weight: 800;
@@ -88,7 +87,7 @@
       padding: 12px 16px;
       border-radius: 14px;
       margin-bottom: 14px;
-      display: flex; /* was: none */
+      display: flex;
       align-items:center;
       justify-content: space-between;
       gap: 10px;
@@ -147,7 +146,6 @@
       flex-wrap: wrap;
     }
 
-    /* Sticky bar (CSS sticky where it works, JS docks it where it doesn't) */
     #stickyBar{
       position: sticky;
       top: 0;
@@ -265,7 +263,6 @@
       line-height: 1.05;
     }
 
-    /* 6 column layout (TXT column removed from list; now in player) */
     .headerRow, .itemRow{
       display: grid;
       grid-template-columns: minmax(0, 1fr) 8ch 54px 36px 36px 54px;
@@ -464,20 +461,16 @@
       bottom: max(18px, env(safe-area-inset-bottom));
       width: min(720px, calc(100vw - 36px));
       background: white;
-
       border: 1.5px solid #d6d6d6;
       border-right-color: #bdbdbd;
       border-bottom-color:#b3b3b3;
       border-radius: 18px;
-
       box-shadow:
         10px 34px 86px rgba(0,0,0,.20),
         4px 14px 30px rgba(0,0,0,.10),
         0px 2px 6px rgba(0,0,0,.06);
-
       overflow: visible;
       z-index: 9999;
-
       -webkit-transform: translateZ(0);
       transform: translateZ(0);
       transform-origin: top left;
@@ -486,7 +479,6 @@
       touch-action: none;
     }
 
-    /* Typing mode: do not block pointer events */
     #floatingPlayer.hiddenWhileTyping{ opacity: .35; }
 
     #fpHeader{
@@ -495,16 +487,13 @@
       justify-content:space-between;
       padding: 10px 12px;
       background: #fbfbfb;
-
       cursor: grab;
       user-select:none;
       gap: 10px;
       touch-action: none;
       line-height: 1.05;
-
       border-bottom: none;
       position: relative;
-
       box-shadow:
         inset 0 1px 0 rgba(255,255,255,.85),
         inset 0 -1px 0 rgba(0,0,0,.04);
@@ -641,7 +630,6 @@
       font-weight: 650;
     }
 
-    /* Sidebar */
     #sbOverlay{
       position: fixed;
       left: 0; top: 0;
@@ -764,7 +752,6 @@
       margin-top: 6px;
     }
 
-    /* Transcript popup */
     #txPanel{
       position: fixed;
       z-index: 10050;
@@ -969,7 +956,6 @@
     }
     #txResizeHandle svg{ width: 22px; height: 22px; opacity: .88; }
 
-    /* Captions */
     .miniBtn.on{
       border-color: var(--blue);
       background: rgba(43,124,255,.10);
@@ -1004,7 +990,6 @@
     }
     #captions{ pointer-events: auto; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 
-    /* cc / CC / CCx buttons */
     .ccModeBtn{
       width: auto;
       min-width: 42px;
@@ -1026,7 +1011,6 @@
     .ccModeBtn.on .btnMark{ color: var(--orange); }
     .ccModeBtn:not(.on) .btnMark{ color: #404040; }
 
-    /* TXT toggle button in player header */
     #fpTxtBtn{
       width: auto;
       min-width: 56px;
@@ -1051,6 +1035,73 @@
     }
     #fpTxtBtn.on .btnMark{ color: #0b5fff; }
 
+    #skipDrawerBtn{
+      width:auto;
+      min-width:60px;
+      padding:0 12px;
+      border-radius:12px;
+    }
+    #skipDrawerBtn .btnMark{
+      font-weight:900;
+      font-size:14px;
+      letter-spacing:.4px;
+      line-height:1;
+    }
+    #skipDrawerBtn.on{
+      border-color: var(--green);
+      background: rgba(22,163,74,.12);
+      box-shadow: var(--greenGlow);
+    }
+
+    .skipDrawer{
+      padding: 0 12px 12px 12px;
+      animation: skipDrawerIn .18s ease;
+    }
+    .skipDrawerInner{
+      border: 1px solid #e2e2e2;
+      border-radius: 14px;
+      background: #fbfbfb;
+      padding: 10px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+    }
+    .skipRow{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-bottom:8px;
+    }
+    .skipRangeRow label{
+      min-width:110px;
+      font-size:.92rem;
+      font-weight:650;
+    }
+    .skipRangeRow input[type="range"]{
+      flex:1 1 180px;
+    }
+    .skipRangeRow span{
+      min-width:64px;
+      text-align:right;
+      font-variant-numeric: tabular-nums;
+      color:#404040;
+      font-size:.92rem;
+    }
+    .skipHint{
+      color: var(--muted);
+      font-size: .88rem;
+      line-height: 1.2;
+      margin-top: 4px;
+    }
+    @keyframes skipDrawerIn{
+      from{
+        opacity:0;
+        transform:translateY(-6px);
+      }
+      to{
+        opacity:1;
+        transform:translateY(0);
+      }
+    }
   </style>
 </head>
 
@@ -1073,10 +1124,9 @@
         <a class="navLink" href="https://protokolfsp.github.io/Tlcfsp/">TLC</a>
         <a class="navLink" href="https://protokolfsp.github.io/MenschiB/">MenschiB</a>
         <a class="navLink" href="https://protokolfsp.github.io/FSP-pdfs/">FSP-PDFs</a>
-        
         <a class="navLink" href="https://protokolfsp.github.io/FSP_DrYemliha/">DrYemliha Notları</a>
         <a class="navLink" href="https://protokolfsp.github.io/FSP-Notlari/">FSP-NOTLARI</a>
-        <a class="navLink" href="https://protokolfsp.github.io/FSPatelier/?refresh=1/">FSPatelier</a> 
+        <a class="navLink" href="https://protokolfsp.github.io/FSPatelier/?refresh=1/">FSPatelier</a>
       </nav>
 
       <div id="stickyBar">
@@ -1164,7 +1214,6 @@
     </div>
   </div>
 
-  <!-- Sidebar -->
   <div id="sbOverlay" aria-hidden="true">
     <div id="sidebar" role="dialog" aria-label="Menü">
       <div id="sbHeader">
@@ -1227,6 +1276,10 @@
           <span class="btnMark">TXT</span>
         </button>
 
+        <button id="skipDrawerBtn" class="miniBtn" type="button" title="Sessiz atlama ayarları" aria-expanded="false" aria-controls="skipDrawer">
+          <span class="btnMark">SKIP</span>
+        </button>
+
         <div id="speedWrap" class="speedWrap" aria-label="Hız">
           <button id="slowBtn" class="speedCtlBtn" type="button" title="Yavaşlat (🐢)">🐢</button>
           <div id="speedValue" class="speedValue on" title="Oynatma hızı">1×</div>
@@ -1248,9 +1301,38 @@
     <div id="fpBody">
       <audio id="player" class="js-player" controls preload="metadata"></audio>
     </div>
+
+    <div id="skipDrawer" class="skipDrawer" hidden>
+      <div class="skipDrawerInner">
+        <div class="skipRow">
+          <button id="skipEnableBtn" class="sbBtn" type="button">Sessiz atlama: Kapalı</button>
+        </div>
+
+        <div class="skipRow">
+          <button id="skipModeLight" class="sbBtn" type="button">Hafif</button>
+          <button id="skipModeBalanced" class="sbBtn on" type="button">Dengeli</button>
+          <button id="skipModeAggressive" class="sbBtn" type="button">Agresif</button>
+        </div>
+
+        <div class="skipRow skipRangeRow">
+          <label for="skipMinGapRange">Min. sessizlik</label>
+          <input id="skipMinGapRange" type="range" min="0.5" max="3.0" step="0.1" value="1.2" />
+          <span id="skipMinGapValue">1.2s</span>
+        </div>
+
+        <div class="skipRow skipRangeRow">
+          <label for="skipFadeRange">Geçiş</label>
+          <input id="skipFadeRange" type="range" min="0" max="250" step="10" value="120" />
+          <span id="skipFadeValue">120ms</span>
+        </div>
+
+        <div class="skipHint">
+          SRT varsa konuşma boşluklarına göre atla. Yoksa ses analizine düş.
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Transcript popup -->
   <div id="txPanel" role="dialog" aria-label="Transkript" aria-hidden="true">
     <div id="txHeader">
       <div id="txTitle">Transkript</div>
@@ -1306,12 +1388,6 @@
   <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
   <script>
-    /* === ORIGINAL SCRIPT (same logic), ONLY minimal edits:
-       - TXT moved to player button
-       - captions click -> replay segment
-       - page title shown
-    */
-
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
     const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
@@ -1374,6 +1450,16 @@
     const ccXBtn     = document.getElementById("ccXBtn");
 
     const fpTxtBtn   = document.getElementById("fpTxtBtn");
+    const skipDrawerBtn = document.getElementById("skipDrawerBtn");
+    const skipDrawer = document.getElementById("skipDrawer");
+    const skipEnableBtn = document.getElementById("skipEnableBtn");
+    const skipModeLight = document.getElementById("skipModeLight");
+    const skipModeBalanced = document.getElementById("skipModeBalanced");
+    const skipModeAggressive = document.getElementById("skipModeAggressive");
+    const skipMinGapRange = document.getElementById("skipMinGapRange");
+    const skipMinGapValue = document.getElementById("skipMinGapValue");
+    const skipFadeRange = document.getElementById("skipFadeRange");
+    const skipFadeValue = document.getElementById("skipFadeValue");
 
     const captionsDock = document.getElementById("captionsDock");
     const captionsEl = document.getElementById("captions");
@@ -1391,7 +1477,6 @@
     const sortDlCountBtn  = document.getElementById("sortDlCountBtn");
     const sortDlCountIcon = document.getElementById("sortDlCountIcon");
 
-    // Sidebar nodes
     const sidebarOpenBtn = document.getElementById("sidebarOpenBtn");
     const sbOverlay = document.getElementById("sbOverlay");
     const sbCloseBtn = document.getElementById("sbCloseBtn");
@@ -1404,7 +1489,6 @@
     const sbSortDlBtn = document.getElementById("sbSortDlBtn");
     const sbClearTxCacheBtn = document.getElementById("sbClearTxCacheBtn");
 
-    // Transcript popup nodes
     const txPanel = document.getElementById("txPanel");
     const txHeader = document.getElementById("txHeader");
     const txResizeHandle = document.getElementById("txResizeHandle");
@@ -1608,12 +1692,10 @@
       speed: "fsp1.speed.v1",
       zoom:  "fsp1.ui.zoom.v1",
       captionsMode: "fsp1.captions.mode.v1",
-
       itemsCache:   "fsp1.items.cache.s1.v2",
       itemsCacheAt: "fsp1.items.cache.s1.at.v1",
       metaUpdated:  "fsp1.items.meta.updated.s1.v1",
       uiState:      "fsp1.ui.state.v1",
-
       txSize: "fsp1.tx.size.v1",
       txPos:  "fsp1.tx.pos.v1"
     };
@@ -1627,7 +1709,6 @@
     let durs  = loadMap(LS.durs);
 
     let filterFav  = false;
-
     let items = [];
     let activeId = null;
     let selectedId = null;
@@ -1676,8 +1757,8 @@
     });
 
     const ALLOWED_SORT = new Set(["title","date","dur","play","download"]);
-let sortMode = localStorage.getItem(LS.sortMode) || "date";
-if (!ALLOWED_SORT.has(sortMode)) sortMode = "date";
+    let sortMode = localStorage.getItem(LS.sortMode) || "date";
+    if (!ALLOWED_SORT.has(sortMode)) sortMode = "date";
     let durSortDir  = (localStorage.getItem(LS.sortDirDur) === "desc") ? "desc" : "asc";
     let dateSortDir = (localStorage.getItem(LS.sortDirDate) === "asc") ? "asc" : "desc";
     let playSortDir = (localStorage.getItem(LS.sortDirPlay) === "asc") ? "asc" : "desc";
@@ -1941,7 +2022,6 @@ if (!ALLOWED_SORT.has(sortMode)) sortMode = "date";
       try { return decodeURIComponent(s); } catch { return s; }
     }
 
-    // ---- SRT Captions ----
     const CAPTION_MODES = ["cc", "CC", "CCx"];
 
     function readCaptionMode(){
@@ -2127,92 +2207,61 @@ if (!ALLOWED_SORT.has(sortMode)) sortMode = "date";
       return parts;
     }
 
-    function trimLinesAroundActive(lines, maxLines){
-      if (lines.length <= maxLines) return { lines, activeStart: -1, activeEnd: -1 };
+    let segEndTime = null;
+    let segResumeAfter = false;
+    let segResumeTime = null;
 
-      let activeStart = lines.findIndex(l => l.isActive);
-      let activeEnd = lines.length - 1 - [...lines].reverse().findIndex(l => l.isActive);
-      if (activeStart < 0) activeStart = activeEnd = Math.floor(lines.length / 2);
-
-      let start = 0;
-      let end = lines.length - 1;
-
-      while ((end - start + 1) > maxLines){
-        const distTop = activeStart - start;
-        const distBot = end - activeEnd;
-        if (distTop > distBot) start += 1;
-        else end -= 1;
-      }
-
-      const sliced = lines.slice(start, end + 1);
-      const newActiveStart = Math.max(0, activeStart - start);
-      const newActiveEnd = Math.max(newActiveStart, activeEnd - start);
-
-      return { lines: sliced, activeStart: newActiveStart, activeEnd: newActiveEnd };
+    function armSegmentEnd(end, resumeAfter, resumeTime){
+      segEndTime = (Number.isFinite(end) ? end : null);
+      segResumeAfter = !!resumeAfter;
+      segResumeTime = (Number.isFinite(resumeTime) ? resumeTime : null);
     }
 
-   // segment replay support (FIX: segment bitince akış devam etsin)
-let segEndTime = null;
-let segResumeAfter = false;
-let segResumeTime = null;
+    function maybeStopAtSegmentEnd(){
+      if (segEndTime == null) return;
 
-function armSegmentEnd(end, resumeAfter, resumeTime){
-  segEndTime = (Number.isFinite(end) ? end : null);
-  segResumeAfter = !!resumeAfter;
-  segResumeTime = (Number.isFinite(resumeTime) ? resumeTime : null);
-}
+      const t = Number(playerEl.currentTime) || 0;
+      if (t < (segEndTime - 0.03)) return;
 
-function maybeStopAtSegmentEnd(){
-  if (segEndTime == null) return;
+      const resumeAfter = segResumeAfter;
+      const resumeTime = segResumeTime;
 
-  const t = Number(playerEl.currentTime) || 0;
-  if (t < (segEndTime - 0.03)) return;
+      segEndTime = null;
+      segResumeAfter = false;
+      segResumeTime = null;
 
-  const resumeAfter = segResumeAfter;
-  const resumeTime = segResumeTime;
+      if (resumeAfter){
+        try{
+          const dur = Number(playerEl.duration);
+          const target = Number.isFinite(resumeTime) ? resumeTime : (t + 0.01);
+          const safeTarget = Number.isFinite(dur) && dur > 0
+            ? Math.min(Math.max(0, target), Math.max(0, dur - 0.05))
+            : Math.max(0, target);
 
-  segEndTime = null;
-  segResumeAfter = false;
-  segResumeTime = null;
+          playerEl.currentTime = safeTarget;
+          const p = plyr.play();
+          if (p && typeof p.catch === "function") p.catch(()=>{});
+          return;
+        }catch{}
+      }
 
-  // Segment bitince: daha önce çalıyorsa kaldığı yerden devam
-  if (resumeAfter){
-    try{
-      const dur = Number(playerEl.duration);
-      const target = Number.isFinite(resumeTime) ? resumeTime : (t + 0.01);
-      const safeTarget = Number.isFinite(dur) && dur > 0
-        ? Math.min(Math.max(0, target), Math.max(0, dur - 0.05))
-        : Math.max(0, target);
+      try{ plyr.pause(); }catch{}
+    }
 
-      playerEl.currentTime = safeTarget;
+    playerEl.addEventListener("timeupdate", maybeStopAtSegmentEnd);
 
-      const p = plyr.play();
-      if (p && typeof p.catch === "function") p.catch(()=>{});
-      return;
-    }catch{}
-  }
+    function playSegment(start, end){
+      if (!Number.isFinite(start) || !Number.isFinite(end) || !(end > start)) return;
+      const resumeAfter = !playerEl.paused;
+      const resumeTime = end + 0.01;
 
-  // Daha önce paused ise: eski davranış (segment biter bitmez dur)
-  try{ plyr.pause(); }catch{}
-}
-
-playerEl.addEventListener("timeupdate", maybeStopAtSegmentEnd);
-
-function playSegment(start, end){
-  if (!Number.isFinite(start) || !Number.isFinite(end) || !(end > start)) return;
-
-  // Tıklamadan önce çalıyorsa: segment bitince devam et
-  const resumeAfter = !playerEl.paused;
-  const resumeTime = end + 0.01;
-
-  try{
-    armSegmentEnd(end, resumeAfter, resumeTime);
-    playerEl.currentTime = Math.max(0, start + 0.01);
-
-    const p = plyr.play();
-    if (p && typeof p.catch === "function") p.catch(()=>{});
-  }catch{}
-}
+      try{
+        armSegmentEnd(end, resumeAfter, resumeTime);
+        playerEl.currentTime = Math.max(0, start + 0.01);
+        const p = plyr.play();
+        if (p && typeof p.catch === "function") p.catch(()=>{});
+      }catch{}
+    }
 
     function renderCaptionLines(lines){
       if (!captionsEl) return;
@@ -2258,6 +2307,30 @@ function playSegment(start, end){
       setTimeout(() => clampPlayerToViewport(), 0);
     }
 
+    function trimLinesAroundActive(lines, maxLines){
+      if (lines.length <= maxLines) return { lines, activeStart: -1, activeEnd: -1 };
+
+      let activeStart = lines.findIndex(l => l.isActive);
+      let activeEnd = lines.length - 1 - [...lines].reverse().findIndex(l => l.isActive);
+      if (activeStart < 0) activeStart = activeEnd = Math.floor(lines.length / 2);
+
+      let start = 0;
+      let end = lines.length - 1;
+
+      while ((end - start + 1) > maxLines){
+        const distTop = activeStart - start;
+        const distBot = end - activeEnd;
+        if (distTop > distBot) start += 1;
+        else end -= 1;
+      }
+
+      const sliced = lines.slice(start, end + 1);
+      const newActiveStart = Math.max(0, activeStart - start);
+      const newActiveEnd = Math.max(newActiveStart, activeEnd - start);
+
+      return { lines: sliced, activeStart: newActiveStart, activeEnd: newActiveEnd };
+    }
+
     function onCaptionsTimeupdate(){
       if (!isCaptionsOn()) return;
       if (!activeCues.length) return;
@@ -2286,7 +2359,6 @@ function playSegment(start, end){
 
     if (playerEl) playerEl.addEventListener("timeupdate", onCaptionsTimeupdate);
 
-    // click on captions => replay clicked sentence-block (works for cc/CC/CCx)
     captionsEl.addEventListener("click", (e) => {
       if (!isCaptionsOn()) return;
       if (!activeCues.length) return;
@@ -2579,7 +2651,6 @@ function playSegment(start, end){
       render();
     });
 
-    // Sticky docking
     let stickyStartTop = null;
     let stickyDocked = false;
     let stickyHomeParent = null;
@@ -3287,10 +3358,12 @@ function playSegment(start, end){
         ? captionsEl.getBoundingClientRect().height
         : 0;
 
+      const drawerH = (!skipDrawer.hidden) ? skipDrawer.getBoundingClientRect().height : 0;
+
       const minX = -w + keepX;
       const maxX = vw - keepX;
       const minY = -h + keepY + capH;
-      const maxY = vh - keepY;
+      const maxY = vh - keepY - Math.min(drawerH, 120);
 
       return {
         minX: Math.min(minX, maxX),
@@ -3455,7 +3528,6 @@ function playSegment(start, end){
       });
     })();
 
-    // Sidebar behavior
     function openSidebar(){
       sbOverlay.classList.add("open");
       sbOverlay.setAttribute("aria-hidden", "false");
@@ -3519,7 +3591,6 @@ function playSegment(start, end){
     sbSortPlayBtn.addEventListener("click", () => clickSort("play"));
     sbSortDlBtn.addEventListener("click", () => clickSort("download"));
 
-    // Transcript logic
     let txOpen = false;
     let txCurrent = null;
     let txPlainText = "";
@@ -3887,7 +3958,6 @@ function playSegment(start, end){
       }
       const it = items.find(x => x.id === activeId) || items.find(x => x.id === selectedId) || null;
       if (!it){
-        // still open empty panel (so second click closes)
         openTranscript();
         txTitleEl.textContent = "Transkript";
         txInfoEl.textContent = "—";
@@ -3915,7 +3985,6 @@ function playSegment(start, end){
 
     txPanel.addEventListener("click", (e) => e.stopPropagation());
 
-    // Draggable transcript panel
     const TX_DRAG_IGNORE_SELECTOR = "button, a, input, textarea, select, option";
     function shouldStartTxDrag(target){
       return !(target && target.closest && target.closest(TX_DRAG_IGNORE_SELECTOR));
@@ -3967,7 +4036,6 @@ function playSegment(start, end){
     txHeader.addEventListener("pointerup", (e) => endTxDrag(e.pointerId));
     txHeader.addEventListener("pointercancel", (e) => endTxDrag(e.pointerId));
 
-    // Resizable transcript panel
     let txResizing = false;
     let txResizeStartX = 0, txResizeStartY = 0;
     let txResizeStartW = 0, txResizeStartH = 0;
@@ -4034,148 +4102,249 @@ function playSegment(start, end){
     txResizeHandle.addEventListener("pointerup", (e) => endTxResize(e.pointerId));
     txResizeHandle.addEventListener("pointercancel", (e) => endTxResize(e.pointerId));
 
-    /* =========================================================
-   FSPneu (S2) + FSPab26 transcripts + şehir/eyalet önek filtresi
-   - Mevcut fonksiyon gövdeleri değişmez.
-   - Sadece wrapper/ek fonksiyonlar ekler.
-   ========================================================= */
+    const IA_IDENTIFIER_2 = "FSPneu";
+    const IA2_SRC = "S2";
+    const IA2_TX_SUBDIR = "FSPab26";
 
-const IA_IDENTIFIER_2 = "FSPneu";
-const IA2_SRC = "S2";
-const IA2_TX_SUBDIR = "FSPab26";
+    const IA2_BLOCK_PREFIXES = [
+      "Dusseldorf", "Düsseldorf",
+      "Stuttgart",
+      "Rheutlingen", "Reutlingen",
+      "Sachsen",
+      "Hessen",  "Karlsruhe"
+    ];
 
-const IA2_BLOCK_PREFIXES = [
-  "Dusseldorf", "Düsseldorf",
-  "Stuttgart",
-  "Rheutlingen", "Reutlingen",
-  "Sachsen",
-  "Hessen",  "Karlsruhe" 
-];
-
-function __ia2EnsureSlashEnd(s){
-  s = String(s || "");
-  return s.endsWith("/") ? s : (s + "/");
-}
-
-function __ia2BasesWithSubdir(bases, subdir){
-  const sd = String(subdir || "").replace(/^\/+|\/+$/g, "");
-  return (bases || []).map(b => __ia2EnsureSlashEnd(b) + sd + "/");
-}
-
-const __IA2_SRT_BASES = __ia2BasesWithSubdir(SRT_BASES, IA2_TX_SUBDIR);
-const __IA2_TXT_BASES = __ia2BasesWithSubdir(TXT_BASES, IA2_TX_SUBDIR);
-
-function __ia2IsBlockedByPrefix(fileName){
-  let base = (fileName || "").toString();
-  base = base.split("/").pop() || base;
-  base = decodeURIComponentSafe(base);
-  base = base.replace(/\.(m4a|mp3)$/i, "").trim();
-
-  // "A " / "A_" / "A-" varsa şehir kontrolünde yok say
-  base = base.replace(/^A[\s_-]+/i, "").trim();
-
-  const folded = foldTR(base);
-  for (const p of IA2_BLOCK_PREFIXES){
-    const c = foldTR(p);
-    if (folded.startsWith(c)){
-      const next = folded.slice(c.length, c.length + 1);
-      if (!next || /[\s\-_0-9.:]/.test(next)) return true;
+    function __ia2EnsureSlashEnd(s){
+      s = String(s || "");
+      return s.endsWith("/") ? s : (s + "/");
     }
-  }
-  return false;
-}
 
-function __ia2MakeItemsFromFiles(files){
-  return (files || [])
-    .filter(f => typeof f?.name === "string")
-    .filter(f => {
-      const name = String(f.name).toLowerCase();
-      if (!name.endsWith(".m4a")) return false; // sadece m4a
-      if (!("source" in f)) return true;
-      return String(f.source || "").toLowerCase() === "original";
-    })
-    .filter(f => !__ia2IsBlockedByPrefix(f.name))
-    .map((f, idx) => {
-      const name = f.name || "";
-      const title = (String(f.title || "").trim()) || decodeURIComponentSafe(name.split("/").pop() || name);
-      const url = buildDownloadUrl(IA_IDENTIFIER_2, name);
-      const localId = name || url || (title + "#" + idx);
-      const id = IA2_SRC + "|" + localId;
+    function __ia2BasesWithSubdir(bases, subdir){
+      const sd = String(subdir || "").replace(/^\/+|\/+$/g, "");
+      return (bases || []).map(b => __ia2EnsureSlashEnd(b) + sd + "/");
+    }
 
-      const txtCandidates = buildTxtNameCandidates({ name });
-      const txtName = (txtCandidates && txtCandidates.length) ? txtCandidates[0] : replaceExtToTxt(name);
-      const txtUrl = txtName ? (__IA2_TXT_BASES[0] + encodeURIComponent(txtName)) : "";
+    const __IA2_SRT_BASES = __ia2BasesWithSubdir(SRT_BASES, IA2_TX_SUBDIR);
+    const __IA2_TXT_BASES = __ia2BasesWithSubdir(TXT_BASES, IA2_TX_SUBDIR);
 
-      return { id, title, name, url, src: IA2_SRC, txtName, txtUrl };
+    function __ia2IsBlockedByPrefix(fileName){
+      let base = (fileName || "").toString();
+      base = base.split("/").pop() || base;
+      base = decodeURIComponentSafe(base);
+      base = base.replace(/\.(m4a|mp3)$/i, "").trim();
+      base = base.replace(/^A[\s_-]+/i, "").trim();
+
+      const folded = foldTR(base);
+      for (const p of IA2_BLOCK_PREFIXES){
+        const c = foldTR(p);
+        if (folded.startsWith(c)){
+          const next = folded.slice(c.length, c.length + 1);
+          if (!next || /[\s\-_0-9.:]/.test(next)) return true;
+        }
+      }
+      return false;
+    }
+
+    function __ia2MakeItemsFromFiles(files){
+      return (files || [])
+        .filter(f => typeof f?.name === "string")
+        .filter(f => {
+          const name = String(f.name).toLowerCase();
+          if (!name.endsWith(".m4a")) return false;
+          if (!("source" in f)) return true;
+          return String(f.source || "").toLowerCase() === "original";
+        })
+        .filter(f => !__ia2IsBlockedByPrefix(f.name))
+        .map((f, idx) => {
+          const name = f.name || "";
+          const title = (String(f.title || "").trim()) || decodeURIComponentSafe(name.split("/").pop() || name);
+          const url = buildDownloadUrl(IA_IDENTIFIER_2, name);
+          const localId = name || url || (title + "#" + idx);
+          const id = IA2_SRC + "|" + localId;
+
+          const txtCandidates = buildTxtNameCandidates({ name });
+          const txtName = (txtCandidates && txtCandidates.length) ? txtCandidates[0] : replaceExtToTxt(name);
+          const txtUrl = txtName ? (__IA2_TXT_BASES[0] + encodeURIComponent(txtName)) : "";
+
+          return { id, title, name, url, src: IA2_SRC, txtName, txtUrl };
+        });
+    }
+
+    const __orig_buildSrtUrlsForItem = buildSrtUrlsForItem;
+    buildSrtUrlsForItem = async function(it){
+      if (it && it.src === IA2_SRC){
+        const names = buildSrtNameCandidates(it);
+        const urls = [];
+        for (const name of names){
+          for (const base of __IA2_SRT_BASES){
+            urls.push(base + encodeURIComponent(name));
+          }
+        }
+        return { urls, triedNames: names };
+      }
+      return __orig_buildSrtUrlsForItem(it);
+    };
+
+    const __orig_buildTxtUrlsForItem = buildTxtUrlsForItem;
+    buildTxtUrlsForItem = async function(it){
+      if (it && it.src === IA2_SRC){
+        const names = buildTxtNameCandidates(it);
+        const urls = [];
+        for (const name of names){
+          for (const base of __IA2_TXT_BASES){
+            urls.push(base + encodeURIComponent(name));
+          }
+        }
+        return { urls, triedNames: names };
+      }
+      return __orig_buildTxtUrlsForItem(it);
+    };
+
+    async function __ia2MergeFspneuIntoItems(){
+      const metaUrl = `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_2)}`;
+      const res = await fetch(metaUrl, { cache: FORCE_REFRESH ? "no-store" : "no-cache" });
+      if (!res.ok) throw new Error("FSPneu metadata okunamadı: " + res.status);
+
+      const j = await res.json();
+      const files = Array.isArray(j.files) ? j.files : [];
+
+      const s2List = __ia2MakeItemsFromFiles(files);
+      const keep = items.filter(it => it?.src !== IA2_SRC);
+      items = keep.concat(s2List);
+
+      try{
+        localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
+        localStorage.setItem(LS.itemsCache, JSON.stringify(items));
+      }catch{}
+
+      statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
+      setSortIcons();
+      render();
+      scheduleRefreshCounts(100);
+    }
+
+    const __orig_loadItems = loadItems;
+    loadItems = async function(){
+      await __orig_loadItems();
+      try{ await __ia2MergeFspneuIntoItems(); }catch(e){ console.warn(e); }
+    };
+
+    const LS_SKIP_SETTINGS = "fsp1.skip.settings.v1";
+
+    const DEFAULT_SKIP_SETTINGS = {
+      enabled: false,
+      mode: "balanced",
+      strategy: "srt-first",
+      minGapSec: 1.2,
+      fadeMs: 120,
+      leadInSec: 0.08,
+      maxSkipSec: 12,
+      rmsThreshold: 0.012,
+    };
+
+    function loadSkipSettings() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(LS_SKIP_SETTINGS) || "{}");
+        return { ...DEFAULT_SKIP_SETTINGS, ...raw };
+      } catch {
+        return { ...DEFAULT_SKIP_SETTINGS };
+      }
+    }
+
+    function saveSkipSettings() {
+      localStorage.setItem(LS_SKIP_SETTINGS, JSON.stringify(skipSettings));
+    }
+
+    let skipSettings = loadSkipSettings();
+
+    function applySkipPreset(mode) {
+      if (mode === "light") {
+        skipSettings.mode = "light";
+        skipSettings.minGapSec = 1.8;
+        skipSettings.fadeMs = 140;
+        skipSettings.leadInSec = 0.10;
+        skipSettings.maxSkipSec = 8;
+        skipSettings.rmsThreshold = 0.010;
+      } else if (mode === "aggressive") {
+        skipSettings.mode = "aggressive";
+        skipSettings.minGapSec = 0.8;
+        skipSettings.fadeMs = 80;
+        skipSettings.leadInSec = 0.05;
+        skipSettings.maxSkipSec = 15;
+        skipSettings.rmsThreshold = 0.016;
+      } else {
+        skipSettings.mode = "balanced";
+        skipSettings.minGapSec = 1.2;
+        skipSettings.fadeMs = 120;
+        skipSettings.leadInSec = 0.08;
+        skipSettings.maxSkipSec = 12;
+        skipSettings.rmsThreshold = 0.012;
+      }
+
+      syncSkipUi();
+      saveSkipSettings();
+    }
+
+    function syncSkipUi() {
+      const open = !skipDrawer.hidden;
+
+      skipDrawerBtn.classList.toggle("on", open || skipSettings.enabled);
+      skipDrawerBtn.setAttribute("aria-expanded", String(open));
+
+      skipEnableBtn.textContent = "Sessiz atlama: " + (skipSettings.enabled ? "Açık" : "Kapalı");
+      skipEnableBtn.classList.toggle("on", !!skipSettings.enabled);
+
+      skipModeLight.classList.toggle("on", skipSettings.mode === "light");
+      skipModeBalanced.classList.toggle("on", skipSettings.mode === "balanced");
+      skipModeAggressive.classList.toggle("on", skipSettings.mode === "aggressive");
+
+      skipMinGapRange.value = String(skipSettings.minGapSec);
+      skipMinGapValue.textContent = `${Number(skipSettings.minGapSec).toFixed(1)}s`;
+
+      skipFadeRange.value = String(skipSettings.fadeMs);
+      skipFadeValue.textContent = `${Math.round(skipSettings.fadeMs)}ms`;
+    }
+
+    function toggleSkipDrawer(force) {
+      const shouldOpen = typeof force === "boolean" ? force : skipDrawer.hidden;
+      skipDrawer.hidden = !shouldOpen;
+      syncSkipUi();
+      setTimeout(() => clampPlayerToViewport(), 0);
+    }
+
+    skipDrawerBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleSkipDrawer();
     });
-}
 
-// S2 için SRT/TXT aramasını FSPab26 altına yönlendir (S1 bozulmaz)
-const __orig_buildSrtUrlsForItem = buildSrtUrlsForItem;
-buildSrtUrlsForItem = async function(it){
-  if (it && it.src === IA2_SRC){
-    const names = buildSrtNameCandidates(it);
-    const urls = [];
-    for (const name of names){
-      for (const base of __IA2_SRT_BASES){
-        urls.push(base + encodeURIComponent(name));
-      }
-    }
-    return { urls, triedNames: names };
-  }
-  return __orig_buildSrtUrlsForItem(it);
-};
+    skipEnableBtn.addEventListener("click", () => {
+      skipSettings.enabled = !skipSettings.enabled;
+      saveSkipSettings();
+      syncSkipUi();
+    });
 
-const __orig_buildTxtUrlsForItem = buildTxtUrlsForItem;
-buildTxtUrlsForItem = async function(it){
-  if (it && it.src === IA2_SRC){
-    const names = buildTxtNameCandidates(it);
-    const urls = [];
-    for (const name of names){
-      for (const base of __IA2_TXT_BASES){
-        urls.push(base + encodeURIComponent(name));
-      }
-    }
-    return { urls, triedNames: names };
-  }
-  return __orig_buildTxtUrlsForItem(it);
-};
+    skipModeLight.addEventListener("click", () => applySkipPreset("light"));
+    skipModeBalanced.addEventListener("click", () => applySkipPreset("balanced"));
+    skipModeAggressive.addEventListener("click", () => applySkipPreset("aggressive"));
 
-async function __ia2MergeFspneuIntoItems(){
-  const metaUrl = `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_2)}`;
-  const res = await fetch(metaUrl, { cache: FORCE_REFRESH ? "no-store" : "no-cache" });
-  if (!res.ok) throw new Error("FSPneu metadata okunamadı: " + res.status);
+    skipMinGapRange.addEventListener("input", () => {
+      skipSettings.minGapSec = Number(skipMinGapRange.value);
+      saveSkipSettings();
+      syncSkipUi();
+    });
 
-  const j = await res.json();
-  const files = Array.isArray(j.files) ? j.files : [];
+    skipFadeRange.addEventListener("input", () => {
+      skipSettings.fadeMs = Number(skipFadeRange.value);
+      saveSkipSettings();
+      syncSkipUi();
+    });
 
-  const s2List = __ia2MakeItemsFromFiles(files);
+    document.addEventListener("click", (e) => {
+      if (skipDrawer.hidden) return;
+      if (fp.contains(e.target)) return;
+      toggleSkipDrawer(false);
+    });
 
-  // S2 kayıtlarını her yenilemede tekrar kur
-  const keep = items.filter(it => it?.src !== IA2_SRC);
-  items = keep.concat(s2List);
-
-  // cache güncelle (opsiyonel ama faydalı)
-  try{
-    localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
-    localStorage.setItem(LS.itemsCache, JSON.stringify(items));
-  }catch{}
-
-  statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
-  setSortIcons();
-  render();
-  scheduleRefreshCounts(100);
-}
-
-// loadItems gövdesine dokunmadan wrapper (mevcut çağrı aynı kalır)
-const __orig_loadItems = loadItems;
-loadItems = async function(){
-  await __orig_loadItems();
-  try{ await __ia2MergeFspneuIntoItems(); }catch(e){ console.warn(e); }
-};
-
-/* ======================= END FSPneu ADDON ======================= */
-    // Init
     setSortIcons();
     restoreUiState();
     restorePlayerPos();
@@ -4184,6 +4353,7 @@ loadItems = async function(){
     setCaptionUi();
     updateOverlayScale();
     setTxtBtnUi();
+    syncSkipUi();
 
     requestAnimationFrame(() => {
       measureStickyStartTop();
