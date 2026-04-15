@@ -34,16 +34,12 @@
       --muted:#6b6b6b;
       --bg:#ffffff;
       --hover:#f7f7f7;
-
       --active:#cfe9ff;
       --activeGlow: 0 0 0 2px rgba(43,124,255,.34) inset, 0 12px 26px rgba(43,124,255,.14);
-
       --blue:#2b7cff;
       --blueGlow: 0 0 0 4px rgba(43,124,255,.24), 0 10px 22px rgba(43,124,255,.10);
-
       --green:#16a34a;
       --greenGlow: 0 0 0 4px rgba(22,163,74,.22), 0 10px 22px rgba(22,163,74,.10);
-
       --orange:#f59e0b;
       --orangeGlow: 0 0 0 4px rgba(245,158,11,.20), 0 10px 22px rgba(245,158,11,.10);
     }
@@ -1145,6 +1141,7 @@
       font-weight: 800;
       line-height: 1;
     }
+
     @keyframes skipDrawerIn{
       from{ opacity:0; transform:translateY(-6px); }
       to{ opacity:1; transform:translateY(0); }
@@ -2912,1275 +2909,1645 @@
       }
 
       try{
-        const metaUrl = `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}`;
-        const res = await fetch(metaUrl, { cache: FORCE_REFRESH ? "no-store" : "no-cache" });
-        if (!res.ok) throw new Error("IA metadata okunamadı");
-        const j = await res.json();
+  const metaUrl = `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}`;
+  const res = await fetch(metaUrl, { cache: FORCE_REFRESH ? "no-store" : "no-cache" });
+  if (!res.ok) throw new Error("IA metadata okunamadı");
+  const j = await res.json();
 
-        const newUpdated = String(
-          j?.item_lastupdated ||
-          j?.item_last_update ||
-          j?.updated ||
-          j?.metadata?.updateddate ||
-          j?.metadata?.publicdate ||
-          ""
-        );
-        const oldUpdated = String(localStorage.getItem(LS.metaUpdated) || "");
+  const newUpdated = String(
+    j?.item_lastupdated ||
+    j?.item_last_update ||
+    j?.updated ||
+    j?.metadata?.updateddate ||
+    j?.metadata?.publicdate ||
+    ""
+  );
+  const oldUpdated = String(localStorage.getItem(LS.metaUpdated) || "");
 
-        if (cacheFresh && newUpdated && oldUpdated && newUpdated === oldUpdated){
-          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
-          return;
-        }
+  if (cacheFresh && newUpdated && oldUpdated && newUpdated === oldUpdated){
+    localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
+    return;
+  }
 
-        const files = Array.isArray(j.files) ? j.files : [];
-        const list = files
-          .filter(f => {
-            const name = (f.name || "").toLowerCase();
-            if (!(name.endsWith(".m4a") || name.endsWith(".mp3"))) return false;
-            if (!("source" in f)) return true;
-            return String(f.source).toLowerCase() === "original";
-          })
-          .map((f, idx) => {
-            const name = f.name || "";
-            const title = (f.title || "").trim() || decodeURIComponentSafe(name.split("/").pop() || name);
-            const url = buildDownloadUrl(IA_IDENTIFIER_1, name);
-            const localId = name || url || (title + "#" + idx);
-            const id = "S1|" + localId;
-            const txtCandidates = buildTxtNameCandidates({ name });
-            const txtName = txtCandidates.length ? txtCandidates[0] : replaceExtToTxt(name);
-            const txtUrl = txtName ? (TXT_BASES[0] + encodeURIComponent(txtName)) : "";
-            return { id, title, name, url, src: "S1", txtName, txtUrl };
-          });
+  const files = Array.isArray(j.files) ? j.files : [];
+  const list = files
+    .filter(f => {
+      const name = (f.name || "").toLowerCase();
+      if (!(name.endsWith(".m4a") || name.endsWith(".mp3"))) return false;
+      if (!("source" in f)) return true;
+      return String(f.source).toLowerCase() === "original";
+    })
+    .map((f, idx) => {
+      const name = f.name || "";
+      const title = (f.title || "").trim() || decodeURIComponentSafe(name.split("/").pop() || name);
+      const url = buildDownloadUrl(IA_IDENTIFIER_1, name);
+      const localId = name || url || (title + "#" + idx);
+      const id = "S1|" + localId;
+      const txtCandidates = buildTxtNameCandidates({ name });
+      const txtName = txtCandidates.length ? txtCandidates[0] : replaceExtToTxt(name);
+      const txtUrl = txtName ? (TXT_BASES[0] + encodeURIComponent(txtName)) : "";
+      return { id, title, name, url, src: "S1", txtName, txtUrl };
+    });
 
-        const newFp = itemsFingerprint(list);
-        const oldFp = itemsFingerprint(items);
-        const shouldUpdate = !cacheFresh || (newFp && newFp !== oldFp);
+  const newFp = itemsFingerprint(list);
+  const oldFp = itemsFingerprint(items);
+  const shouldUpdate = !cacheFresh || (newFp && newFp !== oldFp);
 
-        if (shouldUpdate){
-          items = list;
-          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
-          localStorage.setItem(LS.itemsCache, JSON.stringify(items));
-          if (newUpdated) localStorage.setItem(LS.metaUpdated, newUpdated);
+  if (shouldUpdate){
+    items = list;
+    localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
+    localStorage.setItem(LS.itemsCache, JSON.stringify(items));
+    if (newUpdated) localStorage.setItem(LS.metaUpdated, newUpdated);
 
-          statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
-          setSortIcons();
-          render();
-          restoreScrollIfNeeded();
-          scheduleRefreshCounts(100);
-        } else {
-          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
-          if (newUpdated) localStorage.setItem(LS.metaUpdated, newUpdated);
-        }
+    statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
+    setSortIcons();
+    render();
+    restoreScrollIfNeeded();
+    scheduleRefreshCounts(100);
+  } else {
+    localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
+    if (newUpdated) localStorage.setItem(LS.metaUpdated, newUpdated);
+  }
 
-        updateSticky(true);
-      }catch(err){
-        console.error(err);
-        if (!cacheFresh) statusEl.textContent = "Liste yüklenemedi.";
+  updateSticky(true);
+}catch(err){
+  console.error(err);
+  if (!cacheFresh) statusEl.textContent = "Liste yüklenemedi.";
+}
+}
+
+function getVisibleItems(){
+  const q = foldTR((searchEl.value || "").trim());
+
+  let arr = items.filter(it => {
+    if (q && !foldTR(it.title).includes(q)) return false;
+    if (filterFav && !favs[it.id]) return false;
+    return true;
+  });
+
+  if (sortMode === "dur"){
+    const dir = (durSortDir === "asc") ? 1 : -1;
+    arr.sort((a, b) => {
+      const ha = (durs[a.id] > 0);
+      const hb = (durs[b.id] > 0);
+      if (ha !== hb) return ha ? -1 : 1;
+      if (ha && hb){
+        const da = durs[a.id];
+        const db = durs[b.id];
+        if (da !== db) return (da - db) * dir;
       }
-    }
+      return a.title.localeCompare(b.title, "tr");
+    });
+  } else if (sortMode === "date"){
+    const dir = (dateSortDir === "asc") ? 1 : -1;
+    arr.sort((a, b) => {
+      const ta = parseEndDate(a);
+      const tb = parseEndDate(b);
+      const ha = (ta !== null);
+      const hb = (tb !== null);
+      if (ha !== hb) return ha ? -1 : 1;
+      if (ha && hb && ta !== tb) return (ta - tb) * dir;
+      return a.title.localeCompare(b.title, "tr");
+    });
+  } else if (sortMode === "play"){
+    const dir = (playSortDir === "asc") ? 1 : -1;
+    arr.sort((a, b) => {
+      const ca = Number(globalPlayCounts[a.id]) || 0;
+      const cb = Number(globalPlayCounts[b.id]) || 0;
+      if (ca !== cb) return (ca - cb) * dir;
+      return a.title.localeCompare(b.title, "tr");
+    });
+  } else if (sortMode === "download"){
+    const dir = (dlSortDir === "asc") ? 1 : -1;
+    arr.sort((a, b) => {
+      const ca = Number(globalDownloadCounts[a.id]) || 0;
+      const cb = Number(globalDownloadCounts[b.id]) || 0;
+      if (ca !== cb) return (ca - cb) * dir;
+      return a.title.localeCompare(b.title, "tr");
+    });
+  } else {
+    arr.sort((a, b) => a.title.localeCompare(b.title, "tr"));
+  }
 
-    function getVisibleItems(){
-      const q = foldTR((searchEl.value || "").trim());
+  return arr;
+}
 
-      let arr = items.filter(it => {
-        if (q && !foldTR(it.title).includes(q)) return false;
-        if (filterFav && !favs[it.id]) return false;
-        return true;
-      });
+function iconButton(kind, on, title){
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "iconBtn" + (on ? " on" : "");
+  btn.title = title;
+  btn.dataset.kind = kind;
 
-      if (sortMode === "dur"){
-        const dir = (durSortDir === "asc") ? 1 : -1;
-        arr.sort((a, b) => {
-          const ha = (durs[a.id] > 0);
-          const hb = (durs[b.id] > 0);
-          if (ha !== hb) return ha ? -1 : 1;
-          if (ha && hb){
-            const da = durs[a.id];
-            const db = durs[b.id];
-            if (da !== db) return (da - db) * dir;
-          }
-          return a.title.localeCompare(b.title, "tr");
-        });
-      } else if (sortMode === "date"){
-        const dir = (dateSortDir === "asc") ? 1 : -1;
-        arr.sort((a, b) => {
-          const ta = parseEndDate(a);
-          const tb = parseEndDate(b);
-          const ha = (ta !== null);
-          const hb = (tb !== null);
-          if (ha !== hb) return ha ? -1 : 1;
-          if (ha && hb && ta !== tb) return (ta - tb) * dir;
-          return a.title.localeCompare(b.title, "tr");
-        });
-      } else if (sortMode === "play"){
-        const dir = (playSortDir === "asc") ? 1 : -1;
-        arr.sort((a, b) => {
-          const ca = Number(globalPlayCounts[a.id]) || 0;
-          const cb = Number(globalPlayCounts[b.id]) || 0;
-          if (ca !== cb) return (ca - cb) * dir;
-          return a.title.localeCompare(b.title, "tr");
-        });
-      } else if (sortMode === "download"){
-        const dir = (dlSortDir === "asc") ? 1 : -1;
-        arr.sort((a, b) => {
-          const ca = Number(globalDownloadCounts[a.id]) || 0;
-          const cb = Number(globalDownloadCounts[b.id]) || 0;
-          if (ca !== cb) return (ca - cb) * dir;
-          return a.title.localeCompare(b.title, "tr");
-        });
-      } else {
-        arr.sort((a, b) => a.title.localeCompare(b.title, "tr"));
-      }
+  if (kind === "star"){
+    btn.setAttribute("aria-pressed", String(!!on));
+    btn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="${on ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
+      </svg>`;
+  } else if (kind === "download"){
+    btn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M12 3v12"/>
+        <path d="M7 10l5 5 5-5"/>
+        <path d="M5 21h14"/>
+      </svg>`;
+  }
 
-      return arr;
-    }
+  return btn;
+}
 
-    function iconButton(kind, on, title){
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "iconBtn" + (on ? " on" : "");
-      btn.title = title;
-      btn.dataset.kind = kind;
+function render(){
+  const visible = getVisibleItems();
+  metaEl.textContent = `Görünən: ${visible.length} / Toplam: ${items.length}`;
 
-      if (kind === "star"){
-        btn.setAttribute("aria-pressed", String(!!on));
-        btn.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="${on ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
-          </svg>`;
-      } else if (kind === "download"){
-        btn.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M12 3v12"/>
-            <path d="M7 10l5 5 5-5"/>
-            <path d="M5 21h14"/>
-          </svg>`;
-      }
+  filterFavBtn.classList.toggle("on", filterFav);
+  filterFavBtn.setAttribute("aria-pressed", String(filterFav));
+  setSortIcons();
+  listEl.innerHTML = "";
 
-      return btn;
-    }
+  const toMeasure = (sortMode === "dur") ? items : visible;
+  for (const it of toMeasure){
+    if (!(durs[it.id] > 0)) requestDuration(it);
+  }
 
-    function render(){
-      const visible = getVisibleItems();
-      metaEl.textContent = `Görünən: ${visible.length} / Toplam: ${items.length}`;
+  for (const it of visible){
+    const row = document.createElement("div");
+    row.className = "itemRow" + (it.id === selectedId ? " active" : "");
 
-      filterFavBtn.classList.toggle("on", filterFav);
-      filterFavBtn.setAttribute("aria-pressed", String(filterFav));
-      setSortIcons();
-      listEl.innerHTML = "";
+    const title = document.createElement("div");
+    title.className = "title";
+    title.innerHTML = highlightDisease(it.title);
 
-      const toMeasure = (sortMode === "dur") ? items : visible;
-      for (const it of toMeasure){
-        if (!(durs[it.id] > 0)) requestDuration(it);
-      }
+    const dur = document.createElement("div");
+    dur.className = "dur";
+    dur.textContent = (durs[it.id] > 0) ? fmtDur(durs[it.id]) : "…";
 
-      for (const it of visible){
-        const row = document.createElement("div");
-        row.className = "itemRow" + (it.id === selectedId ? " active" : "");
+    const playCount = document.createElement("div");
+    playCount.className = "countCell";
+    playCount.textContent = String(Number(globalPlayCounts[it.id]) || 0);
 
-        const title = document.createElement("div");
-        title.className = "title";
-        title.innerHTML = highlightDisease(it.title);
+    const favBtn = iconButton("star", !!favs[it.id], "Favori");
+    const dlBtn = iconButton("download", false, "İndir");
 
-        const dur = document.createElement("div");
-        dur.className = "dur";
-        dur.textContent = (durs[it.id] > 0) ? fmtDur(durs[it.id]) : "…";
+    const dlCount = document.createElement("div");
+    dlCount.className = "countCell";
+    dlCount.textContent = String(Number(globalDownloadCounts[it.id]) || 0);
 
-        const playCount = document.createElement("div");
-        playCount.className = "countCell";
-        playCount.textContent = String(Number(globalPlayCounts[it.id]) || 0);
-
-        const favBtn = iconButton("star", !!favs[it.id], "Favori");
-        const dlBtn = iconButton("download", false, "İndir");
-
-        const dlCount = document.createElement("div");
-        dlCount.className = "countCell";
-        dlCount.textContent = String(Number(globalDownloadCounts[it.id]) || 0);
-
-        favBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          selectedId = it.id;
-          favs[it.id] = !favs[it.id];
-          saveMap(LS.favs, favs);
-          render();
-        });
-
-        dlBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          selectedId = it.id;
-
-          const filename =
-            (it.name || it.file || "").split("/").pop() ||
-            (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
-
-          forceDownload(it.url, filename);
-
-          setTimeout(() => {
-            bumpLocalGlobalCount("download", it.id);
-            sendHit("download", it);
-            scheduleRefreshCounts(1200);
-            trackAudioDownload(it, filename);
-            render();
-          }, 0);
-        });
-
-        for (const b of [favBtn, dlBtn]){
-          b.addEventListener("pointerup", (e) => e.stopPropagation());
-          b.addEventListener("pointerdown", (e) => e.stopPropagation());
-        }
-
-        row.appendChild(title);
-        row.appendChild(dur);
-        row.appendChild(playCount);
-        row.appendChild(favBtn);
-        row.appendChild(dlBtn);
-        row.appendChild(dlCount);
-
-        row.addEventListener("click", (e) => {
-          const inTitle = !!(e.target && e.target.closest && e.target.closest(".title"));
-          if (!inTitle){
-            selectedId = it.id;
-            render();
-            return;
-          }
-          playById(it.id);
-        });
-
-        listEl.appendChild(row);
-      }
-
-      updateSticky(false);
-    }
-
-    function playById(id){
-      const visible = getVisibleItems();
-      const idx = visible.findIndex(x => x.id === id);
-      if (idx === -1) return;
-      playAtVisibleIndex(idx);
-    }
-
-    function setMediaSource(url, mime){
-      stopSkipLoop();
-      while (playerEl.firstChild) playerEl.removeChild(playerEl.firstChild);
-      const s = document.createElement("source");
-      s.src = url;
-      if (mime) s.type = mime;
-      playerEl.appendChild(s);
-      playerEl.load();
-    }
-
-    function playAtVisibleIndex(idx){
-      const visible = getVisibleItems();
-      const it = visible[idx];
-      if (!it) return;
-
-      armPlayGate(it);
-      trackAudioPlay(it);
-
-      statusEl.textContent = "";
-      activeId = it.id;
+    favBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
       selectedId = it.id;
-      fpTitle.textContent = it.title;
-      render();
-
-      if (typeof renderCaptionInfo === "function" && isCaptionsOn()){
-        renderCaptionInfo("Altyazı yükleniyor…");
-      }
-
-      const url = it.url;
-      const mime = guessMime(url);
-      const currentSpeed = SPEEDS[speedIndex] || 1;
-      resetSkipRuntimeForNewTrack();
-
-      try{
-        plyr.speed = currentSpeed;
-        setMediaSource(url, mime);
-        loadSrtForItem(it).catch(() => {});
-        const p = plyr.play();
-        if (p && typeof p.catch === "function"){
-          p.catch(() => {
-            statusEl.textContent = "Oynatma engellendi. Player içindeki ▶︎ tuşuna bas.";
-          });
-        }
-        setTimeout(() => {
-          if (playerEl && playerEl.paused) {
-            statusEl.textContent = statusEl.textContent || "Oynatma başlamadı. Player içindeki ▶︎ tuşuna bas.";
-          }
-        }, 900);
-      }catch{
-        statusEl.textContent = "Player başlatılamadı.";
-      }
-    }
-
-    function playPrev(){
-      const visible = getVisibleItems();
-      if (!visible.length) return;
-      let idx = visible.findIndex(x => x.id === activeId);
-      if (idx === -1) idx = 0;
-      idx = (idx - 1 + visible.length) % visible.length;
-      playAtVisibleIndex(idx);
-    }
-
-    function playNext(){
-      const visible = getVisibleItems();
-      if (!visible.length) return;
-      let idx = visible.findIndex(x => x.id === activeId);
-      if (idx === -1) idx = 0;
-      idx = (idx + 1) % visible.length;
-      playAtVisibleIndex(idx);
-    }
-
-    prevBtn.addEventListener("click", playPrev);
-    nextBtn.addEventListener("click", playNext);
-    plyr.on("ended", () => { setTimeout(() => playNext(), 0); });
-
-    function isTypingTarget(){
-      const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
-      return (tag === "input" || tag === "textarea");
-    }
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape"){
-        if (txPanel.classList.contains("open")){
-          e.preventDefault();
-          closeTranscript();
-          return;
-        }
-        if (sbOverlay.classList.contains("open")){
-          e.preventDefault();
-          closeSidebar();
-          return;
-        }
-      }
-
-      if (isTypingTarget()) return;
-
-      if (e.code === "Space"){
-        e.preventDefault();
-        plyr.togglePlay();
-      } else if (e.code === "ArrowLeft"){
-        e.preventDefault();
-        playPrev();
-      } else if (e.code === "ArrowRight"){
-        e.preventDefault();
-        playNext();
-      }
-    });
-
-    filterFavBtn.addEventListener("click", () => { filterFav = !filterFav; render(); });
-
-    resetBtn.addEventListener("click", () => {
-      filterFav = false;
-      searchEl.value = "";
-      sortMode = "title";
-      dateSortDir = "desc";
-      localStorage.setItem(LS.sortMode, sortMode);
-      localStorage.setItem(LS.sortDirDate, dateSortDir);
-      setSortIcons();
+      favs[it.id] = !favs[it.id];
+      saveMap(LS.favs, favs);
       render();
     });
 
-    const SEARCH_DEBOUNCE_MS = 900;
-    let searchTimer = null;
-    let lastSentTermNorm = "";
+    dlBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      selectedId = it.id;
 
-    function sendSearchEvent(termRawInput){
-      const termRaw = (termRawInput || "").trim();
-      const termNorm = foldTR(termRaw);
-      const visibleCount = getVisibleItems().length;
+      const filename =
+        (it.name || it.file || "").split("/").pop() ||
+        (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
 
-      if (termRaw.length === 0) {
-        if (lastSentTermNorm !== "") {
-          lastSentTermNorm = "";
-          gaEvent("search", { search_term: "", results_count: visibleCount });
-        }
+      forceDownload(it.url, filename);
+
+      setTimeout(() => {
+        bumpLocalGlobalCount("download", it.id);
+        sendHit("download", it);
+        scheduleRefreshCounts(1200);
+        trackAudioDownload(it, filename);
+        render();
+      }, 0);
+    });
+
+    for (const b of [favBtn, dlBtn]){
+      b.addEventListener("pointerup", (e) => e.stopPropagation());
+      b.addEventListener("pointerdown", (e) => e.stopPropagation());
+    }
+
+    row.appendChild(title);
+    row.appendChild(dur);
+    row.appendChild(playCount);
+    row.appendChild(favBtn);
+    row.appendChild(dlBtn);
+    row.appendChild(dlCount);
+
+    row.addEventListener("click", (e) => {
+      const inTitle = !!(e.target && e.target.closest && e.target.closest(".title"));
+      if (!inTitle){
+        selectedId = it.id;
+        render();
         return;
       }
-
-      if (termNorm.length < 2) return;
-      if (termNorm === lastSentTermNorm) return;
-
-      lastSentTermNorm = termNorm;
-      const params = { search_term: termNorm, results_count: visibleCount };
-      if (__isDebug) params.search_term_raw = termRaw;
-      gaEvent("search", params);
-    }
-
-    function renderAndTrackSearch(){
-      render();
-      sendSearchEvent(searchEl.value);
-    }
-
-    searchEl.addEventListener("input", () => {
-      clearTimeout(searchTimer);
-      searchTimer = setTimeout(renderAndTrackSearch, SEARCH_DEBOUNCE_MS);
+      playById(it.id);
     });
 
-    searchEl.addEventListener("keydown", (e) => {
-      if (e.key !== "Enter") return;
-      e.preventDefault();
-      clearTimeout(searchTimer);
-      renderAndTrackSearch();
-    });
+    listEl.appendChild(row);
+  }
 
-    function restorePlayerPos(){
-      try{
-        const s = JSON.parse(localStorage.getItem(LS.pos) || "null");
-        if (!s) return;
-        if (typeof s.x !== "number" || typeof s.y !== "number") return;
+  updateSticky(false);
+}
 
-        let x = s.x;
-        let y = s.y;
+function playById(id){
+  const visible = getVisibleItems();
+  const idx = visible.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  playAtVisibleIndex(idx);
+}
 
-        if (s.ver !== 2 && useTransformScale){
-          x = x * uiScale;
-          y = y * uiScale;
-        }
+function setMediaSource(url, mime){
+  stopSkipLoop();
+  while (playerEl.firstChild) playerEl.removeChild(playerEl.firstChild);
+  const s = document.createElement("source");
+  s.src = url;
+  if (mime) s.type = mime;
+  playerEl.appendChild(s);
+  playerEl.load();
+}
 
-        fp.style.left = x + "px";
-        fp.style.top = y + "px";
-        fp.style.bottom = "auto";
-        fp.style.right = "auto";
-        clampPlayerToViewport();
-      }catch{}
-    }
+function playAtVisibleIndex(idx){
+  const visible = getVisibleItems();
+  const it = visible[idx];
+  if (!it) return;
 
-    function savePlayerPos(x, y){
-      localStorage.setItem(LS.pos, JSON.stringify({ x, y, ver: 2 }));
-    }
+  armPlayGate(it);
+  trackAudioPlay(it);
 
-    function getPlayerRect(){
-      return fp.getBoundingClientRect();
-    }
+  statusEl.textContent = "";
+  activeId = it.id;
+  selectedId = it.id;
+  fpTitle.textContent = it.title;
+  render();
 
-    function getPlayerPosPx(){
-      const left = parseFloat(fp.style.left);
-      const top = parseFloat(fp.style.top);
-      if (Number.isFinite(left) && Number.isFinite(top)) return { left, top };
-      const r = getPlayerRect();
-      return { left: r.left, top: r.top };
-    }
+  if (typeof renderCaptionInfo === "function" && isCaptionsOn()){
+    renderCaptionInfo("Altyazı yükleniyor…");
+  }
 
-    function getPlayerBoundsPx(){
-      const { vw, vh } = getViewportWH();
-      const r = getPlayerRect();
-      const w = r.width;
-      const h = r.height;
-      const keepX = Math.max(70, Math.min(w - 16, 180));
-      const keepY = Math.max(56, Math.min(h - 16, 120));
-      const capH = (isCaptionsOn() && captionsEl && !captionsEl.classList.contains("hidden"))
-        ? captionsEl.getBoundingClientRect().height
-        : 0;
-      const drawerH = (!skipDrawer.hidden) ? skipDrawer.getBoundingClientRect().height : 0;
+  const url = it.url;
+  const mime = guessMime(url);
+  const currentSpeed = SPEEDS[speedIndex] || 1;
+  resetSkipRuntimeForNewTrack();
 
-      const minX = -w + keepX;
-      const maxX = vw - keepX;
-      const minY = -h + keepY + capH;
-      const maxY = vh - keepY - Math.min(drawerH, 160);
-
-      return {
-        minX: Math.min(minX, maxX),
-        maxX: Math.max(minX, maxX),
-        minY: Math.min(minY, maxY),
-        maxY: Math.max(minY, maxY),
-      };
-    }
-
-    function clampPlayerToViewport(){
-      const { minX, maxX, minY, maxY } = getPlayerBoundsPx();
-      const cur = getPlayerPosPx();
-      const nx = Math.min(maxX, Math.max(minX, cur.left));
-      const ny = Math.min(maxY, Math.max(minY, cur.top));
-
-      fp.style.left = nx + "px";
-      fp.style.top = ny + "px";
-      fp.style.right = "auto";
-      fp.style.bottom = "auto";
-      savePlayerPos(nx, ny);
-    }
-
-    const DRAG_IGNORE_SELECTOR =
-      "button, a, input, textarea, select, option, .speedWrap, .speedCtlBtn, .miniBtn, " +
-      ".plyr__controls, .plyr__control, .plyr__progress, .plyr__seek, .plyr__volume, .plyr__time, .plyr__menu";
-
-    function shouldStartDrag(target){
-      return !(target && target.closest && target.closest(DRAG_IGNORE_SELECTOR));
-    }
-
-    let dragging = false;
-    let startClientX = 0, startClientY = 0;
-    let startLeft = 0, startTop = 0;
-    let moved = false;
-    let suppressClickUntil = 0;
-
-    fpHeader.addEventListener("pointerdown", (e) => {
-      if (!shouldStartDrag(e.target)) return;
-
-      dragging = true;
-      moved = false;
-      fpHeader.setPointerCapture(e.pointerId);
-      fpHeader.style.cursor = "grabbing";
-      startClientX = e.clientX;
-      startClientY = e.clientY;
-
-      const cur = getPlayerPosPx();
-      startLeft = cur.left;
-      startTop = cur.top;
-
-      fp.style.left = startLeft + "px";
-      fp.style.top = startTop + "px";
-      fp.style.bottom = "auto";
-      fp.style.right = "auto";
-    });
-
-    fpHeader.addEventListener("pointermove", (e) => {
-      if (!dragging) return;
-
-      const dx = e.clientX - startClientX;
-      const dy = e.clientY - startClientY;
-      if (!moved && (Math.abs(dx) + Math.abs(dy) > 6)) moved = true;
-
-      const { minX, maxX, minY, maxY } = getPlayerBoundsPx();
-      const nx = Math.min(maxX, Math.max(minX, startLeft + dx));
-      const ny = Math.min(maxY, Math.max(minY, startTop + dy));
-
-      fp.style.left = nx + "px";
-      fp.style.top = ny + "px";
-      savePlayerPos(nx, ny);
-    });
-
-    function endDrag(pointerId){
-      if (!dragging) return;
-      dragging = false;
-      fpHeader.style.cursor = "grab";
-      try { fpHeader.releasePointerCapture(pointerId); } catch {}
-      clampPlayerToViewport();
-
-      if (moved){
-        suppressClickUntil = Date.now() + 350;
-        moved = false;
-      }
-    }
-
-    fpHeader.addEventListener("pointerup", (e) => endDrag(e.pointerId));
-    fpHeader.addEventListener("pointercancel", (e) => endDrag(e.pointerId));
-
-    fpHeader.addEventListener("click", (e) => {
-      if (Date.now() < suppressClickUntil){
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    }, true);
-
-    window.addEventListener("resize", () => {
-      clampPlayerToViewport();
-      updateOverlayScale();
-      updateSearchNoZoomFontSizes();
-      clampTxSizeToViewport();
-      clampTxPosToViewport();
-      updateSticky(true);
-    });
-
-    window.addEventListener("orientationchange", () => setTimeout(() => {
-      clampPlayerToViewport();
-      updateOverlayScale();
-      updateSearchNoZoomFontSizes();
-      clampTxSizeToViewport();
-      clampTxPosToViewport();
-      updateSticky(true);
-    }, 150));
-
-    if (window.visualViewport){
-      window.visualViewport.addEventListener("resize", () => {
-        clampPlayerToViewport();
-        updateOverlayScale();
-        updateSearchNoZoomFontSizes();
-        clampTxSizeToViewport();
-        clampTxPosToViewport();
-        updateSticky(true);
+  try{
+    plyr.speed = currentSpeed;
+    setMediaSource(url, mime);
+    loadSrtForItem(it).catch(() => {});
+    const p = plyr.play();
+    if (p && typeof p.catch === "function"){
+      p.catch(() => {
+        statusEl.textContent = "Oynatma engellendi. Player içindeki ▶︎ tuşuna bas.";
       });
     }
-
-    (function disablePullToRefresh(){
-      let startY = 0;
-      scrollArea.addEventListener("touchstart", (e) => {
-        if (!e.touches || !e.touches.length) return;
-        startY = e.touches[0].clientY;
-      }, { passive: true });
-
-      scrollArea.addEventListener("touchmove", (e) => {
-        if (!e.touches || !e.touches.length) return;
-        const y = e.touches[0].clientY;
-        if (scrollArea.scrollTop <= 0 && y > startY + 4) e.preventDefault();
-      }, { passive: false });
-    })();
-
-    (function setActiveNav(){
-      const here = location.href.replace(/\/$/, "");
-      document.querySelectorAll(".navRow .navLink").forEach(a => {
-        a.classList.remove("on");
-        const u = (a.getAttribute("href") || "").replace(/\/$/, "");
-        if (!u) return;
-        if (here === u || here.startsWith(u + "/")) a.classList.add("on");
-      });
-    })();
-
-    function openSidebar(){
-      sbOverlay.classList.add("open");
-      sbOverlay.setAttribute("aria-hidden", "false");
-      updateOverlayScale();
-      setSortIcons();
-    }
-
-    function closeSidebar(){
-      sbOverlay.classList.remove("open");
-      sbOverlay.setAttribute("aria-hidden", "true");
-    }
-
-    sidebarOpenBtn.addEventListener("click", (e) => { e.stopPropagation(); openSidebar(); });
-    sbCloseBtn.addEventListener("click", (e) => { e.stopPropagation(); closeSidebar(); });
-    sbOverlay.addEventListener("click", (e) => { if (e.target === sbOverlay) closeSidebar(); });
-    document.getElementById("sidebar").addEventListener("click", (e) => e.stopPropagation());
-
-    sbRefreshBtn.addEventListener("click", async () => {
-      localStorage.setItem(LS.itemsCacheAt, "0");
-      try { await loadItems(); }
-      finally {
-        statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
+    setTimeout(() => {
+      if (playerEl && playerEl.paused) {
+        statusEl.textContent = statusEl.textContent || "Oynatma başlamadı. Player içindeki ▶︎ tuşuna bas.";
       }
-    });
+    }, 900);
+  }catch{
+    statusEl.textContent = "Player başlatılamadı.";
+  }
+}
 
-    sbZoomResetBtn.addEventListener("click", () => resetZoom100());
-    sbFavBtn.addEventListener("click", () => { filterFav = !filterFav; setSortIcons(); render(); });
+function playPrev(){
+  const visible = getVisibleItems();
+  if (!visible.length) return;
+  let idx = visible.findIndex(x => x.id === activeId);
+  if (idx === -1) idx = 0;
+  idx = (idx - 1 + visible.length) % visible.length;
+  playAtVisibleIndex(idx);
+}
 
-    function clickSort(kind){
-      if (kind === "date"){
-        if (sortMode !== "date") sortMode = "date";
-        else dateSortDir = (dateSortDir === "asc") ? "desc" : "asc";
-        localStorage.setItem(LS.sortMode, sortMode);
-        localStorage.setItem(LS.sortDirDate, dateSortDir);
-      } else if (kind === "dur"){
-        if (sortMode !== "dur") sortMode = "dur";
-        else durSortDir = (durSortDir === "asc") ? "desc" : "asc";
-        localStorage.setItem(LS.sortMode, sortMode);
-        localStorage.setItem(LS.sortDirDur, durSortDir);
-      } else if (kind === "play"){
-        if (sortMode !== "play") sortMode = "play";
-        else playSortDir = (playSortDir === "asc") ? "desc" : "asc";
-        localStorage.setItem(LS.sortMode, sortMode);
-        localStorage.setItem(LS.sortDirPlay, playSortDir);
-      } else if (kind === "download"){
-        if (sortMode !== "download") sortMode = "download";
-        else dlSortDir = (dlSortDir === "asc") ? "desc" : "asc";
-        localStorage.setItem(LS.sortMode, sortMode);
-        localStorage.setItem(LS.sortDirDl, dlSortDir);
-      }
-      setSortIcons();
-      render();
+function playNext(){
+  const visible = getVisibleItems();
+  if (!visible.length) return;
+  let idx = visible.findIndex(x => x.id === activeId);
+  if (idx === -1) idx = 0;
+  idx = (idx + 1) % visible.length;
+  playAtVisibleIndex(idx);
+}
+
+prevBtn.addEventListener("click", playPrev);
+nextBtn.addEventListener("click", playNext);
+plyr.on("ended", () => { setTimeout(() => playNext(), 0); });
+
+function isTypingTarget(){
+  const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
+  return (tag === "input" || tag === "textarea");
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape"){
+    if (txPanel.classList.contains("open")){
+      e.preventDefault();
+      closeTranscript();
+      return;
+    }
+    if (sbOverlay.classList.contains("open")){
+      e.preventDefault();
+      closeSidebar();
+      return;
+    }
+  }
+
+  if (isTypingTarget()) return;
+
+  if (e.code === "Space"){
+    e.preventDefault();
+    plyr.togglePlay();
+  } else if (e.code === "ArrowLeft"){
+    e.preventDefault();
+    playPrev();
+  } else if (e.code === "ArrowRight"){
+    e.preventDefault();
+    playNext();
+  }
+});
+
+filterFavBtn.addEventListener("click", () => { filterFav = !filterFav; render(); });
+
+resetBtn.addEventListener("click", () => {
+  filterFav = false;
+  searchEl.value = "";
+  sortMode = "title";
+  dateSortDir = "desc";
+  localStorage.setItem(LS.sortMode, sortMode);
+  localStorage.setItem(LS.sortDirDate, dateSortDir);
+  setSortIcons();
+  render();
+});
+
+const SEARCH_DEBOUNCE_MS = 900;
+let searchTimer = null;
+let lastSentTermNorm = "";
+
+function sendSearchEvent(termRawInput){
+  const termRaw = (termRawInput || "").trim();
+  const termNorm = foldTR(termRaw);
+  const visibleCount = getVisibleItems().length;
+
+  if (termRaw.length === 0) {
+    if (lastSentTermNorm !== "") {
+      lastSentTermNorm = "";
+      gaEvent("search", { search_term: "", results_count: visibleCount });
+    }
+    return;
+  }
+
+  if (termNorm.length < 2) return;
+  if (termNorm === lastSentTermNorm) return;
+
+  lastSentTermNorm = termNorm;
+  const params = { search_term: termNorm, results_count: visibleCount };
+  if (__isDebug) params.search_term_raw = termRaw;
+  gaEvent("search", params);
+}
+
+function renderAndTrackSearch(){
+  render();
+  sendSearchEvent(searchEl.value);
+}
+
+searchEl.addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(renderAndTrackSearch, SEARCH_DEBOUNCE_MS);
+});
+
+searchEl.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  e.preventDefault();
+  clearTimeout(searchTimer);
+  renderAndTrackSearch();
+});
+
+function restorePlayerPos(){
+  try{
+    const s = JSON.parse(localStorage.getItem(LS.pos) || "null");
+    if (!s) return;
+    if (typeof s.x !== "number" || typeof s.y !== "number") return;
+
+    let x = s.x;
+    let y = s.y;
+
+    if (s.ver !== 2 && useTransformScale){
+      x = x * uiScale;
+      y = y * uiScale;
     }
 
-    sbSortDateBtn.addEventListener("click", () => clickSort("date"));
-    sbSortDurBtn.addEventListener("click", () => clickSort("dur"));
-    sbSortPlayBtn.addEventListener("click", () => clickSort("play"));
-    sbSortDlBtn.addEventListener("click", () => clickSort("download"));
+    fp.style.left = x + "px";
+    fp.style.top = y + "px";
+    fp.style.bottom = "auto";
+    fp.style.right = "auto";
+    clampPlayerToViewport();
+  }catch{}
+}
 
-    let txOpen = false;
-    let txCurrent = null;
-    let txPlainText = "";
-    let txMatches = [];
-    let txActiveMatch = -1;
-    let txSearchTimer = null;
-    const txCache = new Map();
-    const TX_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+function savePlayerPos(x, y){
+  localStorage.setItem(LS.pos, JSON.stringify({ x, y, ver: 2 }));
+}
 
-    function clearTxSearchUI(){
-      txMatches = [];
-      txActiveMatch = -1;
-      txMatchCountEl.textContent = "0/0";
-      txPrevMatchBtn.disabled = true;
-      txNextMatchBtn.disabled = true;
-      txContentEl.textContent = txPlainText || "";
+function getPlayerRect(){
+  return fp.getBoundingClientRect();
+}
+
+function getPlayerPosPx(){
+  const left = parseFloat(fp.style.left);
+  const top = parseFloat(fp.style.top);
+  if (Number.isFinite(left) && Number.isFinite(top)) return { left, top };
+  const r = getPlayerRect();
+  return { left: r.left, top: r.top };
+}
+
+function getPlayerBoundsPx(){
+  const { vw, vh } = getViewportWH();
+  const r = getPlayerRect();
+  const w = r.width;
+  const h = r.height;
+  const keepX = Math.max(70, Math.min(w - 16, 180));
+  const keepY = Math.max(56, Math.min(h - 16, 120));
+  const capH = (isCaptionsOn() && captionsEl && !captionsEl.classList.contains("hidden"))
+    ? captionsEl.getBoundingClientRect().height
+    : 0;
+  const drawerH = (!skipDrawer.hidden) ? skipDrawer.getBoundingClientRect().height : 0;
+
+  const minX = -w + keepX;
+  const maxX = vw - keepX;
+  const minY = -h + keepY + capH;
+  const maxY = vh - keepY - Math.min(drawerH, 160);
+
+  return {
+    minX: Math.min(minX, maxX),
+    maxX: Math.max(minX, maxX),
+    minY: Math.min(minY, maxY),
+    maxY: Math.max(minY, maxY),
+  };
+}
+
+function clampPlayerToViewport(){
+  const { minX, maxX, minY, maxY } = getPlayerBoundsPx();
+  const cur = getPlayerPosPx();
+  const nx = Math.min(maxX, Math.max(minX, cur.left));
+  const ny = Math.min(maxY, Math.max(minY, cur.top));
+
+  fp.style.left = nx + "px";
+  fp.style.top = ny + "px";
+  fp.style.right = "auto";
+  fp.style.bottom = "auto";
+  savePlayerPos(nx, ny);
+}
+
+const DRAG_IGNORE_SELECTOR =
+  "button, a, input, textarea, select, option, .speedWrap, .speedCtlBtn, .miniBtn, " +
+  ".plyr__controls, .plyr__control, .plyr__progress, .plyr__seek, .plyr__volume, .plyr__time, .plyr__menu";
+
+function shouldStartDrag(target){
+  return !(target && target.closest && target.closest(DRAG_IGNORE_SELECTOR));
+}
+
+let dragging = false;
+let startClientX = 0, startClientY = 0;
+let startLeft = 0, startTop = 0;
+let moved = false;
+let suppressClickUntil = 0;
+
+fpHeader.addEventListener("pointerdown", (e) => {
+  if (!shouldStartDrag(e.target)) return;
+
+  dragging = true;
+  moved = false;
+  fpHeader.setPointerCapture(e.pointerId);
+  fpHeader.style.cursor = "grabbing";
+  startClientX = e.clientX;
+  startClientY = e.clientY;
+
+  const cur = getPlayerPosPx();
+  startLeft = cur.left;
+  startTop = cur.top;
+
+  fp.style.left = startLeft + "px";
+  fp.style.top = startTop + "px";
+  fp.style.bottom = "auto";
+  fp.style.right = "auto";
+});
+
+fpHeader.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+
+  const dx = e.clientX - startClientX;
+  const dy = e.clientY - startClientY;
+  if (!moved && (Math.abs(dx) + Math.abs(dy) > 6)) moved = true;
+
+  const { minX, maxX, minY, maxY } = getPlayerBoundsPx();
+  const nx = Math.min(maxX, Math.max(minX, startLeft + dx));
+  const ny = Math.min(maxY, Math.max(minY, startTop + dy));
+
+  fp.style.left = nx + "px";
+  fp.style.top = ny + "px";
+  savePlayerPos(nx, ny);
+});
+
+function endDrag(pointerId){
+  if (!dragging) return;
+  dragging = false;
+  fpHeader.style.cursor = "grab";
+  try { fpHeader.releasePointerCapture(pointerId); } catch {}
+  clampPlayerToViewport();
+
+  if (moved){
+    suppressClickUntil = Date.now() + 350;
+    moved = false;
+  }
+}
+
+fpHeader.addEventListener("pointerup", (e) => endDrag(e.pointerId));
+fpHeader.addEventListener("pointercancel", (e) => endDrag(e.pointerId));
+
+fpHeader.addEventListener("click", (e) => {
+  if (Date.now() < suppressClickUntil){
+    e.preventDefault();
+    e.stopPropagation();
+  }
+}, true);
+
+window.addEventListener("resize", () => {
+  clampPlayerToViewport();
+  updateOverlayScale();
+  updateSearchNoZoomFontSizes();
+  clampTxSizeToViewport();
+  clampTxPosToViewport();
+  updateSticky(true);
+});
+
+window.addEventListener("orientationchange", () => setTimeout(() => {
+  clampPlayerToViewport();
+  updateOverlayScale();
+  updateSearchNoZoomFontSizes();
+  clampTxSizeToViewport();
+  clampTxPosToViewport();
+  updateSticky(true);
+}, 150));
+
+if (window.visualViewport){
+  window.visualViewport.addEventListener("resize", () => {
+    clampPlayerToViewport();
+    updateOverlayScale();
+    updateSearchNoZoomFontSizes();
+    clampTxSizeToViewport();
+    clampTxPosToViewport();
+    updateSticky(true);
+  });
+}
+
+(function disablePullToRefresh(){
+  let startY = 0;
+  scrollArea.addEventListener("touchstart", (e) => {
+    if (!e.touches || !e.touches.length) return;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  scrollArea.addEventListener("touchmove", (e) => {
+    if (!e.touches || !e.touches.length) return;
+    const y = e.touches[0].clientY;
+    if (scrollArea.scrollTop <= 0 && y > startY + 4) e.preventDefault();
+  }, { passive: false });
+})();
+
+(function setActiveNav(){
+  const here = location.href.replace(/\/$/, "");
+  document.querySelectorAll(".navRow .navLink").forEach(a => {
+    a.classList.remove("on");
+    const u = (a.getAttribute("href") || "").replace(/\/$/, "");
+    if (!u) return;
+    if (here === u || here.startsWith(u + "/")) a.classList.add("on");
+  });
+})();
+
+function openSidebar(){
+  sbOverlay.classList.add("open");
+  sbOverlay.setAttribute("aria-hidden", "false");
+  updateOverlayScale();
+  setSortIcons();
+}
+
+function closeSidebar(){
+  sbOverlay.classList.remove("open");
+  sbOverlay.setAttribute("aria-hidden", "true");
+}
+
+sidebarOpenBtn.addEventListener("click", (e) => { e.stopPropagation(); openSidebar(); });
+sbCloseBtn.addEventListener("click", (e) => { e.stopPropagation(); closeSidebar(); });
+sbOverlay.addEventListener("click", (e) => { if (e.target === sbOverlay) closeSidebar(); });
+document.getElementById("sidebar").addEventListener("click", (e) => e.stopPropagation());
+
+sbRefreshBtn.addEventListener("click", async () => {
+  localStorage.setItem(LS.itemsCacheAt, "0");
+  try { await loadItems(); }
+  finally {
+    statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
+  }
+});
+
+sbZoomResetBtn.addEventListener("click", () => resetZoom100());
+sbFavBtn.addEventListener("click", () => { filterFav = !filterFav; setSortIcons(); render(); });
+
+function clickSort(kind){
+  if (kind === "date"){
+    if (sortMode !== "date") sortMode = "date";
+    else dateSortDir = (dateSortDir === "asc") ? "desc" : "asc";
+    localStorage.setItem(LS.sortMode, sortMode);
+    localStorage.setItem(LS.sortDirDate, dateSortDir);
+  } else if (kind === "dur"){
+    if (sortMode !== "dur") sortMode = "dur";
+    else durSortDir = (durSortDir === "asc") ? "desc" : "asc";
+    localStorage.setItem(LS.sortMode, sortMode);
+    localStorage.setItem(LS.sortDirDur, durSortDir);
+  } else if (kind === "play"){
+    if (sortMode !== "play") sortMode = "play";
+    else playSortDir = (playSortDir === "asc") ? "desc" : "asc";
+    localStorage.setItem(LS.sortMode, sortMode);
+    localStorage.setItem(LS.sortDirPlay, playSortDir);
+  } else if (kind === "download"){
+    if (sortMode !== "download") sortMode = "download";
+    else dlSortDir = (dlSortDir === "asc") ? "desc" : "asc";
+    localStorage.setItem(LS.sortMode, sortMode);
+    localStorage.setItem(LS.sortDirDl, dlSortDir);
+  }
+  setSortIcons();
+  render();
+}
+
+sbSortDateBtn.addEventListener("click", () => clickSort("date"));
+sbSortDurBtn.addEventListener("click", () => clickSort("dur"));
+sbSortPlayBtn.addEventListener("click", () => clickSort("play"));
+sbSortDlBtn.addEventListener("click", () => clickSort("download"));
+
+let txOpen = false;
+let txCurrent = null;
+let txPlainText = "";
+let txMatches = [];
+let txActiveMatch = -1;
+let txSearchTimer = null;
+const txCache = new Map();
+const TX_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+function clearTxSearchUI(){
+  txMatches = [];
+  txActiveMatch = -1;
+  txMatchCountEl.textContent = "0/0";
+  txPrevMatchBtn.disabled = true;
+  txNextMatchBtn.disabled = true;
+  txContentEl.textContent = txPlainText || "";
+}
+
+function clampTxSizeToViewport(){
+  if (!txOpen) return;
+
+  const saved = loadAny(LS.txSize);
+  if (saved && typeof saved.w === "number" && typeof saved.h === "number"){
+    txPanel.style.width = saved.w + "px";
+    txPanel.style.height = saved.h + "px";
+  } else {
+    txPanel.style.width = TX_DEFAULT_SIZE.w + "px";
+    txPanel.style.height = TX_DEFAULT_SIZE.h + "px";
+  }
+
+  const { vw, vh } = getViewportWH();
+  const vwL = toLayoutPx(vw);
+  const vhL = toLayoutPx(vh);
+  const margin = 28;
+  const maxW = Math.max(TX_MIN_SIZE.w, vwL - margin);
+  const maxH = Math.max(TX_MIN_SIZE.h, vhL - margin);
+  const curW = txPanel.offsetWidth || TX_DEFAULT_SIZE.w;
+  const curH = txPanel.offsetHeight || TX_DEFAULT_SIZE.h;
+  const minW = Math.min(maxW, TX_MIN_SIZE.w);
+  const minH = Math.min(maxH, TX_MIN_SIZE.h);
+
+  const w = Math.min(maxW, Math.max(minW, curW));
+  const h = Math.min(maxH, Math.max(minH, curH));
+
+  txPanel.style.width = w + "px";
+  txPanel.style.height = h + "px";
+  saveAny(LS.txSize, { w, h });
+}
+
+function getTxPosPx(){
+  const cs = getComputedStyle(txPanel);
+  const top = parseFloat(txPanel.style.top || cs.top || "0");
+  const right = parseFloat(txPanel.style.right || cs.right || "0");
+  return { top: Number.isFinite(top) ? top : 0, right: Number.isFinite(right) ? right : 0 };
+}
+
+function setTxPosPx(top, right){
+  txPanel.style.top = top + "px";
+  txPanel.style.right = right + "px";
+  txPanel.style.left = "auto";
+  txPanel.style.bottom = "auto";
+}
+
+function saveTxPos(top, right){
+  saveAny(LS.txPos, { top, right });
+}
+
+function restoreTxPos(){
+  const saved = loadAny(LS.txPos);
+  if (!saved) return;
+  if (typeof saved.top === "number" && typeof saved.right === "number"){
+    setTxPosPx(saved.top, saved.right);
+  }
+}
+
+function clampTxPosCandidate(top, right){
+  const { vw, vh } = getViewportWH();
+  const rect = txPanel.getBoundingClientRect();
+  const w = rect.width;
+  const h = rect.height;
+
+  const margin = 14;
+  const minTop = margin;
+  const maxTop = Math.max(minTop, vh - h - margin);
+
+  const minRight = margin;
+  const maxRight = Math.max(minRight, vw - w - margin);
+
+  return {
+    top: Math.min(maxTop, Math.max(minTop, top)),
+    right: Math.min(maxRight, Math.max(minRight, right)),
+  };
+}
+
+function clampTxPosToViewport(){
+  if (!txOpen) return;
+  const cur = getTxPosPx();
+  const cl = clampTxPosCandidate(cur.top, cur.right);
+  setTxPosPx(cl.top, cl.right);
+  saveTxPos(cl.top, cl.right);
+}
+
+function setTxtBtnUi(){
+  fpTxtBtn.classList.toggle("on", !!txOpen);
+  fpTxtBtn.setAttribute("aria-pressed", String(!!txOpen));
+}
+
+function openTranscript(){
+  txOpen = true;
+  txPanel.classList.add("open");
+  txPanel.setAttribute("aria-hidden", "false");
+  updateOverlayScale();
+  updateSearchNoZoomFontSizes();
+  restoreTxPos();
+  clampTxSizeToViewport();
+  clampTxPosToViewport();
+  setTxtBtnUi();
+}
+
+function closeTranscript(){
+  txOpen = false;
+  txPanel.classList.remove("open");
+  txPanel.setAttribute("aria-hidden", "true");
+  txSearchRow.classList.remove("on");
+  setTxtBtnUi();
+}
+
+txCloseBtn.addEventListener("click", () => closeTranscript());
+
+function escapeForRegex(s){
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildHighlightedHtml(text, ranges, activeIdx){
+  if (!ranges.length) return escHtml(text);
+  const parts = [];
+  let last = 0;
+  for (let i = 0; i < ranges.length; i++){
+    const r = ranges[i];
+    const a = Math.max(0, r[0]);
+    const b = Math.max(a, r[1]);
+    if (a > last) parts.push(escHtml(text.slice(last, a)));
+    const cls = (i === activeIdx) ? "txMark active" : "txMark";
+    parts.push(`<span class="${cls}" data-mi="${i}">${escHtml(text.slice(a, b))}</span>`);
+    last = b;
+  }
+  if (last < text.length) parts.push(escHtml(text.slice(last)));
+  return parts.join("");
+}
+
+function computeMatches(text, q){
+  const out = [];
+  if (!q) return out;
+  const re = new RegExp(escapeForRegex(q), "gi");
+  let m;
+  while ((m = re.exec(text))){
+    const a = m.index;
+    const b = a + (m[0] || "").length;
+    if (b > a) out.push([a, b]);
+    if (out.length >= 2000) break;
+    if (m[0].length === 0) re.lastIndex++;
+  }
+  return out;
+}
+
+function applyTxSearch(){
+  const q = (txSearchInput.value || "").trim();
+  if (!q){
+    clearTxSearchUI();
+    return;
+  }
+  txMatches = computeMatches(txPlainText, q);
+  txActiveMatch = txMatches.length ? 0 : -1;
+  txPrevMatchBtn.disabled = txMatches.length < 2;
+  txNextMatchBtn.disabled = txMatches.length < 2;
+  txMatchCountEl.textContent = txMatches.length ? `1/${txMatches.length}` : "0/0";
+  txContentEl.innerHTML = buildHighlightedHtml(txPlainText, txMatches, txActiveMatch);
+  if (txMatches.length) setTimeout(() => scrollToActiveMatch(), 0);
+}
+
+function scrollToActiveMatch(){
+  const el = txContentEl.querySelector(".txMark.active");
+  if (!el) return;
+  try{
+    el.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+  }catch{
+    el.scrollIntoView();
+  }
+}
+
+function setActiveMatch(idx){
+  if (!txMatches.length) return;
+  txActiveMatch = ((idx % txMatches.length) + txMatches.length) % txMatches.length;
+  txMatchCountEl.textContent = `${txActiveMatch + 1}/${txMatches.length}`;
+
+  const old = txContentEl.querySelector(".txMark.active");
+  if (old) old.classList.remove("active");
+
+  const next = txContentEl.querySelector(`.txMark[data-mi="${txActiveMatch}"]`);
+  if (next){
+    next.classList.add("active");
+    scrollToActiveMatch();
+  } else {
+    txContentEl.innerHTML = buildHighlightedHtml(txPlainText, txMatches, txActiveMatch);
+    setTimeout(() => scrollToActiveMatch(), 0);
+  }
+}
+
+txSearchBtn.addEventListener("click", () => {
+  const on = txSearchRow.classList.toggle("on");
+  if (on){
+    txSearchInput.focus();
+    txSearchInput.select();
+  }
+});
+
+txSearchInput.addEventListener("input", () => {
+  clearTimeout(txSearchTimer);
+  txSearchTimer = setTimeout(applyTxSearch, 180);
+});
+
+txSearchInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter"){
+    e.preventDefault();
+    if (!txMatches.length){
+      applyTxSearch();
+      return;
     }
+    if (e.shiftKey) setActiveMatch(txActiveMatch - 1);
+    else setActiveMatch(txActiveMatch + 1);
+  } else if (e.key === "Escape"){
+    e.preventDefault();
+    txSearchRow.classList.remove("on");
+  }
+});
 
-    function clampTxSizeToViewport(){
-      if (!txOpen) return;
+txPrevMatchBtn.addEventListener("click", () => setActiveMatch(txActiveMatch - 1));
+txNextMatchBtn.addEventListener("click", () => setActiveMatch(txActiveMatch + 1));
 
-      const saved = loadAny(LS.txSize);
-      if (saved && typeof saved.w === "number" && typeof saved.h === "number"){
-        txPanel.style.width = saved.w + "px";
-        txPanel.style.height = saved.h + "px";
-      } else {
-        txPanel.style.width = TX_DEFAULT_SIZE.w + "px";
-        txPanel.style.height = TX_DEFAULT_SIZE.h + "px";
-      }
+async function copyToClipboard(text){
+  if (!text) return false;
+  try{
+    await navigator.clipboard.writeText(text);
+    return true;
+  }catch{}
+  try{
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    ta.style.top = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    return !!ok;
+  }catch{
+    return false;
+  }
+}
 
-      const { vw, vh } = getViewportWH();
-      const vwL = toLayoutPx(vw);
-      const vhL = toLayoutPx(vh);
-      const margin = 28;
-      const maxW = Math.max(TX_MIN_SIZE.w, vwL - margin);
-      const maxH = Math.max(TX_MIN_SIZE.h, vhL - margin);
-      const curW = txPanel.offsetWidth || TX_DEFAULT_SIZE.w;
-      const curH = txPanel.offsetHeight || TX_DEFAULT_SIZE.h;
-      const minW = Math.min(maxW, TX_MIN_SIZE.w);
-      const minH = Math.min(maxH, TX_MIN_SIZE.h);
+txCopyBtn.addEventListener("click", async () => {
+  const ok = await copyToClipboard(txPlainText);
+  txInfoEl.textContent = ok ? "Kopiert." : "Kopieren fehlgeschlagen.";
+  setTimeout(() => { if (txCurrent) updateTxInfo(txCurrent); }, 1200);
+});
 
-      const w = Math.min(maxW, Math.max(minW, curW));
-      const h = Math.min(maxH, Math.max(minH, curH));
+txDownloadBtn.addEventListener("click", () => {
+  if (!txCurrent || !txCurrent.txtUrl) return;
+  const filename = (txCurrent.txtName || "").split("/").pop() || "transkript.txt";
+  forceDownload(txCurrent.txtUrl, filename);
+  trackTranscriptDownload(txCurrent, filename);
+});
 
-      txPanel.style.width = w + "px";
-      txPanel.style.height = h + "px";
-      saveAny(LS.txSize, { w, h });
-    }
+function updateTxInfo(it){
+  const file = (it?.txtName || "").split("/").pop() || "—";
+  txInfoEl.textContent = file ? `TXT: ${file}` : "—";
+}
 
-    function getTxPosPx(){
-      const cs = getComputedStyle(txPanel);
-      const top = parseFloat(txPanel.style.top || cs.top || "0");
-      const right = parseFloat(txPanel.style.right || cs.right || "0");
-      return { top: Number.isFinite(top) ? top : 0, right: Number.isFinite(right) ? right : 0 };
-    }
+async function fetchTranscriptText(it){
+  const cached = txCache.get(it.id);
+  if (cached && (Date.now() - cached.at) < TX_CACHE_TTL_MS) return cached.text;
 
-    function setTxPosPx(top, right){
-      txPanel.style.top = top + "px";
-      txPanel.style.right = right + "px";
-      txPanel.style.left = "auto";
-      txPanel.style.bottom = "auto";
-    }
+  const built = await buildTxtUrlsForItem(it);
+  const urls = [];
+  const seen = new Set();
 
-    function saveTxPos(top, right){
-      saveAny(LS.txPos, { top, right });
-    }
+  for (const u of [it?.txtUrl, ...(built?.urls || [])]){
+    const uu = String(u || "").trim();
+    if (!uu || seen.has(uu)) continue;
+    seen.add(uu);
+    urls.push(uu);
+  }
 
-    function restoreTxPos(){
-      const saved = loadAny(LS.txPos);
-      if (!saved) return;
-      if (typeof saved.top === "number" && typeof saved.right === "number"){
-        setTxPosPx(saved.top, saved.right);
-      }
-    }
+  let lastErr = null;
+  for (const url of urls){
+    try{
+      const res = await fetch(url, { cache: "no-cache" });
+      if (!res.ok) throw new Error("txt fetch failed: " + res.status);
+      const text = await res.text();
 
-    function clampTxPosCandidate(top, right){
-      const { vw, vh } = getViewportWH();
-      const rect = txPanel.getBoundingClientRect();
-      const w = rect.width;
-      const h = rect.height;
-
-      const margin = 14;
-      const minTop = margin;
-      const maxTop = Math.max(minTop, vh - h - margin);
-
-      const minRight = margin;
-      const maxRight = Math.max(minRight, vw - w - margin);
-
-      return {
-        top: Math.min(maxTop, Math.max(minTop, top)),
-        right: Math.min(maxRight, Math.max(minRight, right)),
-      };
-    }
-
-    function clampTxPosToViewport(){
-      if (!txOpen) return;
-      const cur = getTxPosPx();
-      const cl = clampTxPosCandidate(cur.top, cur.right);
-      setTxPosPx(cl.top, cl.right);
-      saveTxPos(cl.top, cl.right);
-    }
-
-    function setTxtBtnUi(){
-      fpTxtBtn.classList.toggle("on", !!txOpen);
-      fpTxtBtn.setAttribute("aria-pressed", String(!!txOpen));
-    }
-
-    function openTranscript(){
-      txOpen = true;
-      txPanel.classList.add("open");
-      txPanel.setAttribute("aria-hidden", "false");
-      updateOverlayScale();
-      updateSearchNoZoomFontSizes();
-      restoreTxPos();
-      clampTxSizeToViewport();
-      clampTxPosToViewport();
-      setTxtBtnUi();
-    }
-
-    function closeTranscript(){
-      txOpen = false;
-      txPanel.classList.remove("open");
-      txPanel.setAttribute("aria-hidden", "true");
-      txSearchRow.classList.remove("on");
-      setTxtBtnUi();
-    }
-
-    txCloseBtn.addEventListener("click", () => closeTranscript());
-
-    function escapeForRegex(s){
-      return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    }
-
-    function buildHighlightedHtml(text, ranges, activeIdx){
-      if (!ranges.length) return escHtml(text);
-      const parts = [];
-      let last = 0;
-      for (let i = 0; i < ranges.length; i++){
-        const r = ranges[i];
-        const a = Math.max(0, r[0]);
-        const b = Math.max(a, r[1]);
-        if (a > last) parts.push(escHtml(text.slice(last, a)));
-        const cls = (i === activeIdx) ? "txMark active" : "txMark";
-        parts.push(`<span class="${cls}" data-mi="${i}">${escHtml(text.slice(a, b))}</span>`);
-        last = b;
-      }
-      if (last < text.length) parts.push(escHtml(text.slice(last)));
-      return parts.join("");
-    }
-
-    function computeMatches(text, q){
-      const out = [];
-      if (!q) return out;
-      const re = new RegExp(escapeForRegex(q), "gi");
-      let m;
-      while ((m = re.exec(text))){
-        const a = m.index;
-        const b = a + (m[0] || "").length;
-        if (b > a) out.push([a, b]);
-        if (out.length >= 2000) break;
-        if (m[0].length === 0) re.lastIndex++;
-      }
-      return out;
-    }
-
-    function applyTxSearch(){
-      const q = (txSearchInput.value || "").trim();
-      if (!q){
-        clearTxSearchUI();
-        return;
-      }
-      txMatches = computeMatches(txPlainText, q);
-      txActiveMatch = txMatches.length ? 0 : -1;
-      txPrevMatchBtn.disabled = txMatches.length < 2;
-      txNextMatchBtn.disabled = txMatches.length < 2;
-      txMatchCountEl.textContent = txMatches.length ? `1/${txMatches.length}` : "0/0";
-      txContentEl.innerHTML = buildHighlightedHtml(txPlainText, txMatches, txActiveMatch);
-      if (txMatches.length) setTimeout(() => scrollToActiveMatch(), 0);
-    }
-
-    function scrollToActiveMatch(){
-      const el = txContentEl.querySelector(".txMark.active");
-      if (!el) return;
       try{
-        el.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
-      }catch{
-        el.scrollIntoView();
-      }
-    }
-
-    function setActiveMatch(idx){
-      if (!txMatches.length) return;
-      txActiveMatch = ((idx % txMatches.length) + txMatches.length) % txMatches.length;
-      txMatchCountEl.textContent = `${txActiveMatch + 1}/${txMatches.length}`;
-
-      const old = txContentEl.querySelector(".txMark.active");
-      if (old) old.classList.remove("active");
-
-      const next = txContentEl.querySelector(`.txMark[data-mi="${txActiveMatch}"]`);
-      if (next){
-        next.classList.add("active");
-        scrollToActiveMatch();
-      } else {
-        txContentEl.innerHTML = buildHighlightedHtml(txPlainText, txMatches, txActiveMatch);
-        setTimeout(() => scrollToActiveMatch(), 0);
-      }
-    }
-
-    txSearchBtn.addEventListener("click", () => {
-      const on = txSearchRow.classList.toggle("on");
-      if (on){
-        txSearchInput.focus();
-        txSearchInput.select();
-      }
-    });
-
-    txSearchInput.addEventListener("input", () => {
-      clearTimeout(txSearchTimer);
-      txSearchTimer = setTimeout(applyTxSearch, 180);
-    });
-
-    txSearchInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter"){
-        e.preventDefault();
-        if (!txMatches.length){
-          applyTxSearch();
-          return;
-        }
-        if (e.shiftKey) setActiveMatch(txActiveMatch - 1);
-        else setActiveMatch(txActiveMatch + 1);
-      } else if (e.key === "Escape"){
-        e.preventDefault();
-        txSearchRow.classList.remove("on");
-      }
-    });
-
-    txPrevMatchBtn.addEventListener("click", () => setActiveMatch(txActiveMatch - 1));
-    txNextMatchBtn.addEventListener("click", () => setActiveMatch(txActiveMatch + 1));
-
-    async function copyToClipboard(text){
-      if (!text) return false;
-      try{
-        await navigator.clipboard.writeText(text);
-        return true;
+        const u = new URL(url, location.href);
+        const fn = decodeURIComponentSafe((u.pathname || "").split("/").pop() || "");
+        if (fn) it.txtName = fn;
       }catch{}
-      try{
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.left = "-9999px";
-        ta.style.top = "-9999px";
-        document.body.appendChild(ta);
-        ta.focus();
-        ta.select();
-        const ok = document.execCommand("copy");
-        ta.remove();
-        return !!ok;
-      }catch{
-        return false;
-      }
+      it.txtUrl = url;
+      txCache.set(it.id, { text, at: Date.now() });
+      return text;
+    }catch(err){
+      lastErr = err;
     }
+  }
+  throw (lastErr || new Error("txt fetch failed"));
+}
 
-    txCopyBtn.addEventListener("click", async () => {
-      const ok = await copyToClipboard(txPlainText);
-      txInfoEl.textContent = ok ? "Kopiert." : "Kopieren fehlgeschlagen.";
-      setTimeout(() => { if (txCurrent) updateTxInfo(txCurrent); }, 1200);
+async function openTranscriptFor(it){
+  if (!it) return;
+  txCurrent = it;
+  openTranscript();
+  trackTranscriptOpen(it);
+
+  txTitleEl.textContent = it.title || "Transkript";
+  updateTxInfo(it);
+  txCopyBtn.disabled = true;
+  txDownloadBtn.disabled = true;
+  txContentEl.textContent = "Yükleniyor…";
+  txPlainText = "";
+  clearTxSearchUI();
+
+  try{
+    const t = await fetchTranscriptText(it);
+    txPlainText = t || "";
+    txCopyBtn.disabled = !txPlainText;
+    updateTxInfo(it);
+    txDownloadBtn.disabled = false;
+    clearTxSearchUI();
+  }catch{
+    txContentEl.textContent = "TXT yüklenemedi.";
+    txCopyBtn.disabled = true;
+  }
+}
+
+function toggleTranscriptFromPlayer(){
+  if (txOpen){
+    closeTranscript();
+    return;
+  }
+  const it = items.find(x => x.id === activeId) || items.find(x => x.id === selectedId) || null;
+  if (!it){
+    openTranscript();
+    txTitleEl.textContent = "Transkript";
+    txInfoEl.textContent = "—";
+    txPlainText = "";
+    txContentEl.textContent = "Bir kayıt seç...";
+    txCopyBtn.disabled = true;
+    txDownloadBtn.disabled = true;
+    return;
+  }
+  openTranscriptFor(it).catch(()=>{});
+}
+
+fpTxtBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleTranscriptFromPlayer();
+});
+
+sbClearTxCacheBtn.addEventListener("click", () => {
+  txCache.clear();
+  txInfoEl.textContent = "TXT Cache temizlendi.";
+  setTimeout(() => { if (txCurrent) updateTxInfo(txCurrent); }, 1200);
+});
+
+txPanel.addEventListener("click", (e) => e.stopPropagation());
+
+const TX_DRAG_IGNORE_SELECTOR = "button, a, input, textarea, select, option";
+function shouldStartTxDrag(target){
+  return !(target && target.closest && target.closest(TX_DRAG_IGNORE_SELECTOR));
+}
+
+let txDragging = false;
+let txDragStartX = 0, txDragStartY = 0;
+let txDragStartTop = 0, txDragStartRight = 0;
+
+txHeader.addEventListener("pointerdown", (e) => {
+  if (!txOpen || !shouldStartTxDrag(e.target)) return;
+  txDragging = true;
+  txHeader.setPointerCapture(e.pointerId);
+  txHeader.style.cursor = "grabbing";
+  txDragStartX = e.clientX;
+  txDragStartY = e.clientY;
+
+  const cur = getTxPosPx();
+  txDragStartTop = cur.top;
+  txDragStartRight = cur.right;
+
+  e.preventDefault();
+  e.stopPropagation();
+});
+
+txHeader.addEventListener("pointermove", (e) => {
+  if (!txDragging) return;
+  const dx = e.clientX - txDragStartX;
+  const dy = e.clientY - txDragStartY;
+  const cl = clampTxPosCandidate(txDragStartTop + dy, txDragStartRight - dx);
+  setTxPosPx(cl.top, cl.right);
+  e.preventDefault();
+});
+
+function endTxDrag(pointerId){
+  if (!txDragging) return;
+  txDragging = false;
+  txHeader.style.cursor = "grab";
+  try { txHeader.releasePointerCapture(pointerId); } catch {}
+  clampTxPosToViewport();
+}
+
+txHeader.addEventListener("pointerup", (e) => endTxDrag(e.pointerId));
+txHeader.addEventListener("pointercancel", (e) => endTxDrag(e.pointerId));
+
+let txResizing = false;
+let txResizeStartX = 0, txResizeStartY = 0;
+let txResizeStartW = 0, txResizeStartH = 0;
+
+function saveTxSize(w, h){
+  saveAny(LS.txSize, { w, h });
+}
+
+function clampTxSize(w, h){
+  const { vw, vh } = getViewportWH();
+  const vwL = toLayoutPx(vw);
+  const vhL = toLayoutPx(vh);
+  const margin = 28;
+  const maxW = Math.max(TX_MIN_SIZE.w, vwL - margin);
+  const maxH = Math.max(TX_MIN_SIZE.h, vhL - margin);
+  const minW = Math.min(maxW, TX_MIN_SIZE.w);
+  const minH = Math.min(maxH, TX_MIN_SIZE.h);
+
+  return {
+    w: Math.min(maxW, Math.max(minW, w)),
+    h: Math.min(maxH, Math.max(minH, h))
+  };
+}
+
+txResizeHandle.addEventListener("pointerdown", (e) => {
+  if (!txOpen) return;
+  txResizing = true;
+  txResizeStartX = e.clientX;
+  txResizeStartY = e.clientY;
+  txResizeStartW = txPanel.offsetWidth;
+  txResizeStartH = txPanel.offsetHeight;
+  txResizeHandle.setPointerCapture(e.pointerId);
+  e.preventDefault();
+  e.stopPropagation();
+});
+
+txResizeHandle.addEventListener("pointermove", (e) => {
+  if (!txResizing) return;
+  const dxClient = e.clientX - txResizeStartX;
+  const dyClient = e.clientY - txResizeStartY;
+  const dx = useTransformScale ? (dxClient / uiScale) : dxClient;
+  const dy = useTransformScale ? (dyClient / uiScale) : dyClient;
+  const cl = clampTxSize(txResizeStartW - dx, txResizeStartH + dy);
+  txPanel.style.width = cl.w + "px";
+  txPanel.style.height = cl.h + "px";
+  saveTxSize(cl.w, cl.h);
+});
+
+function endTxResize(pointerId){
+  if (!txResizing) return;
+  txResizing = false;
+  try { txResizeHandle.releasePointerCapture(pointerId); } catch {}
+  clampTxSizeToViewport();
+  clampTxPosToViewport();
+}
+
+txResizeHandle.addEventListener("pointerup", (e) => endTxResize(e.pointerId));
+txResizeHandle.addEventListener("pointercancel", (e) => endTxResize(e.pointerId));
+
+const IA_IDENTIFIER_2 = "FSPneu";
+const IA2_SRC = "S2";
+const IA2_TX_SUBDIR = "FSPab26";
+const IA2_BLOCK_PREFIXES = ["Dusseldorf", "Düsseldorf", "Stuttgart", "Rheutlingen", "Reutlingen", "Sachsen", "Hessen", "Karlsruhe"];
+
+function __ia2EnsureSlashEnd(s){
+  s = String(s || "");
+  return s.endsWith("/") ? s : (s + "/");
+}
+
+function __ia2BasesWithSubdir(bases, subdir){
+  const sd = String(subdir || "").replace(/^\/+|\/+$/g, "");
+  return (bases || []).map(b => __ia2EnsureSlashEnd(b) + sd + "/");
+}
+
+const __IA2_SRT_BASES = __ia2BasesWithSubdir(SRT_BASES, IA2_TX_SUBDIR);
+const __IA2_TXT_BASES = __ia2BasesWithSubdir(TXT_BASES, IA2_TX_SUBDIR);
+
+function __ia2IsBlockedByPrefix(fileName){
+  let base = (fileName || "").toString();
+  base = base.split("/").pop() || base;
+  base = decodeURIComponentSafe(base);
+  base = base.replace(/\.(m4a|mp3)$/i, "").trim();
+  base = base.replace(/^A[\s_-]+/i, "").trim();
+
+  const folded = foldTR(base);
+  for (const p of IA2_BLOCK_PREFIXES){
+    const c = foldTR(p);
+    if (folded.startsWith(c)){
+      const next = folded.slice(c.length, c.length + 1);
+      if (!next || /[\s\-_0-9.:]/.test(next)) return true;
+    }
+  }
+  return false;
+}
+
+function __ia2MakeItemsFromFiles(files){
+  return (files || [])
+    .filter(f => typeof f?.name === "string")
+    .filter(f => {
+      const name = String(f.name).toLowerCase();
+      if (!name.endsWith(".m4a")) return false;
+      if (!("source" in f)) return true;
+      return String(f.source || "").toLowerCase() === "original";
+    })
+    .filter(f => !__ia2IsBlockedByPrefix(f.name))
+    .map((f, idx) => {
+      const name = f.name || "";
+      const title = (String(f.title || "").trim()) || decodeURIComponentSafe(name.split("/").pop() || name);
+      const url = buildDownloadUrl(IA_IDENTIFIER_2, name);
+      const localId = name || url || (title + "#" + idx);
+      const id = IA2_SRC + "|" + localId;
+
+      const txtCandidates = buildTxtNameCandidates({ name });
+      const txtName = txtCandidates.length ? txtCandidates[0] : replaceExtToTxt(name);
+      const txtUrl = txtName ? (__IA2_TXT_BASES[0] + encodeURIComponent(txtName)) : "";
+
+      return { id, title, name, url, src: IA2_SRC, txtName, txtUrl };
     });
+}
 
-    txDownloadBtn.addEventListener("click", () => {
-      if (!txCurrent || !txCurrent.txtUrl) return;
-      const filename = (txCurrent.txtName || "").split("/").pop() || "transkript.txt";
-      forceDownload(txCurrent.txtUrl, filename);
-      trackTranscriptDownload(txCurrent, filename);
-    });
-
-    function updateTxInfo(it){
-      const file = (it?.txtName || "").split("/").pop() || "—";
-      txInfoEl.textContent = file ? `TXT: ${file}` : "—";
+const __orig_buildSrtUrlsForItem = buildSrtUrlsForItem;
+buildSrtUrlsForItem = async function(it){
+  if (it && it.src === IA2_SRC){
+    const names = buildSrtNameCandidates(it);
+    const urls = [];
+    for (const name of names){
+      for (const base of __IA2_SRT_BASES) urls.push(base + encodeURIComponent(name));
     }
+    return { urls, triedNames: names };
+  }
+  return __orig_buildSrtUrlsForItem(it);
+};
 
-    async function fetchTranscriptText(it){
-      const cached = txCache.get(it.id);
-      if (cached && (Date.now() - cached.at) < TX_CACHE_TTL_MS) return cached.text;
-
-      const built = await buildTxtUrlsForItem(it);
-      const urls = [];
-      const seen = new Set();
-
-      for (const u of [it?.txtUrl, ...(built?.urls || [])]){
-        const uu = String(u || "").trim();
-        if (!uu || seen.has(uu)) continue;
-        seen.add(uu);
-        urls.push(uu);
-      }
-
-      let lastErr = null;
-      for (const url of urls){
-        try{
-          const res = await fetch(url, { cache: "no-cache" });
-          if (!res.ok) throw new Error("txt fetch failed: " + res.status);
-          const text = await res.text();
-
-          try{
-            const u = new URL(url, location.href);
-            const fn = decodeURIComponentSafe((u.pathname || "").split("/").pop() || "");
-            if (fn) it.txtName = fn;
-          }catch{}
-          it.txtUrl = url;
-          txCache.set(it.id, { text, at: Date.now() });
-          return text;
-        }catch(err){
-          lastErr = err;
-        }
-      }
-      throw (lastErr || new Error("txt fetch failed"));
+const __orig_buildTxtUrlsForItem = buildTxtUrlsForItem;
+buildTxtUrlsForItem = async function(it){
+  if (it && it.src === IA2_SRC){
+    const names = buildTxtNameCandidates(it);
+    const urls = [];
+    for (const name of names){
+      for (const base of __IA2_TXT_BASES) urls.push(base + encodeURIComponent(name));
     }
+    return { urls, triedNames: names };
+  }
+  return __orig_buildTxtUrlsForItem(it);
+};
 
-    async function openTranscriptFor(it){
-      if (!it) return;
-      txCurrent = it;
-      openTranscript();
-      trackTranscriptOpen(it);
+async function __ia2MergeFspneuIntoItems(){
+  const metaUrl = `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_2)}`;
+  const res = await fetch(metaUrl, { cache: FORCE_REFRESH ? "no-store" : "no-cache" });
+  if (!res.ok) throw new Error("FSPneu metadata okunamadı: " + res.status);
 
-      txTitleEl.textContent = it.title || "Transkript";
-      updateTxInfo(it);
-      txCopyBtn.disabled = true;
-      txDownloadBtn.disabled = true;
-      txContentEl.textContent = "Yükleniyor…";
-      txPlainText = "";
-      clearTxSearchUI();
+  const j = await res.json();
+  const files = Array.isArray(j.files) ? j.files : [];
+  const s2List = __ia2MakeItemsFromFiles(files);
+  const keep = items.filter(it => it?.src !== IA2_SRC);
+  items = keep.concat(s2List);
 
-      try{
-        const t = await fetchTranscriptText(it);
-        txPlainText = t || "";
-        txCopyBtn.disabled = !txPlainText;
-        updateTxInfo(it);
-        txDownloadBtn.disabled = false;
-        clearTxSearchUI();
-      }catch{
-        txContentEl.textContent = "TXT yüklenemedi.";
-        txCopyBtn.disabled = true;
-      }
+  try{
+    localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
+    localStorage.setItem(LS.itemsCache, JSON.stringify(items));
+  }catch{}
+
+  statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
+  setSortIcons();
+  render();
+  scheduleRefreshCounts(100);
+}
+
+const __orig_loadItems = loadItems;
+loadItems = async function(){
+  await __orig_loadItems();
+  try { await __ia2MergeFspneuIntoItems(); } catch (e) { console.warn(e); }
+};
+
+const DEFAULT_SKIP_SETTINGS = {
+  enabled: false,
+  mode: "balanced",
+  strategy: "hybrid",
+  minGapSec: 1.4,
+  fadeMs: 120,
+  leadInSec: 0.08,
+  maxSkipSec: 12,
+  rmsThreshold: 0.014,
+  confirmMs: 240,
+  fallbackJumpSec: 1.4,
+  cooldownMs: 650
+};
+
+const skipState = {
+  ctx: null,
+  source: null,
+  analyser: null,
+  data: null,
+  rafId: 0,
+  inited: false,
+  supported: true,
+  skipInFlight: false,
+  lowSinceAt: 0,
+  lastSkipAt: 0,
+  lastGapKey: "",
+  lastSrtItemId: null,
+  manualSuppressUntil: 0
+};
+
+function loadSkipSettings(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(LS.skipSettings) || "{}");
+    return { ...DEFAULT_SKIP_SETTINGS, ...raw };
+  }catch{
+    return { ...DEFAULT_SKIP_SETTINGS };
+  }
+}
+
+function saveSkipSettings(){
+  localStorage.setItem(LS.skipSettings, JSON.stringify(skipSettings));
+}
+
+function loadSkipDrawerOpen(){
+  return localStorage.getItem(LS.skipDrawerOpen) === "1";
+}
+
+function saveSkipDrawerOpen(isOpen){
+  localStorage.setItem(LS.skipDrawerOpen, isOpen ? "1" : "0");
+}
+
+let skipSettings = loadSkipSettings();
+
+function resetSkipRuntimeForNewTrack(){
+  skipState.lowSinceAt = 0;
+  skipState.lastGapKey = "";
+  skipState.skipInFlight = false;
+  skipState.manualSuppressUntil = performance.now() + 1200;
+}
+
+function resetSkipRuntimeForManualAction(){
+  skipState.lowSinceAt = 0;
+  skipState.lastGapKey = "";
+  skipState.skipInFlight = false;
+  skipState.manualSuppressUntil = performance.now() + 1000;
+}
+
+function stopSkipLoop(){
+  if (skipState.rafId){
+    cancelAnimationFrame(skipState.rafId);
+    skipState.rafId = 0;
+  }
+}
+
+function startSkipLoop(){
+  if (!skipSettings.enabled) return;
+  if (!skipState.supported) return;
+  if (skipState.rafId) return;
+  skipState.rafId = requestAnimationFrame(skipLoop);
+}
+
+function disableSkipSafely(message){
+  skipSettings.enabled = false;
+  saveSkipSettings();
+  stopSkipLoop();
+  skipState.supported = false;
+  syncSkipUi();
+  if (message) statusEl.textContent = message;
+}
+
+async function ensureSkipAudioGraph(){
+  if (!skipSettings.enabled) return false;
+  if (!skipState.supported) return false;
+
+  if (skipState.inited){
+    if (skipState.ctx && skipState.ctx.state === "suspended"){
+      try { await skipState.ctx.resume(); } catch {}
     }
+    startSkipLoop();
+    return true;
+  }
 
-    function toggleTranscriptFromPlayer(){
-      if (txOpen){
-        closeTranscript();
-        return;
-      }
-      const it = items.find(x => x.id === activeId) || items.find(x => x.id === selectedId) || null;
-      if (!it){
-        openTranscript();
-        txTitleEl.textContent = "Transkript";
-        txInfoEl.textContent = "—";
-        txPlainText = "";
-        txContentEl.textContent = "Bir kayıt seç...";
-        txCopyBtn.disabled = true;
-        txDownloadBtn.disabled = true;
-        return;
-      }
-      openTranscriptFor(it).catch(()=>{});
-    }
-
-    fpTxtBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleTranscriptFromPlayer();
-    });
-
-    sbClearTxCacheBtn.addEventListener("click", () => {
-      txCache.clear();
-      txInfoEl.textContent = "TXT Cache temizlendi.";
-      setTimeout(() => { if (txCurrent) updateTxInfo(txCurrent); }, 1200);
-    });
-
-    txPanel.addEventListener("click", (e) => e.stopPropagation());
-
-    const TX_DRAG_IGNORE_SELECTOR = "button, a, input, textarea, select, option";
-    function shouldStartTxDrag(target){
-      return !(target && target.closest && target.closest(TX_DRAG_IGNORE_SELECTOR));
-    }
-
-    let txDragging = false;
-    let txDragStartX = 0, txDragStartY = 0;
-    let txDragStartTop = 0, txDragStartRight = 0;
-
-    txHeader.addEventListener("pointerdown", (e) => {
-      if (!txOpen || !shouldStartTxDrag(e.target)) return;
-      txDragging = true;
-      txHeader.setPointerCapture(e.pointerId);
-      txHeader.style.cursor = "grabbing";
-      txDragStartX = e.clientX;
-      txDragStartY = e.clientY;
-
-      const cur = getTxPosPx();
-      txDragStartTop = cur.top;
-      txDragStartRight = cur.right;
-
-      e.preventDefault();
-      e.stopPropagation();
-    });
-
-    txHeader.addEventListener("pointermove", (e) => {
-      if (!txDragging) return;
-      const dx = e.clientX - txDragStartX;
-      const dy = e.clientY - txDragStartY;
-      const cl = clampTxPosCandidate(txDragStartTop + dy, txDragStartRight - dx);
-      setTxPosPx(cl.top, cl.right);
-      e.preventDefault();
-    });
-
-    function endTxDrag(pointerId){
-      if (!txDragging) return;
-      txDragging = false;
-      txHeader.style.cursor = "grab";
-      try { txHeader.releasePointerCapture(pointerId); } catch {}
-      clampTxPosToViewport();
-    }
-
-    txHeader.addEventListener("pointerup", (e) => endTxDrag(e.pointerId));
-    txHeader.addEventListener("pointercancel", (e) => endTxDrag(e.pointerId));
-
-    let txResizing = false;
-    let txResizeStartX = 0, txResizeStartY = 0;
-    let txResizeStartW = 0, txResizeStartH = 0;
-
-    function saveTxSize(w, h){
-      saveAny(LS.txSize, { w, h });
-    }
-
-    function clampTxSize(w, h){
-      const { vw, vh } = getViewportWH();
-      const vwL = toLayoutPx(vw);
-      const vhL = toLayoutPx(vh);
-      const margin = 28;
-      const maxW = Math.max(TX_MIN_SIZE.w, vwL - margin);
-      const maxH = Math.max(TX_MIN_SIZE.h, vhL - margin);
-      const minW = Math.min(maxW, TX_MIN_SIZE.w);
-      const minH = Math.min(maxH, TX_MIN_SIZE.h);
-
-      return {
-        w: Math.min(maxW, Math.max(minW, w)),
-        h: Math.min(maxH, Math.max(minH, h))
-      };
-    }
-
-    txResizeHandle.addEventListener("pointerdown", (e) => {
-      if (!txOpen) return;
-      txResizing = true;
-      txResizeStartX = e.clientX;
-      txResizeStartY = e.clientY;
-      txResizeStartW = txPanel.offsetWidth;
-      txResizeStartH = txPanel.offsetHeight;
-      txResizeHandle.setPointerCapture(e.pointerId);
-      e.preventDefault();
-      e.stopPropagation();
-    });
-
-    txResizeHandle.addEventListener("pointermove", (e) => {
-      if (!txResizing) return;
-      const dxClient = e.clientX - txResizeStartX;
-      const dyClient = e.clientY - txResizeStartY;
-      const dx = useTransformScale ? (dxClient / uiScale) : dxClient;
-      const dy = useTransformScale ? (dyClient / uiScale) : dyClient;
-      const cl = clampTxSize(txResizeStartW - dx, txResizeStartH + dy);
-      txPanel.style.width = cl.w + "px";
-      txPanel.style.height = cl.h + "px";
-      saveTxSize(cl.w, cl.h);
-    });
-
-    function endTxResize(pointerId){
-      if (!txResizing) return;
-      txResizing = false;
-      try { txResizeHandle.releasePointerCapture(pointerId); } catch {}
-      clampTxSizeToViewport();
-      clampTxPosToViewport();
-    }
-
-    txResizeHandle.addEventListener("pointerup", (e) => endTxResize(e.pointerId));
-    txResizeHandle.addEventListener("pointercancel", (e) => endTxResize(e.pointerId));
-
-    const IA_IDENTIFIER_2 = "FSPneu";
-    const IA2_SRC = "S2";
-    const IA2_TX_SUBDIR = "FSPab26";
-    const IA2_BLOCK_PREFIXES = ["Dusseldorf", "Düsseldorf", "Stuttgart", "Rheutlingen", "Reutlingen", "Sachsen", "Hessen", "Karlsruhe"];
-
-    function __ia2EnsureSlashEnd(s){
-      s = String(s || "");
-      return s.endsWith("/") ? s : (s + "/");
-    }
-
-    function __ia2BasesWithSubdir(bases, subdir){
-      const sd = String(subdir || "").replace(/^\/+|\/+$/g, "");
-      return (bases || []).map(b => __ia2EnsureSlashEnd(b) + sd + "/");
-    }
-
-    const __IA2_SRT_BASES = __ia2BasesWithSubdir(SRT_BASES, IA2_TX_SUBDIR);
-    const __IA2_TXT_BASES = __ia2BasesWithSubdir(TXT_BASES, IA2_TX_SUBDIR);
-
-    function __ia2IsBlockedByPrefix(fileName){
-      let base = (fileName || "").toString();
-      base = base.split("/").pop() || base;
-      base = decodeURIComponentSafe(base);
-      base = base.replace(/\.(m4a|mp3)$/i, "").trim();
-      base = base.replace(/^A[\s_-]+/i, "").trim();
-
-      const folded = foldTR(base);
-      for (const p of IA2_BLOCK_PREFIXES){
-        const c = foldTR(p);
-        if (folded.startsWith(c)){
-          const next = folded.slice(c.length, c.length + 1);
-          if (!next || /[\s\-_0-9.:]/.test(next)) return true;
-        }
-      }
+  try{
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx){
+      disableSkipSafely("Sessizlik atlama bu tarayıcıda desteklenmiyor.");
       return false;
     }
 
-    function __ia2MakeItemsFromFiles(files){
-      return (files || [])
-        .filter(f => typeof f?.name === "string")
-        .filter(f => {
-          const name = String(f.name).toLowerCase();
-          if (!name.endsWith(".m4a")) return false;
-          if (!("source" in f)) return true;
-          return String(f.source || "").toLowerCase() === "original";
-        })
-        .filter(f => !__ia2IsBlockedByPrefix(f.name))
-        .map((f, idx) => {
-          const name = f.name || "";
-          const title = (String(f.title || "").trim()) || decodeURIComponentSafe(name.split("/").pop() || name);
-          const url = buildDownloadUrl(IA_IDENTIFIER_2, name);
-          const localId = name || url || (title + "#" + idx);
-          const id = IA2_SRC + "|" + localId;
+    skipState.ctx = new AudioCtx();
+    skipState.analyser = skipState.ctx.createAnalyser();
+    skipState.analyser.fftSize = 2048;
+    skipState.analyser.smoothingTimeConstant = 0.18;
+    skipState.data = new Float32Array(skipState.analyser.fftSize);
 
-          const txtCandidates = buildTxtNameCandidates({ name });
-          const txtName = txtCandidates.length ? txtCandidates[0] : replaceExtToTxt(name);
-          const txtUrl = txtName ? (__IA2_TXT_BASES[0] + encodeURIComponent(txtName)) : "";
+    skipState.source = skipState.ctx.createMediaElementSource(playerEl);
 
-          return { id, title, name, url, src: IA2_SRC, txtName, txtUrl };
-        });
-    }
+    skipState.source.connect(skipState.analyser);
+    skipState.source.connect(skipState.ctx.destination);
 
-    const __orig_buildSrtUrlsForItem = buildSrtUrlsForItem;
-    buildSrtUrlsForItem = async function(it){
-      if (it && it.src === IA2_SRC){
-        const names = buildSrtNameCandidates(it);
-        const urls = [];
-        for (const name of names){
-          for (const base of __IA2_SRT_BASES) urls.push(base + encodeURIComponent(name));
-        }
-        return { urls, triedNames: names };
+    skipState.inited = true;
+
+    try{
+      if (skipState.ctx.state !== "running"){
+        await skipState.ctx.resume();
       }
-      return __orig_buildSrtUrlsForItem(it);
-    };
+    }catch{}
 
-    const __orig_buildTxtUrlsForItem = buildTxtUrlsForItem;
-    buildTxtUrlsForItem = async function(it){
-      if (it && it.src === IA2_SRC){
-        const names = buildTxtNameCandidates(it);
-        const urls = [];
-        for (const name of names){
-          for (const base of __IA2_TXT_BASES) urls.push(base + encodeURIComponent(name));
-        }
-        return { urls, triedNames: names };
-      }
-      return __orig_buildTxtUrlsForItem(it);
-    };
+    startSkipLoop();
+    return true;
+  }catch(err){
+    console.warn("Skip audio graph kurulamadı:", err);
+    disableSkipSafely("SKIP devre dışı bırakıldı. Ses normal çalacak.");
+    return false;
+  }
+}
 
-    async function __ia2MergeFspneuIntoItems(){
-      const metaUrl = `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_2)}`;
-      const res = await fetch(metaUrl, { cache: FORCE_REFRESH ? "no-store" : "no-cache" });
-      if (!res.ok) throw new Error("FSPneu metadata okunamadı: " + res.status);
-
-      const j = await res.json();
-      const files = Array.isArray(j.files) ? j.files : [];
-      const s2List = __ia2MakeItemsFromFiles(files);
-      const keep = items.filter(it => it?.src !== IA2_SRC);
-      items = keep.concat(s2List);
-
-      try{
-        localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
-        localStorage.setItem(LS.itemsCache, JSON.stringify(items));
-      }catch{}
-
-      statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
-      setSortIcons();
-      render();
-      scheduleRefreshCounts(100);
+function getCurrentRms(){
+  if (!skipSettings.enabled) return null;
+  if (!skipState.analyser || !skipState.data) return null;
+  try{
+    skipState.analyser.getFloatTimeDomainData(skipState.data);
+    let sum = 0;
+    for (let i = 0; i < skipState.data.length; i++){
+      const v = skipState.data[i];
+      sum += v * v;
     }
+    return Math.sqrt(sum / skipState.data.length);
+  }catch{
+    return null;
+  }
+}
 
-    const __orig_loadItems = loadItems;
-    loadItems = async function(){
-      await __orig_loadItems();
-      try { await __ia2MergeFspneuIntoItems(); } catch (e) { console.warn(e); }
-    };
+function canSkipNow(nowMs){
+  if (!skipSettings.enabled) return false;
+  if (!skipState.inited) return false;
+  if (!playerEl || playerEl.paused || playerEl.seeking) return false;
+  if (!Number.isFinite(playerEl.currentTime)) return false;
+  if (!Number.isFinite(playerEl.duration) || playerEl.duration <= 0) return false;
+  if (segEndTime != null) return false;
+  if (skipState.skipInFlight) return false;
+  if (nowMs < skipState.manualSuppressUntil) return false;
+  if ((nowMs - skipState.lastSkipAt) < skipSettings.cooldownMs) return false;
+  if (playerEl.currentTime < 1.2) return false;
+  return true;
+}
 
-    const DEFAULT_SKIP_SETTINGS = {
-      enabled: false,
+function getHybridGapCandidate(currentTime){
+  if (!activeCues.length) return null;
+
+  const prevIdx = findPrevCueIdx(activeCues, currentTime);
+  const nextIdx = findNextCueIdx(activeCues, currentTime);
+  if (prevIdx === -1 || nextIdx === -1) return null;
+
+  const prev = activeCues[prevIdx];
+  const next = activeCues[nextIdx];
+  const gapStart = prev.end;
+  const gapEnd = next.start;
+  const gapLen = gapEnd - gapStart;
+
+  if (!(gapLen >= skipSettings.minGapSec)) return null;
+  if (currentTime < gapStart + 0.06) return null;
+
+  const target = Math.min(
+    Math.max(currentTime, next.start - skipSettings.leadInSec),
+    gapStart + skipSettings.maxSkipSec
+  );
+
+  if (!(target > currentTime + 0.10)) return null;
+
+  return {
+    key: `${prevIdx}:${nextIdx}:${gapStart.toFixed(3)}:${gapEnd.toFixed(3)}`,
+    gapStart,
+    gapEnd,
+    gapLen,
+    target
+  };
+}
+
+async function fadePlayerVolume(from, to, ms){
+  const duration = Math.max(0, Number(ms) || 0);
+  if (duration <= 0){
+    try { playerEl.volume = Math.max(0, Math.min(1, to)); } catch {}
+    return;
+  }
+
+  const start = performance.now();
+  const diff = to - from;
+
+  return new Promise((resolve) => {
+    function step(now){
+      const p = Math.min(1, (now - start) / duration);
+      const eased = p < 1 ? (1 - Math.pow(1 - p, 3)) : 1;
+      try { playerEl.volume = Math.max(0, Math.min(1, from + diff * eased)); } catch {}
+      if (p < 1) requestAnimationFrame(step);
+      else resolve();
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+async function performSkipSeek(targetTime){
+  if (skipState.skipInFlight) return;
+  skipState.skipInFlight = true;
+
+  const originalVol = Number(playerEl.volume);
+  const fadeMs = Math.max(0, Number(skipSettings.fadeMs) || 0);
+  const dur = Number(playerEl.duration) || 0;
+  const safeTarget = Number.isFinite(dur) && dur > 0
+    ? Math.min(Math.max(0, targetTime), Math.max(0, dur - 0.05))
+    : Math.max(0, targetTime);
+
+  try{
+    await fadePlayerVolume(originalVol, Math.max(0, originalVol * 0.18), Math.floor(fadeMs / 2));
+    playerEl.currentTime = safeTarget;
+    skipState.manualSuppressUntil = performance.now() + Math.max(220, fadeMs + 120);
+    await fadePlayerVolume(Math.max(0, originalVol * 0.18), originalVol, Math.ceil(fadeMs / 2));
+  }catch(err){
+    console.warn("Skip seek failed:", err);
+  }finally{
+    skipState.lastSkipAt = performance.now();
+    skipState.skipInFlight = false;
+    skipState.lowSinceAt = 0;
+  }
+}
+
+function maybeArmLowRms(nowMs, rms){
+  if (rms == null || rms > skipSettings.rmsThreshold){
+    skipState.lowSinceAt = 0;
+    return false;
+  }
+  if (!skipState.lowSinceAt) skipState.lowSinceAt = nowMs;
+  return (nowMs - skipState.lowSinceAt) >= skipSettings.confirmMs;
+}
+
+async function maybeSkipByHybrid(nowMs, currentTime, rms){
+  const gap = getHybridGapCandidate(currentTime);
+  if (!gap) return false;
+
+  if (gap.key === skipState.lastGapKey){
+    if ((nowMs - skipState.lastSkipAt) < skipSettings.cooldownMs) return false;
+  }
+
+  const lowEnough = maybeArmLowRms(nowMs, rms);
+  if (!lowEnough) return false;
+
+  skipState.lastGapKey = gap.key;
+  await performSkipSeek(gap.target);
+  return true;
+}
+
+async function maybeSkipByFallbackAudio(nowMs, currentTime, rms){
+  const lowEnough = maybeArmLowRms(nowMs, rms);
+  if (!lowEnough) return false;
+
+  const jump = Math.min(skipSettings.maxSkipSec, Math.max(0.6, skipSettings.fallbackJumpSec));
+  const target = currentTime + jump;
+  await performSkipSeek(target);
+  return true;
+}
+
+async function skipLoop(){
+  skipState.rafId = 0;
+
+  if (!skipSettings.enabled || !skipState.inited){
+    stopSkipLoop();
+    return;
+  }
+
+  const nowMs = performance.now();
+
+  if (skipState.ctx && skipState.ctx.state === "suspended"){
+    try { await skipState.ctx.resume(); } catch {}
+  }
+
+  if (canSkipNow(nowMs)){
+    const currentTime = Number(playerEl.currentTime) || 0;
+    const rms = getCurrentRms();
+
+    let skipped = false;
+if (skipSettings.strategy === "hybrid"){
+  skipped = await maybeSkipByHybrid(nowMs, currentTime, rms);
+  if (!skipped && !activeCues.length){
+    skipped = await maybeSkipByFallbackAudio(nowMs, currentTime, rms);
+  }
+} else {
+  skipped = await maybeSkipByFallbackAudio(nowMs, currentTime, rms);
+}
+
+if (!skipped && (rms == null || rms > skipSettings.rmsThreshold)){
+  skipState.lowSinceAt = 0;
+}
+}
+
+startSkipLoop();
+}
+
+function applySkipPreset(mode){
+  if (mode === "light"){
+    Object.assign(skipSettings, {
+      mode: "light",
+      strategy: "hybrid",
+      minGapSec: 1.8,
+      fadeMs: 140,
+      leadInSec: 0.10,
+      maxSkipSec: 8,
+      rmsThreshold: 0.012,
+      confirmMs: 280,
+      fallbackJumpSec: 1.0,
+      cooldownMs: 700
+    });
+  } else if (mode === "aggressive"){
+    Object.assign(skipSettings, {
+      mode: "aggressive",
+      strategy: "hybrid",
+      minGapSec: 1.0,
+      fadeMs: 90,
+      leadInSec: 0.05,
+      maxSkipSec: 18,
+      rmsThreshold: 0.018,
+      confirmMs: 180,
+      fallbackJumpSec: 1.8,
+      cooldownMs: 520
+    });
+  } else if (mode === "ultra"){
+    Object.assign(skipSettings, {
+      mode: "ultra",
+      strategy: "hybrid",
+      minGapSec: 0.7,
+      fadeMs: 60,
+      leadInSec: 0.04,
+      maxSkipSec: 24,
+      rmsThreshold: 0.022,
+      confirmMs: 130,
+      fallbackJumpSec: 2.2,
+      cooldownMs: 420
+    });
+  } else if (mode === "max"){
+    Object.assign(skipSettings, {
+      mode: "max",
+      strategy: "hybrid",
+      minGapSec: 0.4,
+      fadeMs: 30,
+      leadInSec: 0.02,
+      maxSkipSec: 36,
+      rmsThreshold: 0.028,
+      confirmMs: 90,
+      fallbackJumpSec: 2.8,
+      cooldownMs: 300
+    });
+  } else {
+    Object.assign(skipSettings, {
       mode: "balanced",
       strategy: "hybrid",
       minGapSec: 1.4,
@@ -4191,540 +4558,187 @@
       confirmMs: 240,
       fallbackJumpSec: 1.4,
       cooldownMs: 650
-    };
-
-    const skipState = {
-      ctx: null,
-      source: null,
-      analyser: null,
-      data: null,
-      rafId: 0,
-      inited: false,
-      supported: true,
-      skipInFlight: false,
-      lowSinceAt: 0,
-      lastSkipAt: 0,
-      lastGapKey: "",
-      lastSrtItemId: null,
-      manualSuppressUntil: 0
-    };
-
-    function loadSkipSettings(){
-      try{
-        const raw = JSON.parse(localStorage.getItem(LS.skipSettings) || "{}");
-        return { ...DEFAULT_SKIP_SETTINGS, ...raw };
-      }catch{
-        return { ...DEFAULT_SKIP_SETTINGS };
-      }
-    }
-
-    function saveSkipSettings(){
-      localStorage.setItem(LS.skipSettings, JSON.stringify(skipSettings));
-    }
-
-    function loadSkipDrawerOpen(){
-      return localStorage.getItem(LS.skipDrawerOpen) === "1";
-    }
-
-    function saveSkipDrawerOpen(isOpen){
-      localStorage.setItem(LS.skipDrawerOpen, isOpen ? "1" : "0");
-    }
-
-    let skipSettings = loadSkipSettings();
-
-    function resetSkipRuntimeForNewTrack(){
-      skipState.lowSinceAt = 0;
-      skipState.lastGapKey = "";
-      skipState.skipInFlight = false;
-      skipState.manualSuppressUntil = performance.now() + 1200;
-    }
-
-    function resetSkipRuntimeForManualAction(){
-      skipState.lowSinceAt = 0;
-      skipState.lastGapKey = "";
-      skipState.skipInFlight = false;
-      skipState.manualSuppressUntil = performance.now() + 1000;
-    }
-
-    function stopSkipLoop(){
-      if (skipState.rafId){
-        cancelAnimationFrame(skipState.rafId);
-        skipState.rafId = 0;
-      }
-    }
-
-    function startSkipLoop(){
-      if (!skipSettings.enabled) return;
-      if (!skipState.supported) return;
-      if (skipState.rafId) return;
-      skipState.rafId = requestAnimationFrame(skipLoop);
-    }
-
-    function disableSkipSafely(message){
-      skipSettings.enabled = false;
-      saveSkipSettings();
-      stopSkipLoop();
-      skipState.supported = false;
-      syncSkipUi();
-      if (message) statusEl.textContent = message;
-    }
-
-    async function ensureSkipAudioGraph(){
-      if (!skipSettings.enabled) return false;
-      if (!skipState.supported) return false;
-
-      if (skipState.inited){
-        if (skipState.ctx && skipState.ctx.state === "suspended"){
-          try { await skipState.ctx.resume(); } catch {}
-        }
-        startSkipLoop();
-        return true;
-      }
-
-      try{
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx){
-          disableSkipSafely("Sessizlik atlama bu tarayıcıda desteklenmiyor.");
-          return false;
-        }
-
-        skipState.ctx = new AudioCtx();
-        skipState.analyser = skipState.ctx.createAnalyser();
-        skipState.analyser.fftSize = 2048;
-        skipState.analyser.smoothingTimeConstant = 0.18;
-        skipState.data = new Float32Array(skipState.analyser.fftSize);
-
-        skipState.source = skipState.ctx.createMediaElementSource(playerEl);
-        skipState.source.connect(skipState.analyser);
-        skipState.analyser.connect(skipState.ctx.destination);
-
-        skipState.inited = true;
-
-        if (skipState.ctx.state === "suspended"){
-          try { await skipState.ctx.resume(); } catch {}
-        }
-
-        startSkipLoop();
-        return true;
-      }catch(err){
-        console.warn("Skip audio graph kurulamadı:", err);
-        disableSkipSafely("SKIP devre dışı bırakıldı. Ses normal çalacak.");
-        return false;
-      }
-    }
-
-    function getCurrentRms(){
-      if (!skipSettings.enabled) return null;
-      if (!skipState.analyser || !skipState.data) return null;
-      try{
-        skipState.analyser.getFloatTimeDomainData(skipState.data);
-        let sum = 0;
-        for (let i = 0; i < skipState.data.length; i++){
-          const v = skipState.data[i];
-          sum += v * v;
-        }
-        return Math.sqrt(sum / skipState.data.length);
-      }catch{
-        return null;
-      }
-    }
-
-    function canSkipNow(nowMs){
-      if (!skipSettings.enabled) return false;
-      if (!skipState.inited) return false;
-      if (!playerEl || playerEl.paused || playerEl.seeking) return false;
-      if (!Number.isFinite(playerEl.currentTime)) return false;
-      if (!Number.isFinite(playerEl.duration) || playerEl.duration <= 0) return false;
-      if (segEndTime != null) return false;
-      if (skipState.skipInFlight) return false;
-      if (nowMs < skipState.manualSuppressUntil) return false;
-      if ((nowMs - skipState.lastSkipAt) < skipSettings.cooldownMs) return false;
-      if (playerEl.currentTime < 1.2) return false;
-      return true;
-    }
-
-    function getHybridGapCandidate(currentTime){
-      if (!activeCues.length) return null;
-
-      const prevIdx = findPrevCueIdx(activeCues, currentTime);
-      const nextIdx = findNextCueIdx(activeCues, currentTime);
-      if (prevIdx === -1 || nextIdx === -1) return null;
-
-      const prev = activeCues[prevIdx];
-      const next = activeCues[nextIdx];
-      const gapStart = prev.end;
-      const gapEnd = next.start;
-      const gapLen = gapEnd - gapStart;
-
-      if (!(gapLen >= skipSettings.minGapSec)) return null;
-      if (currentTime < gapStart + 0.06) return null;
-
-      const target = Math.min(
-        Math.max(currentTime, next.start - skipSettings.leadInSec),
-        gapStart + skipSettings.maxSkipSec
-      );
-
-      if (!(target > currentTime + 0.10)) return null;
-
-      return {
-        key: `${prevIdx}:${nextIdx}:${gapStart.toFixed(3)}:${gapEnd.toFixed(3)}`,
-        gapStart,
-        gapEnd,
-        gapLen,
-        target
-      };
-    }
-
-    async function fadePlayerVolume(from, to, ms){
-      const duration = Math.max(0, Number(ms) || 0);
-      if (duration <= 0){
-        try { playerEl.volume = Math.max(0, Math.min(1, to)); } catch {}
-        return;
-      }
-
-      const start = performance.now();
-      const diff = to - from;
-
-      return new Promise((resolve) => {
-        function step(now){
-          const p = Math.min(1, (now - start) / duration);
-          const eased = p < 1 ? (1 - Math.pow(1 - p, 3)) : 1;
-          try { playerEl.volume = Math.max(0, Math.min(1, from + diff * eased)); } catch {}
-          if (p < 1) requestAnimationFrame(step);
-          else resolve();
-        }
-        requestAnimationFrame(step);
-      });
-    }
-
-    async function performSkipSeek(targetTime){
-      if (skipState.skipInFlight) return;
-      skipState.skipInFlight = true;
-
-      const originalVol = Number(playerEl.volume);
-      const fadeMs = Math.max(0, Number(skipSettings.fadeMs) || 0);
-      const dur = Number(playerEl.duration) || 0;
-      const safeTarget = Number.isFinite(dur) && dur > 0
-        ? Math.min(Math.max(0, targetTime), Math.max(0, dur - 0.05))
-        : Math.max(0, targetTime);
-
-      try{
-        await fadePlayerVolume(originalVol, Math.max(0, originalVol * 0.18), Math.floor(fadeMs / 2));
-        playerEl.currentTime = safeTarget;
-        skipState.manualSuppressUntil = performance.now() + Math.max(220, fadeMs + 120);
-        await fadePlayerVolume(Math.max(0, originalVol * 0.18), originalVol, Math.ceil(fadeMs / 2));
-      }catch(err){
-        console.warn("Skip seek failed:", err);
-      }finally{
-        skipState.lastSkipAt = performance.now();
-        skipState.skipInFlight = false;
-        skipState.lowSinceAt = 0;
-      }
-    }
-
-    function maybeArmLowRms(nowMs, rms){
-      if (rms == null || rms > skipSettings.rmsThreshold){
-        skipState.lowSinceAt = 0;
-        return false;
-      }
-      if (!skipState.lowSinceAt) skipState.lowSinceAt = nowMs;
-      return (nowMs - skipState.lowSinceAt) >= skipSettings.confirmMs;
-    }
-
-    async function maybeSkipByHybrid(nowMs, currentTime, rms){
-      const gap = getHybridGapCandidate(currentTime);
-      if (!gap) return false;
-
-      if (gap.key === skipState.lastGapKey){
-        if ((nowMs - skipState.lastSkipAt) < skipSettings.cooldownMs) return false;
-      }
-
-      const lowEnough = maybeArmLowRms(nowMs, rms);
-      if (!lowEnough) return false;
-
-      skipState.lastGapKey = gap.key;
-      await performSkipSeek(gap.target);
-      return true;
-    }
-
-    async function maybeSkipByFallbackAudio(nowMs, currentTime, rms){
-      const lowEnough = maybeArmLowRms(nowMs, rms);
-      if (!lowEnough) return false;
-
-      const jump = Math.min(skipSettings.maxSkipSec, Math.max(0.6, skipSettings.fallbackJumpSec));
-      const target = currentTime + jump;
-      await performSkipSeek(target);
-      return true;
-    }
-
-    async function skipLoop(){
-      skipState.rafId = 0;
-
-      if (!skipSettings.enabled || !skipState.inited){
-        stopSkipLoop();
-        return;
-      }
-
-      const nowMs = performance.now();
-
-      if (skipState.ctx && skipState.ctx.state === "suspended"){
-        try { await skipState.ctx.resume(); } catch {}
-      }
-
-      if (canSkipNow(nowMs)){
-        const currentTime = Number(playerEl.currentTime) || 0;
-        const rms = getCurrentRms();
-
-        let skipped = false;
-        if (skipSettings.strategy === "hybrid"){
-          skipped = await maybeSkipByHybrid(nowMs, currentTime, rms);
-          if (!skipped && !activeCues.length){
-            skipped = await maybeSkipByFallbackAudio(nowMs, currentTime, rms);
-          }
-        } else {
-          skipped = await maybeSkipByFallbackAudio(nowMs, currentTime, rms);
-        }
-
-        if (!skipped && (rms == null || rms > skipSettings.rmsThreshold)){
-          skipState.lowSinceAt = 0;
-        }
-      }
-
-      startSkipLoop();
-    }
-
-    function applySkipPreset(mode){
-      if (mode === "light"){
-        Object.assign(skipSettings, {
-          mode: "light",
-          strategy: "hybrid",
-          minGapSec: 1.8,
-          fadeMs: 140,
-          leadInSec: 0.10,
-          maxSkipSec: 8,
-          rmsThreshold: 0.012,
-          confirmMs: 280,
-          fallbackJumpSec: 1.0,
-          cooldownMs: 700
-        });
-      } else if (mode === "aggressive"){
-        Object.assign(skipSettings, {
-          mode: "aggressive",
-          strategy: "hybrid",
-          minGapSec: 1.0,
-          fadeMs: 90,
-          leadInSec: 0.05,
-          maxSkipSec: 18,
-          rmsThreshold: 0.018,
-          confirmMs: 180,
-          fallbackJumpSec: 1.8,
-          cooldownMs: 520
-        });
-      } else if (mode === "ultra"){
-        Object.assign(skipSettings, {
-          mode: "ultra",
-          strategy: "hybrid",
-          minGapSec: 0.7,
-          fadeMs: 60,
-          leadInSec: 0.04,
-          maxSkipSec: 24,
-          rmsThreshold: 0.022,
-          confirmMs: 130,
-          fallbackJumpSec: 2.2,
-          cooldownMs: 420
-        });
-      } else if (mode === "max"){
-        Object.assign(skipSettings, {
-          mode: "max",
-          strategy: "hybrid",
-          minGapSec: 0.4,
-          fadeMs: 30,
-          leadInSec: 0.02,
-          maxSkipSec: 36,
-          rmsThreshold: 0.028,
-          confirmMs: 90,
-          fallbackJumpSec: 2.8,
-          cooldownMs: 300
-        });
-      } else {
-        Object.assign(skipSettings, {
-          mode: "balanced",
-          strategy: "hybrid",
-          minGapSec: 1.4,
-          fadeMs: 120,
-          leadInSec: 0.08,
-          maxSkipSec: 12,
-          rmsThreshold: 0.014,
-          confirmMs: 240,
-          fallbackJumpSec: 1.4,
-          cooldownMs: 650
-        });
-      }
-
-      saveSkipSettings();
-      syncSkipUi();
-    }
-
-    function syncSkipUi(){
-      const open = !skipDrawer.hidden;
-
-      skipDrawerBtn.classList.toggle("on", open || skipSettings.enabled);
-      skipDrawerBtn.classList.toggle("breathing", !!skipSettings.enabled);
-      skipDrawerBtn.setAttribute("aria-expanded", String(open));
-
-      skipEnableBtn.textContent = "Sessiz atlama: " + (skipSettings.enabled ? "Açık" : "Kapalı");
-      skipEnableBtn.classList.toggle("on", !!skipSettings.enabled);
-
-      skipModeLight.classList.toggle("on", skipSettings.mode === "light");
-      skipModeBalanced.classList.toggle("on", skipSettings.mode === "balanced");
-      skipModeAggressive.classList.toggle("on", skipSettings.mode === "aggressive");
-      skipModeUltra.classList.toggle("on", skipSettings.mode === "ultra");
-      skipModeMax.classList.toggle("on", skipSettings.mode === "max");
-
-      skipMinGapRange.value = String(skipSettings.minGapSec);
-      skipMinGapValue.textContent = `${Number(skipSettings.minGapSec).toFixed(1)}s`;
-
-      skipFadeRange.value = String(skipSettings.fadeMs);
-      skipFadeValue.textContent = `${Math.round(skipSettings.fadeMs)}ms`;
-
-      skipEngineLabel.textContent = skipState.supported ? "Hybrid" : "Pasif";
-      skipHintEl.textContent = skipState.supported
-        ? "Hybrid: SRT boşluğu aday alır, sesi doğrular, güvenliyse atlar."
-        : "SKIP devre dışı. Player normal çalıyor.";
-    }
-
-    function toggleSkipDrawer(force){
-      const shouldOpen = typeof force === "boolean" ? force : skipDrawer.hidden;
-      skipDrawer.hidden = !shouldOpen;
-      saveSkipDrawerOpen(shouldOpen);
-      syncSkipUi();
-      setTimeout(() => clampPlayerToViewport(), 0);
-    }
-
-    skipDrawerBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleSkipDrawer();
     });
+  }
 
-    skipEnableBtn.addEventListener("click", async () => {
-      skipState.supported = true;
-      skipSettings.enabled = !skipSettings.enabled;
-      saveSkipSettings();
-      syncSkipUi();
+  saveSkipSettings();
+  syncSkipUi();
+}
 
-      if (skipSettings.enabled){
-        await ensureSkipAudioGraph();
-      } else {
-        stopSkipLoop();
-        resetSkipRuntimeForManualAction();
+function syncSkipUi(){
+  const open = !skipDrawer.hidden;
+
+  skipDrawerBtn.classList.toggle("on", open || skipSettings.enabled);
+  skipDrawerBtn.classList.toggle("breathing", !!skipSettings.enabled);
+  skipDrawerBtn.setAttribute("aria-expanded", String(open));
+
+  skipEnableBtn.textContent = "Sessiz atlama: " + (skipSettings.enabled ? "Açık" : "Kapalı");
+  skipEnableBtn.classList.toggle("on", !!skipSettings.enabled);
+
+  skipModeLight.classList.toggle("on", skipSettings.mode === "light");
+  skipModeBalanced.classList.toggle("on", skipSettings.mode === "balanced");
+  skipModeAggressive.classList.toggle("on", skipSettings.mode === "aggressive");
+  skipModeUltra.classList.toggle("on", skipSettings.mode === "ultra");
+  skipModeMax.classList.toggle("on", skipSettings.mode === "max");
+
+  skipMinGapRange.value = String(skipSettings.minGapSec);
+  skipMinGapValue.textContent = `${Number(skipSettings.minGapSec).toFixed(1)}s`;
+
+  skipFadeRange.value = String(skipSettings.fadeMs);
+  skipFadeValue.textContent = `${Math.round(skipSettings.fadeMs)}ms`;
+
+  skipEngineLabel.textContent = skipState.supported ? "Hybrid" : "Pasif";
+  skipHintEl.textContent = skipState.supported
+    ? "Hybrid: SRT boşluğu aday alır, sesi doğrular, güvenliyse atlar."
+    : "SKIP devre dışı. Player normal çalıyor.";
+}
+
+function toggleSkipDrawer(force){
+  const shouldOpen = typeof force === "boolean" ? force : skipDrawer.hidden;
+  skipDrawer.hidden = !shouldOpen;
+  saveSkipDrawerOpen(shouldOpen);
+  syncSkipUi();
+  setTimeout(() => clampPlayerToViewport(), 0);
+}
+
+skipDrawerBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleSkipDrawer();
+});
+
+skipEnableBtn.addEventListener("click", async () => {
+  skipState.supported = true;
+  skipSettings.enabled = !skipSettings.enabled;
+  saveSkipSettings();
+  syncSkipUi();
+
+  if (skipSettings.enabled){
+    const ok = await ensureSkipAudioGraph();
+    if (!ok) return;
+    try{
+      if (!playerEl.paused && skipState.ctx && skipState.ctx.state !== "running"){
+        await skipState.ctx.resume();
       }
-    });
+    }catch{}
+  } else {
+    stopSkipLoop();
+    resetSkipRuntimeForManualAction();
+  }
+});
 
-    skipModeLight.addEventListener("click", () => applySkipPreset("light"));
-    skipModeBalanced.addEventListener("click", () => applySkipPreset("balanced"));
-    skipModeAggressive.addEventListener("click", () => applySkipPreset("aggressive"));
-    skipModeUltra.addEventListener("click", () => applySkipPreset("ultra"));
-    skipModeMax.addEventListener("click", () => applySkipPreset("max"));
+skipModeLight.addEventListener("click", () => applySkipPreset("light"));
+skipModeBalanced.addEventListener("click", () => applySkipPreset("balanced"));
+skipModeAggressive.addEventListener("click", () => applySkipPreset("aggressive"));
+skipModeUltra.addEventListener("click", () => applySkipPreset("ultra"));
+skipModeMax.addEventListener("click", () => applySkipPreset("max"));
 
-    skipMinGapRange.addEventListener("input", () => {
-      skipSettings.minGapSec = Number(skipMinGapRange.value);
-      saveSkipSettings();
-      syncSkipUi();
-    });
+skipMinGapRange.addEventListener("input", () => {
+  skipSettings.minGapSec = Number(skipMinGapRange.value);
+  saveSkipSettings();
+  syncSkipUi();
+});
 
-    skipFadeRange.addEventListener("input", () => {
-      skipSettings.fadeMs = Number(skipFadeRange.value);
-      saveSkipSettings();
-      syncSkipUi();
-    });
+skipFadeRange.addEventListener("input", () => {
+  skipSettings.fadeMs = Number(skipFadeRange.value);
+  saveSkipSettings();
+  syncSkipUi();
+});
 
-    playerEl.addEventListener("play", async () => {
-      if (skipSettings.enabled) await ensureSkipAudioGraph();
-    });
-
-    playerEl.addEventListener("pause", () => {
-      skipState.lowSinceAt = 0;
-      stopSkipLoop();
-    });
-
-    playerEl.addEventListener("ended", () => {
-      skipState.lowSinceAt = 0;
-      stopSkipLoop();
-    });
-
-    playerEl.addEventListener("seeking", resetSkipRuntimeForManualAction);
-    playerEl.addEventListener("seeked", () => {
-      if (skipSettings.enabled) startSkipLoop();
-    });
-
-    let stickySearchNodeDebounce = 0;
-
-    setSortIcons();
-    restoreUiState();
-    restorePlayerPos();
-    restoreSpeed();
-    restoreZoom();
-    setCaptionUi();
-    updateOverlayScale();
-    setTxtBtnUi();
-    skipDrawer.hidden = !loadSkipDrawerOpen();
-    syncSkipUi();
-
-    requestAnimationFrame(() => {
-      measureStickyStartTop();
-      updateSticky(true);
-    });
-
-    async function checkSrtAvailability(){
-      if (!SRT_CHECK || !items.length) return;
-
-      const maxN = Math.min(items.length, 350);
-      const subset = items.slice(0, maxN);
-      let missing = 0;
-      let checked = 0;
-      const concurrency = 8;
-      const q = subset.slice();
-
-      async function headOk(url){
-        try{
-          const r = await fetch(url, { method: "HEAD", cache: "no-store" });
-          if (r.ok) return true;
-        }catch{}
-        try{
-          const r = await fetch(url, { method: "GET", cache: "no-store", headers: { range: "bytes=0-1" } });
-          return r.ok;
-        }catch{
-          return false;
-        }
+playerEl.addEventListener("play", async () => {
+  if (skipSettings.enabled){
+    const ok = await ensureSkipAudioGraph();
+    if (!ok) return;
+    try{
+      if (skipState.ctx && skipState.ctx.state !== "running"){
+        await skipState.ctx.resume();
       }
+    }catch{}
+  }
+});
 
-      async function worker(){
-        while (q.length){
-          const it = q.shift();
-          const built = await buildSrtUrlsForItem(it);
-          const urls = built.urls || [];
-          let ok = false;
-          for (const u of urls){
-            if (await headOk(u)){ ok = true; break; }
-          }
-          checked++;
-          if (!ok){
-            missing++;
-            console.warn("SRT eksik:", it.title, it.name);
-          }
-          if (checked % 25 === 0){
-            statusEl.textContent = `SRT kontrol: ${checked}/${maxN} (eksik: ${missing})`;
-          }
-        }
-      }
+playerEl.addEventListener("pause", () => {
+  skipState.lowSinceAt = 0;
+  stopSkipLoop();
+});
 
-      await Promise.all(Array.from({ length: concurrency }, () => worker()));
-      statusEl.textContent = `SRT kontrol bitti: ${checked}/${maxN} (eksik: ${missing})`;
+playerEl.addEventListener("ended", () => {
+  skipState.lowSinceAt = 0;
+  stopSkipLoop();
+});
+
+playerEl.addEventListener("seeking", resetSkipRuntimeForManualAction);
+playerEl.addEventListener("seeked", () => {
+  if (skipSettings.enabled) startSkipLoop();
+});
+
+let stickySearchNodeDebounce = 0;
+
+setSortIcons();
+restoreUiState();
+restorePlayerPos();
+restoreSpeed();
+restoreZoom();
+setCaptionUi();
+updateOverlayScale();
+setTxtBtnUi();
+skipDrawer.hidden = !loadSkipDrawerOpen();
+syncSkipUi();
+
+requestAnimationFrame(() => {
+  measureStickyStartTop();
+  updateSticky(true);
+});
+
+async function checkSrtAvailability(){
+  if (!SRT_CHECK || !items.length) return;
+
+  const maxN = Math.min(items.length, 350);
+  const subset = items.slice(0, maxN);
+  let missing = 0;
+  let checked = 0;
+  const concurrency = 8;
+  const q = subset.slice();
+
+  async function headOk(url){
+    try{
+      const r = await fetch(url, { method: "HEAD", cache: "no-store" });
+      if (r.ok) return true;
+    }catch{}
+    try{
+      const r = await fetch(url, { method: "GET", cache: "no-store", headers: { range: "bytes=0-1" } });
+      return r.ok;
+    }catch{
+      return false;
     }
+  }
 
-    setTimeout(clampPlayerToViewport, stickySearchNodeDebounce);
-    loadItems();
-    setTimeout(() => checkSrtAvailability().catch(()=>{}), 1200);
+  async function worker(){
+    while (q.length){
+      const it = q.shift();
+      const built = await buildSrtUrlsForItem(it);
+      const urls = built.urls || [];
+      let ok = false;
+      for (const u of urls){
+        if (await headOk(u)){ ok = true; break; }
+      }
+      checked++;
+      if (!ok){
+        missing++;
+        console.warn("SRT eksik:", it.title, it.name);
+      }
+      if (checked % 25 === 0){
+        statusEl.textContent = `SRT kontrol: ${checked}/${maxN} (eksik: ${missing})`;
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+  statusEl.textContent = `SRT kontrol bitti: ${checked}/${maxN} (eksik: ${missing})`;
+}
+
+setTimeout(clampPlayerToViewport, stickySearchNodeDebounce);
+loadItems();
+setTimeout(() => checkSrtAvailability().catch(()=>{}), 1200);
   </script>
 </body>
 </html>
