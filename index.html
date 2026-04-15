@@ -19,7 +19,7 @@
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-TNRQ49C157"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
+    function gtag(){ dataLayer.push(arguments); }
     gtag("js", new Date());
     const __isDebug = new URLSearchParams(location.search).has("debug");
     gtag("config", "G-TNRQ49C157", { debug_mode: __isDebug, send_page_view: true });
@@ -92,12 +92,14 @@
       justify-content: space-between;
       gap: 10px;
     }
+
     .pageTitleMain{
       display:flex;
       flex-direction:column;
       gap:6px;
       min-width:0;
     }
+
     .buildMeta{
       font-size: .82rem;
       font-weight: 750;
@@ -134,6 +136,7 @@
       flex-wrap: wrap;
       margin: 0 0 12px 0;
     }
+
     .navLink{
       display:inline-flex;
       align-items:center;
@@ -221,6 +224,7 @@
       user-select:none;
       flex: 0 0 auto;
     }
+
     .zoomBtn{
       height: 36px;
       width: 48px;
@@ -265,6 +269,7 @@
       filter: saturate(1.7);
       color: #b45309;
     }
+
     .zoomBtn.enabled.zoomIn{
       opacity: 1;
       background: rgba(34, 197, 94, .18);
@@ -356,9 +361,7 @@
     .iconOrange{ fill: var(--orange); }
     .iconBlue{ fill: var(--blue); }
 
-    #list{
-      border-bottom: 1px solid var(--border);
-    }
+    #list{ border-bottom: 1px solid var(--border); }
 
     .itemRow{
       padding: 4px 8px;
@@ -366,9 +369,7 @@
       cursor: pointer;
       background: #f7f7f7;
     }
-    #list .itemRow:nth-child(even){
-      background: #eeeeee;
-    }
+    #list .itemRow:nth-child(even){ background: #eeeeee; }
     .itemRow:hover{ background: var(--hover); }
 
     .itemRow.active{
@@ -574,6 +575,7 @@
       background: white;
       user-select:none;
     }
+
     .speedCtlBtn{
       width: 36px;
       height: 36px;
@@ -638,10 +640,7 @@
         overflow: visible;
         text-overflow: clip;
       }
-      #fpHeaderRight{
-        width: 100%;
-        justify-content: flex-end;
-      }
+      #fpHeaderRight{ width: 100%; justify-content: flex-end; }
       #search{ font-size: 16px; }
       .buildMeta{ font-size: .78rem; }
     }
@@ -695,6 +694,7 @@
       border-bottom: 1px solid #ececec;
       line-height: 1.05;
     }
+
     #sbTitle{
       font-weight: 750;
       font-size: 1rem;
@@ -704,6 +704,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
     #sbCloseBtn{
       width: 40px;
       height: 36px;
@@ -1079,6 +1080,7 @@
     #skipDrawerBtn.breathing{
       animation: skipBreath 1.8s ease-in-out infinite;
     }
+
     @keyframes skipBreath{
       0%,100%{
         transform: scale(1);
@@ -1348,7 +1350,7 @@
     </div>
 
     <div id="fpBody">
-      <audio id="player" class="js-player" controls preload="metadata" crossorigin="anonymous"></audio>
+      <audio id="player" class="js-player" controls preload="metadata"></audio>
     </div>
 
     <div id="skipDrawer" class="skipDrawer" hidden>
@@ -1481,7 +1483,6 @@
     const appScaleEl = document.getElementById("appScale");
     const zoomOutBtn = document.getElementById("zoomOutBtn");
     const zoomInBtn = document.getElementById("zoomInBtn");
-
     const buildMetaEl = document.getElementById("buildMeta");
 
     const fp = document.getElementById("floatingPlayer");
@@ -2152,7 +2153,6 @@
 
         const text = stripSrtTags(lines.slice(timeIdx + 1).join("\n")).trim();
         if (!text) continue;
-
         cues.push({ start, end, text });
       }
 
@@ -3160,6 +3160,7 @@
     }
 
     function setMediaSource(url, mime){
+      stopSkipLoop();
       while (playerEl.firstChild) playerEl.removeChild(playerEl.firstChild);
       const s = document.createElement("source");
       s.src = url;
@@ -3314,6 +3315,7 @@
       clearTimeout(searchTimer);
       searchTimer = setTimeout(renderAndTrackSearch, SEARCH_DEBOUNCE_MS);
     });
+
     searchEl.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
       e.preventDefault();
@@ -3462,6 +3464,7 @@
 
     fpHeader.addEventListener("pointerup", (e) => endDrag(e.pointerId));
     fpHeader.addEventListener("pointercancel", (e) => endDrag(e.pointerId));
+
     fpHeader.addEventListener("click", (e) => {
       if (Date.now() < suppressClickUntil){
         e.preventDefault();
@@ -3477,6 +3480,7 @@
       clampTxPosToViewport();
       updateSticky(true);
     });
+
     window.addEventListener("orientationchange", () => setTimeout(() => {
       clampPlayerToViewport();
       updateOverlayScale();
@@ -3485,6 +3489,7 @@
       clampTxPosToViewport();
       updateSticky(true);
     }, 150));
+
     if (window.visualViewport){
       window.visualViewport.addEventListener("resize", () => {
         clampPlayerToViewport();
@@ -4195,6 +4200,7 @@
       data: null,
       rafId: 0,
       inited: false,
+      supported: true,
       skipInFlight: false,
       lowSinceAt: 0,
       lastSkipAt: 0,
@@ -4226,143 +4232,6 @@
 
     let skipSettings = loadSkipSettings();
 
-    function applySkipPreset(mode){
-      if (mode === "light"){
-        Object.assign(skipSettings, {
-          mode: "light",
-          strategy: "hybrid",
-          minGapSec: 1.8,
-          fadeMs: 140,
-          leadInSec: 0.10,
-          maxSkipSec: 8,
-          rmsThreshold: 0.012,
-          confirmMs: 280,
-          fallbackJumpSec: 1.0,
-          cooldownMs: 700
-        });
-      } else if (mode === "aggressive"){
-        Object.assign(skipSettings, {
-          mode: "aggressive",
-          strategy: "hybrid",
-          minGapSec: 1.0,
-          fadeMs: 90,
-          leadInSec: 0.05,
-          maxSkipSec: 18,
-          rmsThreshold: 0.018,
-          confirmMs: 180,
-          fallbackJumpSec: 1.8,
-          cooldownMs: 520
-        });
-      } else if (mode === "ultra"){
-        Object.assign(skipSettings, {
-          mode: "ultra",
-          strategy: "hybrid",
-          minGapSec: 0.7,
-          fadeMs: 60,
-          leadInSec: 0.04,
-          maxSkipSec: 24,
-          rmsThreshold: 0.022,
-          confirmMs: 130,
-          fallbackJumpSec: 2.2,
-          cooldownMs: 420
-        });
-      } else if (mode === "max"){
-        Object.assign(skipSettings, {
-          mode: "max",
-          strategy: "hybrid",
-          minGapSec: 0.4,
-          fadeMs: 30,
-          leadInSec: 0.02,
-          maxSkipSec: 36,
-          rmsThreshold: 0.028,
-          confirmMs: 90,
-          fallbackJumpSec: 2.8,
-          cooldownMs: 300
-        });
-      } else {
-        Object.assign(skipSettings, {
-          mode: "balanced",
-          strategy: "hybrid",
-          minGapSec: 1.4,
-          fadeMs: 120,
-          leadInSec: 0.08,
-          maxSkipSec: 12,
-          rmsThreshold: 0.014,
-          confirmMs: 240,
-          fallbackJumpSec: 1.4,
-          cooldownMs: 650
-        });
-      }
-
-      saveSkipSettings();
-      syncSkipUi();
-    }
-
-    function syncSkipUi(){
-      const open = !skipDrawer.hidden;
-
-      skipDrawerBtn.classList.toggle("on", open || skipSettings.enabled);
-      skipDrawerBtn.classList.toggle("breathing", !!skipSettings.enabled);
-      skipDrawerBtn.setAttribute("aria-expanded", String(open));
-
-      skipEnableBtn.textContent = "Sessiz atlama: " + (skipSettings.enabled ? "Açık" : "Kapalı");
-      skipEnableBtn.classList.toggle("on", !!skipSettings.enabled);
-
-      skipModeLight.classList.toggle("on", skipSettings.mode === "light");
-      skipModeBalanced.classList.toggle("on", skipSettings.mode === "balanced");
-      skipModeAggressive.classList.toggle("on", skipSettings.mode === "aggressive");
-      skipModeUltra.classList.toggle("on", skipSettings.mode === "ultra");
-      skipModeMax.classList.toggle("on", skipSettings.mode === "max");
-
-      skipMinGapRange.value = String(skipSettings.minGapSec);
-      skipMinGapValue.textContent = `${Number(skipSettings.minGapSec).toFixed(1)}s`;
-
-      skipFadeRange.value = String(skipSettings.fadeMs);
-      skipFadeValue.textContent = `${Math.round(skipSettings.fadeMs)}ms`;
-
-      skipEngineLabel.textContent = "Hybrid";
-      skipHintEl.textContent = "Hybrid: SRT boşluğu aday alır, sesi doğrular, güvenliyse atlar.";
-    }
-
-    function toggleSkipDrawer(force){
-      const shouldOpen = typeof force === "boolean" ? force : skipDrawer.hidden;
-      skipDrawer.hidden = !shouldOpen;
-      saveSkipDrawerOpen(shouldOpen);
-      syncSkipUi();
-      setTimeout(() => clampPlayerToViewport(), 0);
-    }
-
-    skipDrawerBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleSkipDrawer();
-    });
-
-    skipEnableBtn.addEventListener("click", async () => {
-      skipSettings.enabled = !skipSettings.enabled;
-      saveSkipSettings();
-      syncSkipUi();
-      if (skipSettings.enabled) await ensureSkipAudioGraph();
-      resetSkipRuntimeForManualAction();
-    });
-
-    skipModeLight.addEventListener("click", () => applySkipPreset("light"));
-    skipModeBalanced.addEventListener("click", () => applySkipPreset("balanced"));
-    skipModeAggressive.addEventListener("click", () => applySkipPreset("aggressive"));
-    skipModeUltra.addEventListener("click", () => applySkipPreset("ultra"));
-    skipModeMax.addEventListener("click", () => applySkipPreset("max"));
-
-    skipMinGapRange.addEventListener("input", () => {
-      skipSettings.minGapSec = Number(skipMinGapRange.value);
-      saveSkipSettings();
-      syncSkipUi();
-    });
-
-    skipFadeRange.addEventListener("input", () => {
-      skipSettings.fadeMs = Number(skipFadeRange.value);
-      saveSkipSettings();
-      syncSkipUi();
-    });
-
     function resetSkipRuntimeForNewTrack(){
       skipState.lowSinceAt = 0;
       skipState.lastGapKey = "";
@@ -4377,31 +4246,55 @@
       skipState.manualSuppressUntil = performance.now() + 1000;
     }
 
-    playerEl.addEventListener("seeking", resetSkipRuntimeForManualAction);
-    playerEl.addEventListener("seeked", resetSkipRuntimeForManualAction);
-    playerEl.addEventListener("pause", () => { skipState.lowSinceAt = 0; });
-    playerEl.addEventListener("ended", () => { skipState.lowSinceAt = 0; });
+    function stopSkipLoop(){
+      if (skipState.rafId){
+        cancelAnimationFrame(skipState.rafId);
+        skipState.rafId = 0;
+      }
+    }
+
+    function startSkipLoop(){
+      if (!skipSettings.enabled) return;
+      if (!skipState.supported) return;
+      if (skipState.rafId) return;
+      skipState.rafId = requestAnimationFrame(skipLoop);
+    }
+
+    function disableSkipSafely(message){
+      skipSettings.enabled = false;
+      saveSkipSettings();
+      stopSkipLoop();
+      skipState.supported = false;
+      syncSkipUi();
+      if (message) statusEl.textContent = message;
+    }
 
     async function ensureSkipAudioGraph(){
-      if (skipState.inited) {
+      if (!skipSettings.enabled) return false;
+      if (!skipState.supported) return false;
+
+      if (skipState.inited){
         if (skipState.ctx && skipState.ctx.state === "suspended"){
           try { await skipState.ctx.resume(); } catch {}
         }
-        if (!skipState.rafId) skipState.rafId = requestAnimationFrame(skipLoop);
+        startSkipLoop();
         return true;
       }
 
       try{
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return false;
+        if (!AudioCtx){
+          disableSkipSafely("Sessizlik atlama bu tarayıcıda desteklenmiyor.");
+          return false;
+        }
 
         skipState.ctx = new AudioCtx();
-        skipState.source = skipState.ctx.createMediaElementSource(playerEl);
         skipState.analyser = skipState.ctx.createAnalyser();
         skipState.analyser.fftSize = 2048;
         skipState.analyser.smoothingTimeConstant = 0.18;
         skipState.data = new Float32Array(skipState.analyser.fftSize);
 
+        skipState.source = skipState.ctx.createMediaElementSource(playerEl);
         skipState.source.connect(skipState.analyser);
         skipState.analyser.connect(skipState.ctx.destination);
 
@@ -4411,15 +4304,17 @@
           try { await skipState.ctx.resume(); } catch {}
         }
 
-        if (!skipState.rafId) skipState.rafId = requestAnimationFrame(skipLoop);
+        startSkipLoop();
         return true;
       }catch(err){
         console.warn("Skip audio graph kurulamadı:", err);
+        disableSkipSafely("SKIP devre dışı bırakıldı. Ses normal çalacak.");
         return false;
       }
     }
 
     function getCurrentRms(){
+      if (!skipSettings.enabled) return null;
       if (!skipState.analyser || !skipState.data) return null;
       try{
         skipState.analyser.getFloatTimeDomainData(skipState.data);
@@ -4436,6 +4331,7 @@
 
     function canSkipNow(nowMs){
       if (!skipSettings.enabled) return false;
+      if (!skipState.inited) return false;
       if (!playerEl || playerEl.paused || playerEl.seeking) return false;
       if (!Number.isFinite(playerEl.currentTime)) return false;
       if (!Number.isFinite(playerEl.duration) || playerEl.duration <= 0) return false;
@@ -4537,9 +4433,7 @@
 
     async function maybeSkipByHybrid(nowMs, currentTime, rms){
       const gap = getHybridGapCandidate(currentTime);
-      if (!gap){
-        return false;
-      }
+      if (!gap) return false;
 
       if (gap.key === skipState.lastGapKey){
         if ((nowMs - skipState.lastSkipAt) < skipSettings.cooldownMs) return false;
@@ -4565,9 +4459,15 @@
 
     async function skipLoop(){
       skipState.rafId = 0;
+
+      if (!skipSettings.enabled || !skipState.inited){
+        stopSkipLoop();
+        return;
+      }
+
       const nowMs = performance.now();
 
-      if (skipSettings.enabled && skipState.ctx && skipState.ctx.state === "suspended"){
+      if (skipState.ctx && skipState.ctx.state === "suspended"){
         try { await skipState.ctx.resume(); } catch {}
       }
 
@@ -4590,25 +4490,174 @@
         }
       }
 
-      skipState.rafId = requestAnimationFrame(skipLoop);
+      startSkipLoop();
     }
+
+    function applySkipPreset(mode){
+      if (mode === "light"){
+        Object.assign(skipSettings, {
+          mode: "light",
+          strategy: "hybrid",
+          minGapSec: 1.8,
+          fadeMs: 140,
+          leadInSec: 0.10,
+          maxSkipSec: 8,
+          rmsThreshold: 0.012,
+          confirmMs: 280,
+          fallbackJumpSec: 1.0,
+          cooldownMs: 700
+        });
+      } else if (mode === "aggressive"){
+        Object.assign(skipSettings, {
+          mode: "aggressive",
+          strategy: "hybrid",
+          minGapSec: 1.0,
+          fadeMs: 90,
+          leadInSec: 0.05,
+          maxSkipSec: 18,
+          rmsThreshold: 0.018,
+          confirmMs: 180,
+          fallbackJumpSec: 1.8,
+          cooldownMs: 520
+        });
+      } else if (mode === "ultra"){
+        Object.assign(skipSettings, {
+          mode: "ultra",
+          strategy: "hybrid",
+          minGapSec: 0.7,
+          fadeMs: 60,
+          leadInSec: 0.04,
+          maxSkipSec: 24,
+          rmsThreshold: 0.022,
+          confirmMs: 130,
+          fallbackJumpSec: 2.2,
+          cooldownMs: 420
+        });
+      } else if (mode === "max"){
+        Object.assign(skipSettings, {
+          mode: "max",
+          strategy: "hybrid",
+          minGapSec: 0.4,
+          fadeMs: 30,
+          leadInSec: 0.02,
+          maxSkipSec: 36,
+          rmsThreshold: 0.028,
+          confirmMs: 90,
+          fallbackJumpSec: 2.8,
+          cooldownMs: 300
+        });
+      } else {
+        Object.assign(skipSettings, {
+          mode: "balanced",
+          strategy: "hybrid",
+          minGapSec: 1.4,
+          fadeMs: 120,
+          leadInSec: 0.08,
+          maxSkipSec: 12,
+          rmsThreshold: 0.014,
+          confirmMs: 240,
+          fallbackJumpSec: 1.4,
+          cooldownMs: 650
+        });
+      }
+
+      saveSkipSettings();
+      syncSkipUi();
+    }
+
+    function syncSkipUi(){
+      const open = !skipDrawer.hidden;
+
+      skipDrawerBtn.classList.toggle("on", open || skipSettings.enabled);
+      skipDrawerBtn.classList.toggle("breathing", !!skipSettings.enabled);
+      skipDrawerBtn.setAttribute("aria-expanded", String(open));
+
+      skipEnableBtn.textContent = "Sessiz atlama: " + (skipSettings.enabled ? "Açık" : "Kapalı");
+      skipEnableBtn.classList.toggle("on", !!skipSettings.enabled);
+
+      skipModeLight.classList.toggle("on", skipSettings.mode === "light");
+      skipModeBalanced.classList.toggle("on", skipSettings.mode === "balanced");
+      skipModeAggressive.classList.toggle("on", skipSettings.mode === "aggressive");
+      skipModeUltra.classList.toggle("on", skipSettings.mode === "ultra");
+      skipModeMax.classList.toggle("on", skipSettings.mode === "max");
+
+      skipMinGapRange.value = String(skipSettings.minGapSec);
+      skipMinGapValue.textContent = `${Number(skipSettings.minGapSec).toFixed(1)}s`;
+
+      skipFadeRange.value = String(skipSettings.fadeMs);
+      skipFadeValue.textContent = `${Math.round(skipSettings.fadeMs)}ms`;
+
+      skipEngineLabel.textContent = skipState.supported ? "Hybrid" : "Pasif";
+      skipHintEl.textContent = skipState.supported
+        ? "Hybrid: SRT boşluğu aday alır, sesi doğrular, güvenliyse atlar."
+        : "SKIP devre dışı. Player normal çalıyor.";
+    }
+
+    function toggleSkipDrawer(force){
+      const shouldOpen = typeof force === "boolean" ? force : skipDrawer.hidden;
+      skipDrawer.hidden = !shouldOpen;
+      saveSkipDrawerOpen(shouldOpen);
+      syncSkipUi();
+      setTimeout(() => clampPlayerToViewport(), 0);
+    }
+
+    skipDrawerBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleSkipDrawer();
+    });
+
+    skipEnableBtn.addEventListener("click", async () => {
+      skipState.supported = true;
+      skipSettings.enabled = !skipSettings.enabled;
+      saveSkipSettings();
+      syncSkipUi();
+
+      if (skipSettings.enabled){
+        await ensureSkipAudioGraph();
+      } else {
+        stopSkipLoop();
+        resetSkipRuntimeForManualAction();
+      }
+    });
+
+    skipModeLight.addEventListener("click", () => applySkipPreset("light"));
+    skipModeBalanced.addEventListener("click", () => applySkipPreset("balanced"));
+    skipModeAggressive.addEventListener("click", () => applySkipPreset("aggressive"));
+    skipModeUltra.addEventListener("click", () => applySkipPreset("ultra"));
+    skipModeMax.addEventListener("click", () => applySkipPreset("max"));
+
+    skipMinGapRange.addEventListener("input", () => {
+      skipSettings.minGapSec = Number(skipMinGapRange.value);
+      saveSkipSettings();
+      syncSkipUi();
+    });
+
+    skipFadeRange.addEventListener("input", () => {
+      skipSettings.fadeMs = Number(skipFadeRange.value);
+      saveSkipSettings();
+      syncSkipUi();
+    });
 
     playerEl.addEventListener("play", async () => {
       if (skipSettings.enabled) await ensureSkipAudioGraph();
     });
 
-    function isSkipAvailable(){
-      return !!window.AudioContext || !!window.webkitAudioContext;
-    }
+    playerEl.addEventListener("pause", () => {
+      skipState.lowSinceAt = 0;
+      stopSkipLoop();
+    });
 
-    function setSkipStatusText(){
-      if (!skipSettings.enabled) return;
-      if (!isSkipAvailable()){
-        statusEl.textContent = "Sessizlik atlama bu tarayıcıda desteklenmiyor.";
-      }
-    }
+    playerEl.addEventListener("ended", () => {
+      skipState.lowSinceAt = 0;
+      stopSkipLoop();
+    });
 
-    const SEARCH_NODE_DEBOUNCE = 0;
+    playerEl.addEventListener("seeking", resetSkipRuntimeForManualAction);
+    playerEl.addEventListener("seeked", () => {
+      if (skipSettings.enabled) startSkipLoop();
+    });
+
+    let stickySearchNodeDebounce = 0;
 
     setSortIcons();
     restoreUiState();
@@ -4620,7 +4669,6 @@
     setTxtBtnUi();
     skipDrawer.hidden = !loadSkipDrawerOpen();
     syncSkipUi();
-    setSkipStatusText();
 
     requestAnimationFrame(() => {
       measureStickyStartTop();
@@ -4674,7 +4722,7 @@
       statusEl.textContent = `SRT kontrol bitti: ${checked}/${maxN} (eksik: ${missing})`;
     }
 
-    setTimeout(clampPlayerToViewport, SEARCH_NODE_DEBOUNCE);
+    setTimeout(clampPlayerToViewport, stickySearchNodeDebounce);
     loadItems();
     setTimeout(() => checkSrtAvailability().catch(()=>{}), 1200);
   </script>
