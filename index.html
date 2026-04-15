@@ -1107,7 +1107,7 @@
       margin-bottom:8px;
     }
     .skipRangeRow label{
-      min-width:110px;
+      min-width:120px;
       font-size:.92rem;
       font-weight:650;
     }
@@ -1154,7 +1154,7 @@
       <div class="pageTitle">
         <div class="pageTitleMain">
           <span>FSP Audio — Güncel</span>
-          <div id="buildMeta" class="buildMeta">v1.80 · Güncelleme: 15.04.2026</div>
+          <div id="buildMeta" class="buildMeta">v1.81 · Güncelleme: 15.04.2026</div>
         </div>
         <button id="sidebarOpenBtn" type="button" aria-label="Menü" title="Menü">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -1352,7 +1352,7 @@
       <div class="skipDrawerInner">
         <div class="skipRow">
           <button id="skipEnableBtn" class="sbBtn" type="button">Sessiz atlama: Kapalı</button>
-          <span id="skipEngineLabel" class="skipEngineLabel">SRT</span>
+          <span id="skipEngineLabel" class="skipEngineLabel">Hazır değil</span>
         </div>
 
         <div class="skipRow">
@@ -1376,7 +1376,7 @@
         </div>
 
         <div class="skipHint" id="skipHint">
-          Ses yoluna dokunmaz. Yalnızca SRT boşluklarında atlar.
+          Dosya buffer’dan analiz edilir. Çalma yolu değişmez.
         </div>
       </div>
     </div>
@@ -1437,7 +1437,7 @@
   <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
   <script>
-    const BUILD_VERSION = "v1.80";
+    const BUILD_VERSION = "v1.81";
     const BUILD_UPDATED = "15.04.2026";
 
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
@@ -1736,7 +1736,7 @@
       uiState: "fsp1.ui.state.v1",
       txSize: "fsp1.tx.size.v1",
       txPos: "fsp1.tx.pos.v1",
-      skipSettings: "fsp1.skip.settings.v2",
+      skipSettings: "fsp1.skip.settings.buffer.v1",
       skipDrawerOpen: "fsp1.skip.drawer.open.v1"
     };
 
@@ -2173,6 +2173,11 @@
         if (cues[i].start > t) return i;
       }
       return -1;
+    }
+
+    function findNextCueStart(cues, t){
+      const idx = findNextCueIdx(cues, t);
+      return idx >= 0 ? cues[idx].start : null;
     }
 
     function splitCaptionLines(text){
@@ -2918,7 +2923,7 @@
         Array.isArray(cached) &&
         cached.length > 0 &&
         Number.isFinite(cachedAt) &&
-        (Date.now() - cachedAt) < CACHE_TTL_MS;
+        (Date.now() - cachedAt) < (30 * 24 * 60 * 60 * 1000);
 
       if (cacheFresh){
         items = cached;
@@ -2949,33 +2954,32 @@
 
         if (cacheFresh && newUpdated && oldUpdated && newUpdated === oldUpdated){
           localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
-          return;
+        } else {
+          const files = Array.isArray(j.files) ? j.files : [];
+          const list = files
+            .filter(f => {
+              const name = (f.name || "").toLowerCase();
+              if (!(name.endsWith(".m4a") || name.endsWith(".mp3"))) return false;
+              if (!("source" in f)) return true;
+              return String(f.source).toLowerCase() === "original";
+            })
+            .map((f, idx) => {
+              const name = f.name || "";
+              const title = (f.title || "").trim() || decodeURIComponentSafe(name.split("/").pop() || name);
+              const url = buildDownloadUrl(IA_IDENTIFIER_1, name);
+              const localId = name || url || (title + "#" + idx);
+              const id = "S1|" + localId;
+              const txtCandidates = buildTxtNameCandidates({ name });
+              const txtName = txtCandidates.length ? txtCandidates[0] : replaceExtToTxt(name);
+              const txtUrl = txtName ? (TXT_BASES[0] + encodeURIComponent(txtName)) : "";
+              return { id, title, name, url, src: "S1", txtName, txtUrl };
+            });
+
+          items = list;
+          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
+          localStorage.setItem(LS.itemsCache, JSON.stringify(items));
+          if (newUpdated) localStorage.setItem(LS.metaUpdated, newUpdated);
         }
-
-        const files = Array.isArray(j.files) ? j.files : [];
-        const list = files
-          .filter(f => {
-            const name = (f.name || "").toLowerCase();
-            if (!(name.endsWith(".m4a") || name.endsWith(".mp3"))) return false;
-            if (!("source" in f)) return true;
-            return String(f.source).toLowerCase() === "original";
-          })
-          .map((f, idx) => {
-            const name = f.name || "";
-            const title = (f.title || "").trim() || decodeURIComponentSafe(name.split("/").pop() || name);
-            const url = buildDownloadUrl(IA_IDENTIFIER_1, name);
-            const localId = name || url || (title + "#" + idx);
-            const id = "S1|" + localId;
-            const txtCandidates = buildTxtNameCandidates({ name });
-            const txtName = txtCandidates.length ? txtCandidates[0] : replaceExtToTxt(name);
-            const txtUrl = txtName ? (TXT_BASES[0] + encodeURIComponent(txtName)) : "";
-            return { id, title, name, url, src: "S1", txtName, txtUrl };
-          });
-
-        items = list;
-        localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
-        localStorage.setItem(LS.itemsCache, JSON.stringify(items));
-        if (newUpdated) localStorage.setItem(LS.metaUpdated, newUpdated);
 
         statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
         setSortIcons();
@@ -3224,6 +3228,7 @@
         plyr.speed = currentSpeed;
         setMediaSource(url, mime);
         loadSrtForItem(it).catch(() => {});
+        prepareBufferedSkipForItem(it).catch(() => {});
         const p = plyr.play();
         if (p && typeof p.catch === "function"){
           p.catch(() => {
@@ -4085,21 +4090,29 @@
     const DEFAULT_SKIP_SETTINGS = {
       enabled: false,
       mode: "balanced",
-      strategy: "srt_only",
       minGapSec: 1.4,
       fadeMs: 120,
       leadInSec: 0.08,
       maxSkipSec: 12,
-      cooldownMs: 650
+      cooldownMs: 650,
+      windowMs: 32,
+      mergeGapSec: 0.12,
+      rmsThreshold: 0.008
     };
+
+    const skipMapCache = new Map();
 
     const skipState = {
       rafId: 0,
-      supported: true,
       skipInFlight: false,
       lastSkipAt: 0,
       lastGapKey: "",
-      manualSuppressUntil: 0
+      manualSuppressUntil: 0,
+      silenceMap: [],
+      readyForId: null,
+      analysisStatus: "idle",
+      analysisAbort: null,
+      analysisJobId: 0
     };
 
     function loadSkipSettings(){
@@ -4146,9 +4159,174 @@
 
     function startSkipLoop(){
       if (!skipSettings.enabled) return;
-      if (!skipState.supported) return;
       if (skipState.rafId) return;
       skipState.rafId = requestAnimationFrame(skipLoop);
+    }
+
+    function abortSkipAnalysis(){
+      try{
+        if (skipState.analysisAbort) skipState.analysisAbort.abort();
+      }catch{}
+      skipState.analysisAbort = null;
+    }
+
+    function closeAudioContextSafe(ctx){
+      try{
+        if (ctx && typeof ctx.close === "function") return ctx.close();
+      }catch{}
+      return Promise.resolve();
+    }
+
+    async function decodeAudioDataSafe(ctx, arrayBuffer){
+      if (ctx.decodeAudioData.length >= 2){
+        return new Promise((resolve, reject) => {
+          ctx.decodeAudioData(arrayBuffer.slice(0), resolve, reject);
+        });
+      }
+      return ctx.decodeAudioData(arrayBuffer.slice(0));
+    }
+
+    async function buildSilenceMapFromUrl(url, signal, settings){
+      const res = await fetch(url, { cache: "force-cache", signal });
+      if (!res.ok) throw new Error("Audio fetch failed: " + res.status);
+
+      const arr = await res.arrayBuffer();
+      if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) throw new Error("AudioContext unsupported");
+
+      const ctx = new AudioCtx();
+      try{
+        const audioBuffer = await decodeAudioDataSafe(ctx, arr);
+        if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
+        const sr = audioBuffer.sampleRate;
+        const channels = Math.max(1, audioBuffer.numberOfChannels);
+        const length = audioBuffer.length;
+        const win = Math.max(128, Math.floor(sr * settings.windowMs / 1000));
+
+        const chData = [];
+        for (let c = 0; c < channels; c++) chData.push(audioBuffer.getChannelData(c));
+
+        const rawSegments = [];
+        let runStart = -1;
+
+        for (let i = 0; i < length; i += win){
+          const end = Math.min(i + win, length);
+          let sum = 0;
+          let count = 0;
+
+          for (let c = 0; c < channels; c++){
+            const data = chData[c];
+            for (let j = i; j < end; j++){
+              const v = data[j];
+              sum += v * v;
+              count++;
+            }
+          }
+
+          const rms = Math.sqrt(sum / Math.max(1, count));
+          const isSilent = rms <= settings.rmsThreshold;
+
+          if (isSilent && runStart < 0) runStart = i;
+          if (!isSilent && runStart >= 0){
+            rawSegments.push({ start: runStart / sr, end: i / sr });
+            runStart = -1;
+          }
+        }
+
+        if (runStart >= 0){
+          rawSegments.push({ start: runStart / sr, end: length / sr });
+        }
+
+        const minGap = Number(settings.minGapSec) || 1.0;
+        const mergeGap = Number(settings.mergeGapSec) || 0.1;
+
+        const filtered = rawSegments
+          .map(seg => ({
+            start: Math.max(0, seg.start),
+            end: Math.max(seg.start, seg.end)
+          }))
+          .filter(seg => (seg.end - seg.start) >= minGap)
+          .filter(seg => seg.start > 0.2);
+
+        const merged = [];
+        for (const seg of filtered){
+          const last = merged[merged.length - 1];
+          if (last && seg.start - last.end <= mergeGap){
+            last.end = seg.end;
+          } else {
+            merged.push({ ...seg });
+          }
+        }
+
+        return merged;
+      } finally {
+        await closeAudioContextSafe(ctx);
+      }
+    }
+
+    function findSilenceAtTime(t, list){
+      let lo = 0;
+      let hi = list.length - 1;
+
+      while (lo <= hi){
+        const mid = (lo + hi) >> 1;
+        const seg = list[mid];
+        if (t < seg.start) hi = mid - 1;
+        else if (t >= seg.end) lo = mid + 1;
+        else return seg;
+      }
+      return null;
+    }
+
+    function currentSkipItem(){
+      return items.find(x => x.id === activeId) || null;
+    }
+
+    async function prepareBufferedSkipForItem(it){
+      if (!it) return;
+
+      const cached = skipMapCache.get(it.id);
+      if (cached){
+        skipState.silenceMap = cached;
+        skipState.readyForId = it.id;
+        skipState.analysisStatus = "ready";
+        syncSkipUi();
+        return;
+      }
+
+      abortSkipAnalysis();
+      const ctrl = new AbortController();
+      skipState.analysisAbort = ctrl;
+      skipState.analysisStatus = "working";
+      skipState.readyForId = null;
+      skipState.silenceMap = [];
+      const jobId = ++skipState.analysisJobId;
+      syncSkipUi();
+
+      try{
+        const silenceMap = await buildSilenceMapFromUrl(it.url, ctrl.signal, skipSettings);
+        if (ctrl.signal.aborted || jobId !== skipState.analysisJobId) return;
+
+        skipMapCache.set(it.id, silenceMap);
+        skipState.silenceMap = silenceMap;
+        skipState.readyForId = it.id;
+        skipState.analysisStatus = "ready";
+        syncSkipUi();
+        if (skipSettings.enabled && activeId === it.id) startSkipLoop();
+      }catch(err){
+        if (err?.name === "AbortError") return;
+        console.warn("Buffered skip map failed:", err);
+        if (jobId !== skipState.analysisJobId) return;
+        skipState.silenceMap = [];
+        skipState.readyForId = null;
+        skipState.analysisStatus = "error";
+        syncSkipUi();
+      }finally{
+        if (skipState.analysisAbort === ctrl) skipState.analysisAbort = null;
+      }
     }
 
     function canSkipNow(nowMs){
@@ -4161,35 +4339,36 @@
       if (nowMs < skipState.manualSuppressUntil) return false;
       if ((nowMs - skipState.lastSkipAt) < skipSettings.cooldownMs) return false;
       if (playerEl.currentTime < 1.2) return false;
-      if (!activeCues.length) return false;
+      if (!skipState.silenceMap.length) return false;
+      if (skipState.readyForId !== activeId) return false;
       return true;
     }
 
-    function getHybridGapCandidate(currentTime){
-      if (!activeCues.length) return null;
+    function getBufferedSkipCandidate(currentTime){
+      const seg = findSilenceAtTime(currentTime, skipState.silenceMap);
+      if (!seg) return null;
+      if (currentTime < seg.start + 0.04) return null;
 
-      const prevIdx = findPrevCueIdx(activeCues, currentTime);
-      const nextIdx = findNextCueIdx(activeCues, currentTime);
-      if (prevIdx === -1 || nextIdx === -1) return null;
+      const nextCueStart = activeCues.length ? findNextCueStart(activeCues, currentTime) : null;
+      const duration = Number(playerEl.duration) || 0;
 
-      const prev = activeCues[prevIdx];
-      const next = activeCues[nextIdx];
-      const gapStart = prev.end;
-      const gapEnd = next.start;
-      const gapLen = gapEnd - gapStart;
-
-      if (!(gapLen >= skipSettings.minGapSec)) return null;
-      if (currentTime < gapStart + 0.06) return null;
-
-      const target = Math.min(
-        Math.max(currentTime, next.start - skipSettings.leadInSec),
-        gapStart + skipSettings.maxSkipSec
+      let target = Math.min(
+        seg.end - skipSettings.leadInSec,
+        seg.start + skipSettings.maxSkipSec
       );
 
-      if (!(target > currentTime + 0.10)) return null;
+      if (Number.isFinite(nextCueStart)){
+        target = Math.min(target, nextCueStart - skipSettings.leadInSec);
+      }
+
+      if (duration > 0){
+        target = Math.min(target, Math.max(0, duration - 0.05));
+      }
+
+      if (!(target > currentTime + 0.08)) return null;
 
       return {
-        key: `${prevIdx}:${nextIdx}:${gapStart.toFixed(3)}:${gapEnd.toFixed(3)}`,
+        key: `${seg.start.toFixed(3)}:${seg.end.toFixed(3)}`,
         target
       };
     }
@@ -4240,8 +4419,8 @@
       }
     }
 
-    async function maybeSkipBySrt(currentTime){
-      const gap = getHybridGapCandidate(currentTime);
+    async function maybeSkipByBuffer(currentTime){
+      const gap = getBufferedSkipCandidate(currentTime);
       if (!gap) return false;
 
       if (gap.key === skipState.lastGapKey){
@@ -4264,7 +4443,7 @@
       const nowMs = performance.now();
       if (canSkipNow(nowMs)){
         const currentTime = Number(playerEl.currentTime) || 0;
-        await maybeSkipBySrt(currentTime);
+        await maybeSkipByBuffer(currentTime);
       }
 
       startSkipLoop();
@@ -4274,56 +4453,68 @@
       if (mode === "light"){
         Object.assign(skipSettings, {
           mode: "light",
-          strategy: "srt_only",
           minGapSec: 1.8,
           fadeMs: 140,
           leadInSec: 0.10,
           maxSkipSec: 8,
-          cooldownMs: 700
+          cooldownMs: 700,
+          windowMs: 36,
+          mergeGapSec: 0.16,
+          rmsThreshold: 0.007
         });
       } else if (mode === "aggressive"){
         Object.assign(skipSettings, {
           mode: "aggressive",
-          strategy: "srt_only",
           minGapSec: 1.0,
           fadeMs: 90,
           leadInSec: 0.05,
           maxSkipSec: 18,
-          cooldownMs: 520
+          cooldownMs: 520,
+          windowMs: 28,
+          mergeGapSec: 0.10,
+          rmsThreshold: 0.009
         });
       } else if (mode === "ultra"){
         Object.assign(skipSettings, {
           mode: "ultra",
-          strategy: "srt_only",
           minGapSec: 0.7,
           fadeMs: 60,
           leadInSec: 0.04,
           maxSkipSec: 24,
-          cooldownMs: 420
+          cooldownMs: 420,
+          windowMs: 24,
+          mergeGapSec: 0.08,
+          rmsThreshold: 0.010
         });
       } else if (mode === "max"){
         Object.assign(skipSettings, {
           mode: "max",
-          strategy: "srt_only",
           minGapSec: 0.4,
           fadeMs: 30,
           leadInSec: 0.02,
           maxSkipSec: 36,
-          cooldownMs: 300
+          cooldownMs: 300,
+          windowMs: 20,
+          mergeGapSec: 0.06,
+          rmsThreshold: 0.012
         });
       } else {
         Object.assign(skipSettings, {
           mode: "balanced",
-          strategy: "srt_only",
           minGapSec: 1.4,
           fadeMs: 120,
           leadInSec: 0.08,
           maxSkipSec: 12,
-          cooldownMs: 650
+          cooldownMs: 650,
+          windowMs: 32,
+          mergeGapSec: 0.12,
+          rmsThreshold: 0.008
         });
       }
 
       saveSkipSettings();
+      const it = currentSkipItem();
+      if (it) prepareBufferedSkipForItem(it).catch(()=>{});
       syncSkipUi();
     }
 
@@ -4347,10 +4538,34 @@
       skipFadeRange.value = String(skipSettings.fadeMs);
       skipFadeValue.textContent = `${Math.round(skipSettings.fadeMs)}ms`;
 
-      skipEngineLabel.textContent = activeCues.length ? "SRT" : "SRT yok";
-      skipHintEl.textContent = activeCues.length
-        ? "Ses yoluna dokunmaz. Yalnızca SRT boşluklarında atlar."
-        : "Bu kayıtta güvenli skip için SRT bulunamadı.";
+      if (!activeId){
+        skipEngineLabel.textContent = "Bekliyor";
+        skipHintEl.textContent = "Bir kayıt seçildiğinde ses dosyası buffer’a alınır ve sessizlik haritası hazırlanır.";
+        return;
+      }
+
+      if (skipState.analysisStatus === "working"){
+        skipEngineLabel.textContent = "Tarıyor";
+        skipHintEl.textContent = "Ses dosyası buffer’dan analiz ediliyor. Oynatma normal devam eder.";
+        return;
+      }
+
+      if (skipState.analysisStatus === "ready" && skipState.readyForId === activeId){
+        skipEngineLabel.textContent = `Hazır (${skipState.silenceMap.length})`;
+        skipHintEl.textContent = activeCues.length
+          ? "Buffer tabanlı sessizlik + SRT iniş noktası kullanılır."
+          : "Buffer tabanlı sessizlik haritası hazır. SRT olmasa da skip çalışır.";
+        return;
+      }
+
+      if (skipState.analysisStatus === "error"){
+        skipEngineLabel.textContent = "Hata";
+        skipHintEl.textContent = "Buffer analizi başarısız oldu. Çalma normal devam eder.";
+        return;
+      }
+
+      skipEngineLabel.textContent = "Hazır değil";
+      skipHintEl.textContent = "Analiz henüz yapılmadı.";
     }
 
     function toggleSkipDrawer(force){
@@ -4372,6 +4587,8 @@
       syncSkipUi();
 
       if (skipSettings.enabled){
+        const it = currentSkipItem();
+        if (it && skipState.readyForId !== it.id) prepareBufferedSkipForItem(it).catch(()=>{});
         startSkipLoop();
       } else {
         stopSkipLoop();
@@ -4388,6 +4605,8 @@
     skipMinGapRange.addEventListener("input", () => {
       skipSettings.minGapSec = Number(skipMinGapRange.value);
       saveSkipSettings();
+      const it = currentSkipItem();
+      if (it) prepareBufferedSkipForItem(it).catch(()=>{});
       syncSkipUi();
     });
 
@@ -4408,11 +4627,6 @@
     playerEl.addEventListener("seeked", () => {
       if (skipSettings.enabled) startSkipLoop();
     });
-
-    function setTxtBtnUi(){
-      fpTxtBtn.classList.toggle("on", !!txOpen);
-      fpTxtBtn.setAttribute("aria-pressed", String(!!txOpen));
-    }
 
     setSortIcons();
     restoreUiState();
