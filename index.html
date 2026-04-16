@@ -1115,7 +1115,7 @@
       flex:1 1 180px;
     }
     .skipRangeRow span{
-      min-width:64px;
+      min-width:72px;
       text-align:right;
       font-variant-numeric: tabular-nums;
       color:#404040;
@@ -1154,7 +1154,7 @@
       <div class="pageTitle">
         <div class="pageTitleMain">
           <span>FSP Audio — Güncel</span>
-          <div id="buildMeta" class="buildMeta">v1.81 · Güncelleme: 15.04.2026</div>
+          <div id="buildMeta" class="buildMeta">v1.82 · Güncelleme: 16.04.2026</div>
         </div>
         <button id="sidebarOpenBtn" type="button" aria-label="Menü" title="Menü">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -1365,14 +1365,14 @@
 
         <div class="skipRow skipRangeRow">
           <label for="skipMinGapRange">Min. sessizlik</label>
-          <input id="skipMinGapRange" type="range" min="0.3" max="3.0" step="0.1" value="1.4" />
-          <span id="skipMinGapValue">1.4s</span>
+          <input id="skipMinGapRange" type="range" min="0.3" max="3.0" step="0.1" value="0.55" />
+          <span id="skipMinGapValue">0.55s</span>
         </div>
 
         <div class="skipRow skipRangeRow">
           <label for="skipFadeRange">Geçiş</label>
-          <input id="skipFadeRange" type="range" min="0" max="250" step="10" value="120" />
-          <span id="skipFadeValue">120ms</span>
+          <input id="skipFadeRange" type="range" min="0" max="250" step="10" value="80" />
+          <span id="skipFadeValue">80ms</span>
         </div>
 
         <div class="skipHint" id="skipHint">
@@ -1437,8 +1437,8 @@
   <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
   <script>
-    const BUILD_VERSION = "v1.81";
-    const BUILD_UPDATED = "15.04.2026";
+    const BUILD_VERSION = "v1.82";
+    const BUILD_UPDATED = "16.04.2026";
 
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
     const IA_IDENTIFIER_2 = "FSPneu";
@@ -1736,7 +1736,7 @@
       uiState: "fsp1.ui.state.v1",
       txSize: "fsp1.tx.size.v1",
       txPos: "fsp1.tx.pos.v1",
-      skipSettings: "fsp1.skip.settings.buffer.v1",
+      skipSettings: "fsp1.skip.settings.buffer.v2",
       skipDrawerOpen: "fsp1.skip.drawer.open.v1"
     };
 
@@ -1754,11 +1754,6 @@
 
     const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
     let pendingScrollTop = null;
-
-    function itemsFingerprint(list){
-      if (!Array.isArray(list) || !list.length) return "";
-      return list.map(x => String(x?.id || "")).sort().join("|");
-    }
 
     function saveUiState(){
       try{
@@ -2157,15 +2152,6 @@
         else return mid;
       }
       return -1;
-    }
-
-    function findPrevCueIdx(cues, t){
-      let idx = -1;
-      for (let i = 0; i < cues.length; i++){
-        if (cues[i].end <= t) idx = i;
-        else break;
-      }
-      return idx;
     }
 
     function findNextCueIdx(cues, t){
@@ -2923,7 +2909,7 @@
         Array.isArray(cached) &&
         cached.length > 0 &&
         Number.isFinite(cachedAt) &&
-        (Date.now() - cachedAt) < (30 * 24 * 60 * 60 * 1000);
+        (Date.now() - cachedAt) < CACHE_TTL_MS;
 
       if (cacheFresh){
         items = cached;
@@ -2952,9 +2938,7 @@
         );
         const oldUpdated = String(localStorage.getItem(LS.metaUpdated) || "");
 
-        if (cacheFresh && newUpdated && oldUpdated && newUpdated === oldUpdated){
-          localStorage.setItem(LS.itemsCacheAt, String(Date.now()));
-        } else {
+        if (!(cacheFresh && newUpdated && oldUpdated && newUpdated === oldUpdated)){
           const files = Array.isArray(j.files) ? j.files : [];
           const list = files
             .filter(f => {
@@ -4090,14 +4074,14 @@
     const DEFAULT_SKIP_SETTINGS = {
       enabled: false,
       mode: "balanced",
-      minGapSec: 1.4,
-      fadeMs: 120,
-      leadInSec: 0.08,
-      maxSkipSec: 12,
-      cooldownMs: 650,
-      windowMs: 32,
-      mergeGapSec: 0.12,
-      rmsThreshold: 0.008
+      minGapSec: 0.55,
+      fadeMs: 80,
+      leadInSec: 0.04,
+      maxSkipSec: 20,
+      cooldownMs: 280,
+      windowMs: 20,
+      mergeGapSec: 0.18,
+      rmsThreshold: 0.018
     };
 
     const skipMapCache = new Map();
@@ -4204,7 +4188,7 @@
         const sr = audioBuffer.sampleRate;
         const channels = Math.max(1, audioBuffer.numberOfChannels);
         const length = audioBuffer.length;
-        const win = Math.max(128, Math.floor(sr * settings.windowMs / 1000));
+        const win = Math.max(64, Math.floor(sr * settings.windowMs / 1000));
 
         const chData = [];
         for (let c = 0; c < channels; c++) chData.push(audioBuffer.getChannelData(c));
@@ -4240,8 +4224,8 @@
           rawSegments.push({ start: runStart / sr, end: length / sr });
         }
 
-        const minGap = Number(settings.minGapSec) || 1.0;
-        const mergeGap = Number(settings.mergeGapSec) || 0.1;
+        const minGap = Number(settings.minGapSec) || 0.55;
+        const mergeGap = Number(settings.mergeGapSec) || 0.18;
 
         const filtered = rawSegments
           .map(seg => ({
@@ -4249,7 +4233,7 @@
             end: Math.max(seg.start, seg.end)
           }))
           .filter(seg => (seg.end - seg.start) >= minGap)
-          .filter(seg => seg.start > 0.2);
+          .filter(seg => seg.end > 0.25);
 
         const merged = [];
         for (const seg of filtered){
@@ -4347,25 +4331,27 @@
     function getBufferedSkipCandidate(currentTime){
       const seg = findSilenceAtTime(currentTime, skipState.silenceMap);
       if (!seg) return null;
-      if (currentTime < seg.start + 0.04) return null;
+
+      const segLen = seg.end - seg.start;
+      if (segLen < skipSettings.minGapSec) return null;
+      if (currentTime < seg.start + 0.01) return null;
 
       const nextCueStart = activeCues.length ? findNextCueStart(activeCues, currentTime) : null;
       const duration = Number(playerEl.duration) || 0;
 
-      let target = Math.min(
-        seg.end - skipSettings.leadInSec,
-        seg.start + skipSettings.maxSkipSec
-      );
+      let target = seg.end - skipSettings.leadInSec;
 
-      if (Number.isFinite(nextCueStart)){
+      if (Number.isFinite(nextCueStart)) {
         target = Math.min(target, nextCueStart - skipSettings.leadInSec);
       }
 
-      if (duration > 0){
+      target = Math.min(target, seg.start + skipSettings.maxSkipSec);
+
+      if (duration > 0) {
         target = Math.min(target, Math.max(0, duration - 0.05));
       }
 
-      if (!(target > currentTime + 0.08)) return null;
+      if (!(target > currentTime + 0.03)) return null;
 
       return {
         key: `${seg.start.toFixed(3)}:${seg.end.toFixed(3)}`,
@@ -4428,6 +4414,11 @@
       }
 
       skipState.lastGapKey = gap.key;
+      console.log("SKIP", {
+        now: currentTime.toFixed(2),
+        to: gap.target.toFixed(2),
+        key: gap.key
+      });
       await performSkipSeek(gap.target);
       return true;
     }
@@ -4453,62 +4444,62 @@
       if (mode === "light"){
         Object.assign(skipSettings, {
           mode: "light",
-          minGapSec: 1.8,
-          fadeMs: 140,
-          leadInSec: 0.10,
-          maxSkipSec: 8,
-          cooldownMs: 700,
-          windowMs: 36,
-          mergeGapSec: 0.16,
-          rmsThreshold: 0.007
+          minGapSec: 1.2,
+          fadeMs: 120,
+          leadInSec: 0.07,
+          maxSkipSec: 10,
+          cooldownMs: 450,
+          windowMs: 28,
+          mergeGapSec: 0.14,
+          rmsThreshold: 0.014
         });
       } else if (mode === "aggressive"){
         Object.assign(skipSettings, {
           mode: "aggressive",
-          minGapSec: 1.0,
-          fadeMs: 90,
-          leadInSec: 0.05,
-          maxSkipSec: 18,
-          cooldownMs: 520,
-          windowMs: 28,
-          mergeGapSec: 0.10,
-          rmsThreshold: 0.009
+          minGapSec: 0.40,
+          fadeMs: 60,
+          leadInSec: 0.03,
+          maxSkipSec: 24,
+          cooldownMs: 220,
+          windowMs: 16,
+          mergeGapSec: 0.22,
+          rmsThreshold: 0.020
         });
       } else if (mode === "ultra"){
         Object.assign(skipSettings, {
           mode: "ultra",
-          minGapSec: 0.7,
-          fadeMs: 60,
-          leadInSec: 0.04,
-          maxSkipSec: 24,
-          cooldownMs: 420,
-          windowMs: 24,
-          mergeGapSec: 0.08,
-          rmsThreshold: 0.010
+          minGapSec: 0.30,
+          fadeMs: 40,
+          leadInSec: 0.02,
+          maxSkipSec: 32,
+          cooldownMs: 180,
+          windowMs: 14,
+          mergeGapSec: 0.24,
+          rmsThreshold: 0.024
         });
       } else if (mode === "max"){
         Object.assign(skipSettings, {
           mode: "max",
-          minGapSec: 0.4,
-          fadeMs: 30,
-          leadInSec: 0.02,
-          maxSkipSec: 36,
-          cooldownMs: 300,
-          windowMs: 20,
-          mergeGapSec: 0.06,
-          rmsThreshold: 0.012
+          minGapSec: 0.20,
+          fadeMs: 20,
+          leadInSec: 0.01,
+          maxSkipSec: 40,
+          cooldownMs: 120,
+          windowMs: 12,
+          mergeGapSec: 0.28,
+          rmsThreshold: 0.030
         });
       } else {
         Object.assign(skipSettings, {
           mode: "balanced",
-          minGapSec: 1.4,
-          fadeMs: 120,
-          leadInSec: 0.08,
-          maxSkipSec: 12,
-          cooldownMs: 650,
-          windowMs: 32,
-          mergeGapSec: 0.12,
-          rmsThreshold: 0.008
+          minGapSec: 0.55,
+          fadeMs: 80,
+          leadInSec: 0.04,
+          maxSkipSec: 20,
+          cooldownMs: 280,
+          windowMs: 20,
+          mergeGapSec: 0.18,
+          rmsThreshold: 0.018
         });
       }
 
@@ -4534,7 +4525,7 @@
       skipModeMax.classList.toggle("on", skipSettings.mode === "max");
 
       skipMinGapRange.value = String(skipSettings.minGapSec);
-      skipMinGapValue.textContent = `${Number(skipSettings.minGapSec).toFixed(1)}s`;
+      skipMinGapValue.textContent = `${Number(skipSettings.minGapSec).toFixed(2)}s`;
       skipFadeRange.value = String(skipSettings.fadeMs);
       skipFadeValue.textContent = `${Math.round(skipSettings.fadeMs)}ms`;
 
@@ -4551,7 +4542,8 @@
       }
 
       if (skipState.analysisStatus === "ready" && skipState.readyForId === activeId){
-        skipEngineLabel.textContent = `Hazır (${skipState.silenceMap.length})`;
+        const totalSilentSec = skipState.silenceMap.reduce((a, s) => a + Math.max(0, s.end - s.start), 0);
+        skipEngineLabel.textContent = `Hazır (${skipState.silenceMap.length} / ${totalSilentSec.toFixed(1)}s)`;
         skipHintEl.textContent = activeCues.length
           ? "Buffer tabanlı sessizlik + SRT iniş noktası kullanılır."
           : "Buffer tabanlı sessizlik haritası hazır. SRT olmasa da skip çalışır.";
