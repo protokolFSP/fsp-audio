@@ -1074,7 +1074,7 @@
       box-shadow: var(--greenGlow);
     }
     #skipDrawerBtn.breathing{
-      animation: skipBreath 1.8s ease-in-out infinite;
+      animation: skipBreath 1.5s ease-in-out infinite;
     }
 
     @keyframes skipBreath{
@@ -1083,8 +1083,8 @@
         box-shadow: 0 0 0 0 rgba(22,163,74,.18), 0 0 0 3px rgba(22,163,74,.10) inset;
       }
       50%{
-        transform: scale(1.04);
-        box-shadow: 0 0 0 10px rgba(22,163,74,0), 0 0 0 3px rgba(22,163,74,.16) inset, 0 0 14px rgba(22,163,74,.16);
+        transform: scale(1.05);
+        box-shadow: 0 0 0 12px rgba(22,163,74,0), 0 0 0 3px rgba(22,163,74,.16) inset, 0 0 14px rgba(22,163,74,.18);
       }
     }
 
@@ -1154,7 +1154,7 @@
       <div class="pageTitle">
         <div class="pageTitleMain">
           <span>FSP Audio — Güncel</span>
-          <div id="buildMeta" class="buildMeta">v1.83 · Güncelleme: 17.04.2026</div>
+          <div id="buildMeta" class="buildMeta">v1.84 · Güncelleme: 17.04.2026</div>
         </div>
         <button id="sidebarOpenBtn" type="button" aria-label="Menü" title="Menü">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -1365,14 +1365,14 @@
 
         <div class="skipRow skipRangeRow">
           <label for="skipMinGapRange">Min. segment</label>
-          <input id="skipMinGapRange" type="range" min="200" max="2000" step="50" value="550" />
-          <span id="skipMinGapValue">550ms</span>
+          <input id="skipMinGapRange" type="range" min="120" max="2000" step="20" value="220" />
+          <span id="skipMinGapValue">220ms</span>
         </div>
 
         <div class="skipRow skipRangeRow">
           <label for="skipFadeRange">Geçiş</label>
-          <input id="skipFadeRange" type="range" min="0" max="250" step="10" value="80" />
-          <span id="skipFadeValue">80ms</span>
+          <input id="skipFadeRange" type="range" min="0" max="250" step="10" value="16" />
+          <span id="skipFadeValue">16ms</span>
         </div>
 
         <div class="skipHint" id="skipHint">
@@ -1437,7 +1437,7 @@
   <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
   <script>
-    const BUILD_VERSION = "v1.83";
+    const BUILD_VERSION = "v1.84";
     const BUILD_UPDATED = "17.04.2026";
 
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
@@ -1737,7 +1737,7 @@
       uiState: "fsp1.ui.state.v1",
       txSize: "fsp1.tx.size.v1",
       txPos: "fsp1.tx.pos.v1",
-      skipSettings: "fsp1.skip.settings.map.v1",
+      skipSettings: "fsp1.skip.settings.map.v2",
       skipDrawerOpen: "fsp1.skip.drawer.open.v1"
     };
 
@@ -4049,13 +4049,14 @@
 
     const DEFAULT_SKIP_SETTINGS = {
       enabled: false,
-      mode: "balanced",
-      fadeMs: 80,
-      leadInMs: 40,
+      mode: "aggressive",
+      fadeMs: 16,
+      leadInMs: 0,
       tailKeepMs: 0,
-      minSegmentMs: 550,
-      cooldownMs: 280,
-      maxAutoSeekMs: 20000
+      resumeOffsetMs: 90,
+      minSegmentMs: 220,
+      cooldownMs: 110,
+      maxAutoSeekMs: 45000
     };
 
     const skipState = {
@@ -4262,13 +4263,16 @@
         else if (t >= seg.end) lo = mid + 1;
         else return seg;
       }
+
       return null;
     }
 
     async function fadePlayerVolume(from, to, ms){
       const duration = Math.max(0, Number(ms) || 0);
       if (duration <= 0){
-        try{ playerEl.volume = Math.max(0, Math.min(1, to)); }catch{}
+        try{
+          playerEl.volume = Math.max(0, Math.min(1, to));
+        }catch{}
         return;
       }
 
@@ -4310,25 +4314,36 @@
       if (segLenMs < skipSettings.minSegmentMs) return false;
 
       const current = Number(playerEl.currentTime) || 0;
-      const leadInSec = (Number(skipSettings.leadInMs) || 0) / 1000;
+      const duration = Number(playerEl.duration) || 0;
       const tailKeepSec = (Number(skipSettings.tailKeepMs) || 0) / 1000;
-      const maxAutoSeekSec = (Number(skipSettings.maxAutoSeekMs) || 20000) / 1000;
+      const resumeOffsetSec = (Number(skipSettings.resumeOffsetMs) || 0) / 1000;
+      const maxAutoSeekSec = (Number(skipSettings.maxAutoSeekMs) || 45000) / 1000;
 
-      let target = seg.end - tailKeepSec;
-      target = Math.max(target, current);
-      target = Math.min(target, current + maxAutoSeekSec);
+      let target = seg.end - tailKeepSec + resumeOffsetSec;
+      target = Math.min(target, seg.start + maxAutoSeekSec);
 
-      if (!(target > current + 0.08)) return false;
+      if (duration > 0){
+        target = Math.min(target, Math.max(0, duration - 0.05));
+      }
+
+      if (!(target > current + 0.03)) return false;
 
       skipState.skipInFlight = true;
       const fadeMs = Math.max(0, Number(skipSettings.fadeMs) || 0);
       const originalVol = Number(playerEl.volume);
 
       try{
-        await fadePlayerVolume(originalVol, Math.max(0, originalVol * 0.14), Math.floor(fadeMs / 2));
-        playerEl.currentTime = Math.max(0, target + leadInSec);
-        skipState.manualSuppressUntil = performance.now() + Math.max(180, fadeMs + 120);
-        await fadePlayerVolume(Math.max(0, originalVol * 0.14), originalVol, Math.ceil(fadeMs / 2));
+        if (fadeMs > 0){
+          await fadePlayerVolume(originalVol, Math.max(0, originalVol * 0.10), Math.floor(fadeMs / 2));
+        }
+
+        playerEl.currentTime = Math.max(0, target);
+        skipState.manualSuppressUntil = performance.now() + Math.max(40, fadeMs + 30);
+
+        if (fadeMs > 0){
+          await fadePlayerVolume(Math.max(0, originalVol * 0.10), originalVol, Math.ceil(fadeMs / 2));
+        }
+
         skipState.lastSkipAt = performance.now();
         return true;
       }catch(err){
@@ -4362,52 +4377,68 @@
       if (mode === "light"){
         Object.assign(skipSettings, {
           mode: "light",
-          fadeMs: 120,
-          leadInMs: 60,
+          fadeMs: 70,
+          leadInMs: 0,
           tailKeepMs: 0,
-          minSegmentMs: 1200,
-          cooldownMs: 420,
-          maxAutoSeekMs: 12000
+          resumeOffsetMs: 40,
+          minSegmentMs: 700,
+          cooldownMs: 260,
+          maxAutoSeekMs: 14000
+        });
+      } else if (mode === "balanced"){
+        Object.assign(skipSettings, {
+          mode: "balanced",
+          fadeMs: 35,
+          leadInMs: 0,
+          tailKeepMs: 0,
+          resumeOffsetMs: 60,
+          minSegmentMs: 350,
+          cooldownMs: 170,
+          maxAutoSeekMs: 26000
         });
       } else if (mode === "aggressive"){
         Object.assign(skipSettings, {
           mode: "aggressive",
-          fadeMs: 60,
-          leadInMs: 30,
+          fadeMs: 16,
+          leadInMs: 0,
           tailKeepMs: 0,
-          minSegmentMs: 400,
-          cooldownMs: 220,
-          maxAutoSeekMs: 24000
+          resumeOffsetMs: 90,
+          minSegmentMs: 220,
+          cooldownMs: 110,
+          maxAutoSeekMs: 45000
         });
       } else if (mode === "ultra"){
         Object.assign(skipSettings, {
           mode: "ultra",
-          fadeMs: 35,
-          leadInMs: 15,
+          fadeMs: 8,
+          leadInMs: 0,
           tailKeepMs: 0,
-          minSegmentMs: 300,
-          cooldownMs: 170,
-          maxAutoSeekMs: 32000
+          resumeOffsetMs: 120,
+          minSegmentMs: 160,
+          cooldownMs: 70,
+          maxAutoSeekMs: 60000
         });
       } else if (mode === "max"){
         Object.assign(skipSettings, {
           mode: "max",
-          fadeMs: 15,
+          fadeMs: 0,
           leadInMs: 0,
           tailKeepMs: 0,
-          minSegmentMs: 200,
-          cooldownMs: 120,
-          maxAutoSeekMs: 40000
+          resumeOffsetMs: 150,
+          minSegmentMs: 120,
+          cooldownMs: 40,
+          maxAutoSeekMs: 90000
         });
       } else {
         Object.assign(skipSettings, {
           mode: "balanced",
-          fadeMs: 80,
-          leadInMs: 40,
+          fadeMs: 35,
+          leadInMs: 0,
           tailKeepMs: 0,
-          minSegmentMs: 550,
-          cooldownMs: 280,
-          maxAutoSeekMs: 20000
+          resumeOffsetMs: 60,
+          minSegmentMs: 350,
+          cooldownMs: 170,
+          maxAutoSeekMs: 26000
         });
       }
 
@@ -4430,14 +4461,21 @@
       skipModeUltra.classList.toggle("on", skipSettings.mode === "ultra");
       skipModeMax.classList.toggle("on", skipSettings.mode === "max");
 
+      skipMinGapRange.min = "120";
+      skipMinGapRange.max = "2000";
+      skipMinGapRange.step = "20";
       skipMinGapRange.value = String(skipSettings.minSegmentMs);
       skipMinGapValue.textContent = `${Math.round(skipSettings.minSegmentMs)}ms`;
+
       skipFadeRange.value = String(skipSettings.fadeMs);
       skipFadeValue.textContent = `${Math.round(skipSettings.fadeMs)}ms`;
 
       const segCount = skipState.currentMap?.segments?.length || 0;
       skipEngineLabel.textContent = segCount ? `MAP ${segCount}` : "MAP";
-      if (!skipState.status) setSkipStatus(segCount ? `Silence map hazır · ${segCount} segment` : "Silence map bekleniyor…");
+
+      if (!skipState.status){
+        setSkipStatus(segCount ? `Silence map hazır · ${segCount} segment` : "Silence map bekleniyor…");
+      }
     }
 
     function toggleSkipDrawer(force){
@@ -4468,7 +4506,10 @@
       if (it && (!skipState.currentMap || skipState.currentMapItemId !== it.id)){
         await primeSilenceMapForItem(it);
       }
-      if (skipState.currentMap?.segments?.length && !playerEl.paused) startSkipLoop();
+
+      if (skipState.currentMap?.segments?.length && !playerEl.paused){
+        startSkipLoop();
+      }
     });
 
     skipModeLight.addEventListener("click", () => applySkipPreset("light"));
@@ -4493,10 +4534,16 @@
       if (skipSettings.enabled) startSkipLoop();
     });
 
-    playerEl.addEventListener("pause", () => { stopSkipLoop(); });
-    playerEl.addEventListener("ended", () => { stopSkipLoop(); });
+    playerEl.addEventListener("pause", () => {
+      stopSkipLoop();
+    });
+
+    playerEl.addEventListener("ended", () => {
+      stopSkipLoop();
+    });
 
     playerEl.addEventListener("seeking", resetSkipRuntimeForManualAction);
+
     playerEl.addEventListener("seeked", () => {
       if (skipSettings.enabled) startSkipLoop();
     });
