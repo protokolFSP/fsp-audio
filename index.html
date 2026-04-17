@@ -2284,2395 +2284,1939 @@
     }
 
     let segEndTime = null;
-let segResumeAfter = false;
-let segResumeTime = null;
+    let segResumeAfter = false;
+    let segResumeTime = null;
 
-function armSegmentEnd(end, resumeAfter, resumeTime){
-  segEndTime = Number.isFinite(end) ? end : null;
-  segResumeAfter = !!resumeAfter;
-  segResumeTime = Number.isFinite(resumeTime) ? resumeTime : null;
-}
-
-function maybeStopAtSegmentEnd(){
-  if (segEndTime == null) return;
-
-  const t = Number(playerEl.currentTime) || 0;
-  if (t < (segEndTime - 0.03)) return;
-
-  const resumeAfter = segResumeAfter;
-  const resumeTime = segResumeTime;
-
-  segEndTime = null;
-  segResumeAfter = false;
-  segResumeTime = null;
-
-  if (resumeAfter){
-    try{
-      const dur = Number(playerEl.duration);
-      const target = Number.isFinite(resumeTime) ? resumeTime : (t + 0.01);
-      const safeTarget = Number.isFinite(dur) && dur > 0
-        ? Math.min(Math.max(0, target), Math.max(0, dur - 0.05))
-        : Math.max(0, target);
-
-      playerEl.currentTime = safeTarget;
-      const p = plyr.play();
-      if (p && typeof p.catch === "function") p.catch(() => {});
-      return;
-    }catch{}
-  }
-
-  try{ plyr.pause(); }catch{}
-}
-
-playerEl.addEventListener("timeupdate", maybeStopAtSegmentEnd);
-
-function playSegment(start, end){
-  if (!Number.isFinite(start) || !Number.isFinite(end) || !(end > start)) return;
-
-  const resumeAfter = !playerEl.paused;
-  const resumeTime = end + 0.01;
-
-  try{
-    armSegmentEnd(end, resumeAfter, resumeTime);
-    playerEl.currentTime = Math.max(0, start + 0.01);
-
-    const p = plyr.play();
-    if (p && typeof p.catch === "function") p.catch(() => {});
-  }catch{}
-}
-
-function renderCaptionLines(lines){
-  if (!isCaptionsOn()) {
-    captionsEl.innerHTML = "";
-    return;
-  }
-
-  const maxLines = getCaptionMaxLines();
-  captionsEl.style.setProperty("--capLines", String(maxLines));
-
-  const { lines: trimmed, activeStart, activeEnd } = trimLinesAroundActive(lines, maxLines);
-  const out = [];
-
-  for (let i = 0; i < trimmed.length; i++){
-    const ln = trimmed[i];
-    const isActive = !!ln.isActive;
-
-    let dist = 0;
-    if (!isActive){
-      if (i < activeStart) dist = activeStart - i;
-      else if (i > activeEnd) dist = i - activeEnd;
-      else dist = 1;
+    function armSegmentEnd(end, resumeAfter, resumeTime){
+      segEndTime = Number.isFinite(end) ? end : null;
+      segResumeAfter = !!resumeAfter;
+      segResumeTime = Number.isFinite(resumeTime) ? resumeTime : null;
     }
 
-    const opacity = isActive ? 1 : Math.max(0.20, 0.92 - (dist * 0.12));
-    const weight = isActive ? 750 : 500;
-    const ds = Number.isFinite(ln.start) ? ` data-start="${ln.start}"` : "";
-    const de = Number.isFinite(ln.end) ? ` data-end="${ln.end}"` : "";
+    function maybeStopAtSegmentEnd(){
+      if (segEndTime == null) return;
 
-    out.push(
-      `<span class="capLine" style="opacity:${opacity.toFixed(2)};font-weight:${weight}"${ds}${de}>${escHtml(ln.text)}</span>`
-    );
-  }
+      const t = Number(playerEl.currentTime) || 0;
+      if (t < (segEndTime - 0.03)) return;
 
-  const html = out.join("<br>");
-  captionsEl.innerHTML = html || "…";
-  captionsEl.classList.toggle("isEmpty", !html);
-  setTimeout(() => clampPlayerToViewport(), 0);
-}
+      const resumeAfter = segResumeAfter;
+      const resumeTime = segResumeTime;
 
-function renderCaptionInfo(text){
-  if (!isCaptionsOn()) {
-    captionsEl.innerHTML = "";
-    return;
-  }
-  captionsEl.textContent = text || "…";
-  captionsEl.classList.add("isEmpty");
-  setTimeout(() => clampPlayerToViewport(), 0);
-}
+      segEndTime = null;
+      segResumeAfter = false;
+      segResumeTime = null;
 
-function onCaptionsTimeupdate(){
-  if (!isCaptionsOn()) return;
-  if (!activeCues.length) return;
+      if (resumeAfter){
+        try{
+          const dur = Number(playerEl.duration);
+          const target = Number.isFinite(resumeTime) ? resumeTime : (t + 0.01);
+          const safeTarget = Number.isFinite(dur) && dur > 0
+            ? Math.min(Math.max(0, target), Math.max(0, dur - 0.05))
+            : Math.max(0, target);
 
-  const t = Number(playerEl.currentTime) || 0;
-  const idx = findCueIdx(activeCues, t);
+          playerEl.currentTime = safeTarget;
+          const p = plyr.play();
+          if (p && typeof p.catch === "function") p.catch(() => {});
+          return;
+        }catch{}
+      }
 
-  if (idx === -1){
-    if (lastCueIdx === -1) renderCaptionInfo("…");
-    return;
-  }
-  if (idx === lastCueIdx) return;
-  lastCueIdx = idx;
-
-  const parts = composeCaptionParts(activeCues, idx);
-  const flat = [];
-
-  for (const p of parts){
-    for (const line of splitCaptionLines(p.text)){
-      flat.push({
-        text: line,
-        isActive: !!p.isActive,
-        start: p.start,
-        end: p.end
-      });
+      try{ plyr.pause(); }catch{}
     }
-  }
 
-  renderCaptionLines(flat);
-}
+    playerEl.addEventListener("timeupdate", maybeStopAtSegmentEnd);
 
-playerEl.addEventListener("timeupdate", onCaptionsTimeupdate);
+    function playSegment(start, end){
+      if (!Number.isFinite(start) || !Number.isFinite(end) || !(end > start)) return;
 
-captionsEl.addEventListener("click", (e) => {
-  if (!isCaptionsOn()) return;
-  if (!activeCues.length) return;
+      const resumeAfter = !playerEl.paused;
+      const resumeTime = end + 0.01;
 
-  const span = e.target && e.target.closest ? e.target.closest(".capLine") : null;
-  if (!span) return;
+      try{
+        armSegmentEnd(end, resumeAfter, resumeTime);
+        playerEl.currentTime = Math.max(0, start + 0.01);
 
-  const s = Number(span.getAttribute("data-start"));
-  const en = Number(span.getAttribute("data-end"));
-  if (Number.isFinite(s) && Number.isFinite(en) && en > s){
-    playSegment(s, en);
-  }
-});
-
-function buildSrtNameCandidates(it){
-  const rawName = (it?.name || "").split("/").pop() || "";
-  const decoded = decodeURIComponentSafe(rawName);
-
-  const baseDecoded = decoded.replace(/\.(m4a|mp3)$/i, ".srt");
-  const baseRaw = rawName.replace(/\.(m4a|mp3)$/i, ".srt");
-  const hasA = /^A\s+/i.test(baseDecoded);
-
-  const names = [
-    baseDecoded,
-    baseRaw,
-    hasA ? baseDecoded : ("A " + baseDecoded),
-    hasA ? baseRaw : ("A " + baseRaw),
-    hasA ? baseDecoded : ("A_" + baseDecoded),
-    hasA ? baseRaw : ("A_" + baseRaw),
-    hasA ? baseDecoded : ("A-" + baseDecoded),
-    hasA ? baseRaw : ("A-" + baseRaw),
-    decoded + ".srt",
-    rawName + ".srt"
-  ];
-
-  return [...new Set(names.map((x) => String(x || "").trim()).filter(Boolean))];
-}
-
-function buildTxtNameCandidates(it){
-  const rawName = (it?.name || "").split("/").pop() || "";
-  const decoded = decodeURIComponentSafe(rawName);
-
-  const baseDecoded = decoded.replace(/\.(m4a|mp3)$/i, ".txt");
-  const baseRaw = rawName.replace(/\.(m4a|mp3)$/i, ".txt");
-  const hasA = /^A\s+/i.test(baseDecoded);
-
-  const names = [
-    baseDecoded,
-    baseRaw,
-    hasA ? baseDecoded : ("A " + baseDecoded),
-    hasA ? baseRaw : ("A " + baseRaw),
-    hasA ? baseDecoded : ("A_" + baseDecoded),
-    hasA ? baseRaw : ("A_" + baseRaw),
-    hasA ? baseDecoded : ("A-" + baseDecoded),
-    hasA ? baseRaw : ("A-" + baseRaw),
-    decoded + ".txt",
-    rawName + ".txt"
-  ];
-
-  return [...new Set(names.map((x) => String(x || "").trim()).filter(Boolean))];
-}
-
-function __ia2EnsureSlashEnd(s){
-  s = String(s || "");
-  return s.endsWith("/") ? s : (s + "/");
-}
-
-function __ia2BasesWithSubdir(bases, subdir){
-  const sd = String(subdir || "").replace(/^\/+|\/+$/g, "");
-  return (bases || []).map((b) => __ia2EnsureSlashEnd(b) + sd + "/");
-}
-
-const __IA2_SRT_BASES = __ia2BasesWithSubdir(SRT_BASES, IA2_TX_SUBDIR);
-const __IA2_TXT_BASES = __ia2BasesWithSubdir(TXT_BASES, IA2_TX_SUBDIR);
-
-async function buildTxtUrlsForItem(it){
-  const names = buildTxtNameCandidates(it);
-  const urls = [];
-  const bases = (it && it.src === IA2_SRC) ? __IA2_TXT_BASES : TXT_BASES;
-
-  for (const name of names){
-    for (const base of bases){
-      urls.push(base + encodeURIComponent(name));
+        const p = plyr.play();
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      }catch{}
     }
-  }
 
-  return { urls, triedNames: names };
-}
+    function renderCaptionLines(lines){
+      if (!isCaptionsOn()) {
+        captionsEl.innerHTML = "";
+        return;
+      }
 
-async function buildSrtUrlsForItem(it){
-  const names = buildSrtNameCandidates(it);
-  const urls = [];
-  const bases = (it && it.src === IA2_SRC) ? __IA2_SRT_BASES : SRT_BASES;
+      const maxLines = getCaptionMaxLines();
+      captionsEl.style.setProperty("--capLines", String(maxLines));
 
-  for (const name of names){
-    for (const base of bases){
-      urls.push(base + encodeURIComponent(name));
+      const { lines: trimmed, activeStart, activeEnd } = trimLinesAroundActive(lines, maxLines);
+      const out = [];
+
+      for (let i = 0; i < trimmed.length; i++){
+        const ln = trimmed[i];
+        const isActive = !!ln.isActive;
+
+        let dist = 0;
+        if (!isActive){
+          if (i < activeStart) dist = activeStart - i;
+          else if (i > activeEnd) dist = i - activeEnd;
+          else dist = 1;
+        }
+
+        const opacity = isActive ? 1 : Math.max(0.20, 0.92 - (dist * 0.12));
+        const weight = isActive ? 750 : 500;
+        const ds = Number.isFinite(ln.start) ? ` data-start="${ln.start}"` : "";
+        const de = Number.isFinite(ln.end) ? ` data-end="${ln.end}"` : "";
+
+        out.push(
+          `<span class="capLine" style="opacity:${opacity.toFixed(2)};font-weight:${weight}"${ds}${de}>${escHtml(ln.text)}</span>`
+        );
+      }
+
+      const html = out.join("<br>");
+      captionsEl.innerHTML = html || "…";
+      captionsEl.classList.toggle("isEmpty", !html);
+      setTimeout(() => clampPlayerToViewport(), 0);
     }
-  }
 
-  return { urls, triedNames: names };
-}
+    function renderCaptionInfo(text){
+      if (!isCaptionsOn()) {
+        captionsEl.innerHTML = "";
+        return;
+      }
+      captionsEl.textContent = text || "…";
+      captionsEl.classList.add("isEmpty");
+      setTimeout(() => clampPlayerToViewport(), 0);
+    }
 
-async function loadSrtForItem(it){
-  activeCues = [];
-  lastCueIdx = -1;
+    function onCaptionsTimeupdate(){
+      if (!isCaptionsOn()) return;
+      if (!activeCues.length) return;
 
-  if (!isCaptionsOn()) return;
-  if (!it) return renderCaptionInfo("Bir kayıt seç...");
+      const t = Number(playerEl.currentTime) || 0;
+      const idx = findCueIdx(activeCues, t);
 
-  const cached = srtCache.get(it.id);
-  if (cached){
-    activeCues = cached;
-    renderCaptionInfo("…");
-    return onCaptionsTimeupdate();
-  }
+      if (idx === -1){
+        if (lastCueIdx === -1) renderCaptionInfo("…");
+        return;
+      }
+      if (idx === lastCueIdx) return;
+      lastCueIdx = idx;
 
-  renderCaptionInfo("Altyazı yükleniyor…");
+      const parts = composeCaptionParts(activeCues, idx);
+      const flat = [];
 
-  try { if (srtCtrl) srtCtrl.abort(); } catch {}
-  srtCtrl = new AbortController();
+      for (const p of parts){
+        for (const line of splitCaptionLines(p.text)){
+          flat.push({
+            text: line,
+            isActive: !!p.isActive,
+            start: p.start,
+            end: p.end
+          });
+        }
+      }
 
-  const built = await buildSrtUrlsForItem(it);
-  const urls = built.urls;
-  const triedNames = built.triedNames || [];
-  let lastUrl = urls[0] || "";
+      renderCaptionLines(flat);
+    }
 
-  try{
-    let cues = null;
+    playerEl.addEventListener("timeupdate", onCaptionsTimeupdate);
 
-    for (const u of urls){
-      lastUrl = u;
-      const res = await fetch(u, { cache: "no-store", signal: srtCtrl.signal });
-      if (!res.ok) continue;
+    captionsEl.addEventListener("click", (e) => {
+      if (!isCaptionsOn()) return;
+      if (!activeCues.length) return;
 
-      const body = await res.text();
-      const parsed = parseSrtToCues(body);
-      if (parsed && parsed.length){
-        cues = parsed;
-        break;
+      const span = e.target && e.target.closest ? e.target.closest(".capLine") : null;
+      if (!span) return;
+
+      const s = Number(span.getAttribute("data-start"));
+      const en = Number(span.getAttribute("data-end"));
+      if (Number.isFinite(s) && Number.isFinite(en) && en > s){
+        playSegment(s, en);
+      }
+    });
+
+    function buildSrtNameCandidates(it){
+      const rawName = (it?.name || "").split("/").pop() || "";
+      const decoded = decodeURIComponentSafe(rawName);
+
+      const baseDecoded = decoded.replace(/\.(m4a|mp3)$/i, ".srt");
+      const baseRaw = rawName.replace(/\.(m4a|mp3)$/i, ".srt");
+      const hasA = /^A\s+/i.test(baseDecoded);
+
+      const names = [
+        baseDecoded,
+        baseRaw,
+        hasA ? baseDecoded : ("A " + baseDecoded),
+        hasA ? baseRaw : ("A " + baseRaw),
+        hasA ? baseDecoded : ("A_" + baseDecoded),
+        hasA ? baseRaw : ("A_" + baseRaw),
+        hasA ? baseDecoded : ("A-" + baseDecoded),
+        hasA ? baseRaw : ("A-" + baseRaw),
+        decoded + ".srt",
+        rawName + ".srt"
+      ];
+
+      return [...new Set(names.map((x) => String(x || "").trim()).filter(Boolean))];
+    }
+
+    function buildTxtNameCandidates(it){
+      const rawName = (it?.name || "").split("/").pop() || "";
+      const decoded = decodeURIComponentSafe(rawName);
+
+      const baseDecoded = decoded.replace(/\.(m4a|mp3)$/i, ".txt");
+      const baseRaw = rawName.replace(/\.(m4a|mp3)$/i, ".txt");
+      const hasA = /^A\s+/i.test(baseDecoded);
+
+      const names = [
+        baseDecoded,
+        baseRaw,
+        hasA ? baseDecoded : ("A " + baseDecoded),
+        hasA ? baseRaw : ("A " + baseRaw),
+        hasA ? baseDecoded : ("A_" + baseDecoded),
+        hasA ? baseRaw : ("A_" + baseRaw),
+        hasA ? baseDecoded : ("A-" + baseDecoded),
+        hasA ? baseRaw : ("A-" + baseRaw),
+        decoded + ".txt",
+        rawName + ".txt"
+      ];
+
+      return [...new Set(names.map((x) => String(x || "").trim()).filter(Boolean))];
+    }
+
+    function __ia2EnsureSlashEnd(s){
+      s = String(s || "");
+      return s.endsWith("/") ? s : (s + "/");
+    }
+
+    function __ia2BasesWithSubdir(bases, subdir){
+      const sd = String(subdir || "").replace(/^\/+|\/+$/g, "");
+      return (bases || []).map((b) => __ia2EnsureSlashEnd(b) + sd + "/");
+    }
+
+    const __IA2_SRT_BASES = __ia2BasesWithSubdir(SRT_BASES, IA2_TX_SUBDIR);
+    const __IA2_TXT_BASES = __ia2BasesWithSubdir(TXT_BASES, IA2_TX_SUBDIR);
+
+    async function buildTxtUrlsForItem(it){
+      const names = buildTxtNameCandidates(it);
+      const urls = [];
+      const bases = (it && it.src === IA2_SRC) ? __IA2_TXT_BASES : TXT_BASES;
+
+      for (const name of names){
+        for (const base of bases){
+          urls.push(base + encodeURIComponent(name));
+        }
+      }
+
+      return { urls, triedNames: names };
+    }
+
+    async function buildSrtUrlsForItem(it){
+      const names = buildSrtNameCandidates(it);
+      const urls = [];
+      const bases = (it && it.src === IA2_SRC) ? __IA2_SRT_BASES : SRT_BASES;
+
+      for (const name of names){
+        for (const base of bases){
+          urls.push(base + encodeURIComponent(name));
+        }
+      }
+
+      return { urls, triedNames: names };
+    }
+
+    async function loadSrtForItem(it){
+      activeCues = [];
+      lastCueIdx = -1;
+
+      if (!isCaptionsOn()) return;
+      if (!it) return renderCaptionInfo("Bir kayıt seç...");
+
+      const cached = srtCache.get(it.id);
+      if (cached){
+        activeCues = cached;
+        renderCaptionInfo("…");
+        return onCaptionsTimeupdate();
+      }
+
+      renderCaptionInfo("Altyazı yükleniyor…");
+
+      try { if (srtCtrl) srtCtrl.abort(); } catch {}
+      srtCtrl = new AbortController();
+
+      const built = await buildSrtUrlsForItem(it);
+      const urls = built.urls;
+      const triedNames = built.triedNames || [];
+      let lastUrl = urls[0] || "";
+
+      try{
+        let cues = null;
+
+        for (const u of urls){
+          lastUrl = u;
+          const res = await fetch(u, { cache: "no-store", signal: srtCtrl.signal });
+          if (!res.ok) continue;
+
+          const body = await res.text();
+          const parsed = parseSrtToCues(body);
+          if (parsed && parsed.length){
+            cues = parsed;
+            break;
+          }
+        }
+
+        if (!cues) throw new Error("srt not found");
+
+        srtCache.set(it.id, cues);
+        activeCues = cues;
+        renderCaptionInfo("…");
+        onCaptionsTimeupdate();
+      }catch(err){
+        if (err && err.name === "AbortError") return;
+
+        if (SRT_DEBUG){
+          renderCaptionInfo("SRT yok. Denenen isimler: " + (triedNames.join(" | ") || "-") + "\nSon URL: " + lastUrl);
+        } else {
+          renderCaptionInfo("Bu kayıtta altyazı yok.");
+        }
       }
     }
 
-    if (!cues) throw new Error("srt not found");
-
-    srtCache.set(it.id, cues);
-    activeCues = cues;
-    renderCaptionInfo("…");
-    onCaptionsTimeupdate();
-  }catch(err){
-    if (err && err.name === "AbortError") return;
-
-    if (SRT_DEBUG){
-      renderCaptionInfo("SRT yok. Denenen isimler: " + (triedNames.join(" | ") || "-") + "\nSon URL: " + lastUrl);
-    } else {
-      renderCaptionInfo("Bu kayıtta altyazı yok.");
-    }
-  }
-}
-
-function setModeOrToggle(nextMode){
-  if (captionMode === nextMode){
-    captionMode = null;
-    localStorage.setItem(LS.captionsMode, "");
-  } else {
-    captionMode = nextMode;
-    localStorage.setItem(LS.captionsMode, nextMode);
-  }
-
-  setCaptionUi();
-
-  const it = items.find((x) => x.id === activeId);
-  if (it) loadSrtForItem(it).catch(() => {});
-}
-
-ccSmallBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  setModeOrToggle("cc");
-});
-
-ccMedBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  setModeOrToggle("CC");
-});
-
-ccXBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  setModeOrToggle("CCx");
-});
-
-function parseEndDate(item){
-  const raw0 = (item.name || item.file || item.title || "").toString();
-  let s;
-  try { s = decodeURIComponent(raw0.split("/").pop() || raw0); } catch { s = raw0; }
-
-  s = s.replace(/\.(mp3|m4a|wav|aac|ogg|flac)$/i, "").trim();
-  s = s.normalize("NFKC").replace(/\u00A0/g, " ").trim();
-  s = s.trim().replace(/[)\]\s]+$/g, "").trim();
-
-  const m = s.match(/(\d{1,2})[.\-_\u00B7](\d{1,2})[.\-_\u00B7](\d{2}|\d{4})\s*$/);
-  if (!m) return null;
-
-  const dd = Number(m[1]);
-  const mm = Number(m[2]);
-  let yy = Number(m[3]);
-  if (yy < 100) yy = 2000 + yy;
-  if (!(dd >= 1 && dd <= 31 && mm >= 1 && mm <= 12)) return null;
-
-  const t = Date.UTC(yy, mm - 1, dd);
-  if (!Number.isFinite(t)) return null;
-
-  const d = new Date(t);
-  if (d.getUTCFullYear() !== yy || (d.getUTCMonth() + 1) !== mm || d.getUTCDate() !== dd) return null;
-  return t;
-}
-
-function setArrowIcon(svgEl, isAsc){
-  if (!svgEl) return;
-  while (svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
-
-  const ns = "http://www.w3.org/2000/svg";
-  const mkPath = (d) => {
-    const p = document.createElementNS(ns, "path");
-    p.setAttribute("d", d);
-    p.setAttribute("fill", "none");
-    p.setAttribute("stroke", "currentColor");
-    p.setAttribute("stroke-width", "2");
-    p.setAttribute("stroke-linecap", "round");
-    p.setAttribute("stroke-linejoin", "round");
-    return p;
-  };
-
-  svgEl.setAttribute("viewBox", "0 0 24 24");
-  svgEl.setAttribute("aria-hidden", "true");
-  svgEl.setAttribute("focusable", "false");
-  svgEl.appendChild(mkPath(isAsc ? "M12 19V5" : "M12 5v14"));
-  svgEl.appendChild(mkPath(isAsc ? "M7 10l5-5 5 5" : "M7 14l5 5 5-5"));
-}
-
-function setSortIcons(){
-  sortDurBtn.classList.remove("on");
-  sortDateBtn.classList.remove("on");
-  sortPlayBtn.classList.remove("on");
-  sortDlCountBtn.classList.remove("on");
-
-  setArrowIcon(sortDurIcon, durSortDir === "asc");
-  setArrowIcon(sortDateIcon, dateSortDir === "asc");
-  setArrowIcon(sortPlayIcon, playSortDir === "asc");
-  setArrowIcon(sortDlCountIcon, dlSortDir === "asc");
-
-  if (sortMode === "dur") sortDurBtn.classList.add("on");
-  if (sortMode === "date") sortDateBtn.classList.add("on");
-  if (sortMode === "play") sortPlayBtn.classList.add("on");
-  if (sortMode === "download") sortDlCountBtn.classList.add("on");
-
-  sbFavBtn.classList.toggle("on", !!filterFav);
-  sbSortDateBtn.classList.toggle("on", sortMode === "date");
-  sbSortDurBtn.classList.toggle("on", sortMode === "dur");
-  sbSortPlayBtn.classList.toggle("on", sortMode === "play");
-  sbSortDlBtn.classList.toggle("on", sortMode === "download");
-}
-
-sortDurBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  if (sortMode !== "dur") sortMode = "dur";
-  else durSortDir = (durSortDir === "asc") ? "desc" : "asc";
-
-  localStorage.setItem(LS.sortMode, sortMode);
-  localStorage.setItem(LS.sortDirDur, durSortDir);
-  setSortIcons();
-  render();
-});
-
-sortDateBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  if (sortMode !== "date") sortMode = "date";
-  else dateSortDir = (dateSortDir === "asc") ? "desc" : "asc";
-
-  localStorage.setItem(LS.sortMode, sortMode);
-  localStorage.setItem(LS.sortDirDate, dateSortDir);
-  setSortIcons();
-  render();
-});
-
-sortPlayBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  if (sortMode !== "play") sortMode = "play";
-  else playSortDir = (playSortDir === "asc") ? "desc" : "asc";
-
-  localStorage.setItem(LS.sortMode, sortMode);
-  localStorage.setItem(LS.sortDirPlay, playSortDir);
-  setSortIcons();
-  render();
-});
-
-sortDlCountBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  if (sortMode !== "download") sortMode = "download";
-  else dlSortDir = (dlSortDir === "asc") ? "desc" : "asc";
-
-  localStorage.setItem(LS.sortMode, sortMode);
-  localStorage.setItem(LS.sortDirDl, dlSortDir);
-  setSortIcons();
-  render();
-});
-
-let stickyStartTop = null;
-let stickyDocked = false;
-let stickyHomeParent = null;
-
-function measureStickyStartTop(){
-  if (!stickyBar || stickyDocked) return;
-  const barRect = stickyBar.getBoundingClientRect();
-  const scRect = scrollArea.getBoundingClientRect();
-  stickyStartTop = (barRect.top - scRect.top) + scrollArea.scrollTop;
-}
-
-function getScrollAreaPadding(){
-  const cs = getComputedStyle(scrollArea);
-  const pt = parseFloat(cs.paddingTop) || 0;
-  const pl = parseFloat(cs.paddingLeft) || 0;
-  const pr = parseFloat(cs.paddingRight) || 0;
-  return { pt, pl, pr };
-}
-
-function dockStickyBar(){
-  if (stickyDocked) return;
-  stickyDocked = true;
-  stickyHomeParent = stickyBar.parentNode;
-  stickyPh.style.height = stickyBar.offsetHeight + "px";
-  stickyBar.classList.add("docked");
-  document.body.appendChild(stickyBar);
-  positionDockedStickyBar();
-}
-
-function undockStickyBar(){
-  if (!stickyDocked) return;
-  stickyDocked = false;
-  stickyBar.classList.remove("docked");
-  stickyBar.style.position = "";
-  stickyBar.style.left = "";
-  stickyBar.style.top = "";
-  stickyBar.style.width = "";
-  stickyBar.style.transform = "";
-  stickyBar.style.transformOrigin = "";
-  stickyPh.style.height = "0px";
-  stickyHomeParent.insertBefore(stickyBar, stickyPh);
-  measureStickyStartTop();
-}
-
-function positionDockedStickyBar(){
-  if (!stickyDocked) return;
-
-  const rect = scrollArea.getBoundingClientRect();
-  const pad = getScrollAreaPadding();
-  const left = rect.left + pad.pl;
-  const top = rect.top + pad.pt;
-  const width = Math.max(260, rect.width - pad.pl - pad.pr);
-
-  stickyBar.style.position = "fixed";
-  stickyBar.style.transformOrigin = "top left";
-
-  if (useTransformScale){
-    stickyBar.style.left = (left / uiScale) + "px";
-    stickyBar.style.top = (top / uiScale) + "px";
-    stickyBar.style.width = (width / uiScale) + "px";
-    stickyBar.style.transform = `scale(${uiScale})`;
-  } else {
-    stickyBar.style.left = left + "px";
-    stickyBar.style.top = top + "px";
-    stickyBar.style.width = width + "px";
-    stickyBar.style.transform = "";
-  }
-}
-
-function updateSticky(forceRecalc = false){
-  if (!stickyBar) return;
-  const needDock = (IS_SAFARI || useTransformScale);
-
-  if (forceRecalc && !stickyDocked){
-    requestAnimationFrame(() => measureStickyStartTop());
-  }
-
-  if (!needDock){
-    if (stickyDocked) undockStickyBar();
-    return;
-  }
-
-  if (stickyStartTop == null || forceRecalc){
-    if (stickyDocked) undockStickyBar();
-    measureStickyStartTop();
-  }
-
-  const shouldDock = (scrollArea.scrollTop > (stickyStartTop || 0));
-  if (shouldDock && !stickyDocked) dockStickyBar();
-  if (!shouldDock && stickyDocked) undockStickyBar();
-  if (stickyDocked) positionDockedStickyBar();
-}
-
-scrollArea.addEventListener("scroll", () => updateSticky(false), { passive: true });
-
-const durQueue = [];
-const durLoading = new Set();
-let durActive = 0;
-const DUR_CONCURRENCY = 2;
-let rerenderTimer = null;
-
-function scheduleRerender(){
-  if (rerenderTimer) return;
-  rerenderTimer = setTimeout(() => {
-    rerenderTimer = null;
-    render();
-  }, 120);
-}
-
-function requestDuration(it){
-  const id = it.id;
-  if (durs[id] > 0) return;
-  if (durLoading.has(id)) return;
-
-  durLoading.add(id);
-  durQueue.push(it);
-  pumpDurationQueue();
-}
-
-function pumpDurationQueue(){
-  while (durActive < DUR_CONCURRENCY && durQueue.length){
-    const it = durQueue.shift();
-    durActive++;
-    loadDurationFor(it).catch(() => {}).finally(() => {
-      durActive--;
-      pumpDurationQueue();
-    });
-  }
-}
-
-function loadDurationFor(it){
-  return new Promise((resolve, reject) => {
-    const a = new Audio();
-    a.preload = "metadata";
-    a.src = it.url;
-    let done = false;
-
-    const cleanup = () => {
-      a.removeEventListener("loadedmetadata", onMeta);
-      a.removeEventListener("error", onErr);
-      try { a.src = ""; } catch {}
-    };
-
-    const finish = (ok, err) => {
-      if (done) return;
-      done = true;
-      cleanup();
-      durLoading.delete(it.id);
-      ok ? resolve() : reject(err || new Error("metadata error"));
-    };
-
-    const onMeta = () => {
-      const dur = a.duration;
-      if (Number.isFinite(dur) && dur > 0){
-        durs[it.id] = dur;
-        saveMap(LS.durs, durs);
-        scheduleRerender();
+    function setModeOrToggle(nextMode){
+      if (captionMode === nextMode){
+        captionMode = null;
+        localStorage.setItem(LS.captionsMode, "");
+      } else {
+        captionMode = nextMode;
+        localStorage.setItem(LS.captionsMode, nextMode);
       }
-      finish(true);
-    };
 
-    const onErr = () => finish(false, new Error("metadata error"));
+      setCaptionUi();
 
-    a.addEventListener("loadedmetadata", onMeta, { once: true });
-    a.addEventListener("error", onErr, { once: true });
-
-    setTimeout(() => {
-      if (!done) finish(false, new Error("timeout"));
-    }, 12000);
-  });
-}
-
-function makeProxyUrl(fileUrl, filename){
-  const u = DL_PROXY + "?u=" + encodeURIComponent(fileUrl);
-  return filename ? (u + "&f=" + encodeURIComponent(filename)) : u;
-}
-
-function clickDownload(href, filename){
-  const a = document.createElement("a");
-  a.href = href;
-  a.rel = "noopener";
-  a.target = "_blank";
-  if (filename) a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
-
-async function forceDownload(fileUrl, filename){
-  const proxied = makeProxyUrl(fileUrl, filename);
-
-  try{
-    clickDownload(proxied, filename);
-    return;
-  }catch{}
-
-  try{
-    const res = await fetch(proxied, { mode: "cors", cache: "no-store" });
-    if (!res.ok) throw new Error("fetch failed");
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    clickDownload(url, filename);
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  }catch{
-    window.location.href = fileUrl;
-  }
-}
-
-function buildDownloadUrl(identifier, name){
-  const parts = (name || "").split("/").map((p) => encodeURIComponent(p));
-  return `https://archive.org/download/${identifier}/${parts.join("/")}`;
-}
-
-function replaceExtToTxt(name){
-  return String(name || "").replace(/\.(m4a|mp3)$/i, ".txt");
-}
-
-function __ia2IsBlockedByPrefix(fileName){
-  const blockPrefixes = ["Dusseldorf", "Düsseldorf", "Stuttgart", "Rheutlingen", "Reutlingen", "Sachsen", "Hessen", "Karlsruhe"];
-  let base = (fileName || "").toString();
-  base = base.split("/").pop() || base;
-  base = decodeURIComponentSafe(base);
-  base = base.replace(/\.(m4a|mp3)$/i, "").trim();
-  base = base.replace(/^A[\s_-]+/i, "").trim();
-
-  const folded = foldTR(base);
-  for (const p of blockPrefixes){
-    const c = foldTR(p);
-    if (folded.startsWith(c)){
-      const next = folded.slice(c.length, c.length + 1);
-      if (!next || /[\s\-_0-9.:]/.test(next)) return true;
-    }
-  }
-  return false;
-}
-
-function __ia2MakeItemsFromFiles(files){
-  return (files || [])
-    .filter((f) => typeof f?.name === "string")
-    .filter((f) => {
-      const name = String(f.name).toLowerCase();
-      if (!name.endsWith(".m4a")) return false;
-      if (!("source" in f)) return true;
-      return String(f.source || "").toLowerCase() === "original";
-    })
-    .filter((f) => !__ia2IsBlockedByPrefix(f.name))
-    .map((f, idx) => {
-      const name = f.name || "";
-      const title = (String(f.title || "").trim()) || decodeURIComponentSafe(name.split("/").pop() || name);
-      const url = buildDownloadUrl(IA_IDENTIFIER_2, name);
-      const localId = name || url || (title + "#" + idx);
-      const id = IA2_SRC + "|" + localId;
-
-      const txtCandidates = buildTxtNameCandidates({ name });
-      const txtName = txtCandidates.length ? txtCandidates[0] : replaceExtToTxt(name);
-      const txtUrl = txtName ? (__IA2_TXT_BASES[0] + encodeURIComponent(txtName)) : "";
-
-      return { id, title, name, url, src: IA2_SRC, txtName, txtUrl };
-    });
-}
-
-async function loadItems(){
-  try{
-    const res1 = await fetch(`https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}`, {
-      cache: FORCE_REFRESH ? "no-store" : "no-cache"
-    });
-    if (!res1.ok) throw new Error("S1 metadata okunamadı");
-
-    const j1 = await res1.json();
-    const files1 = Array.isArray(j1.files) ? j1.files : [];
-
-    const list1 = files1
-      .filter((f) => {
-        const name = (f.name || "").toLowerCase();
-        if (!(name.endsWith(".m4a") || name.endsWith(".mp3"))) return false;
-        if (!("source" in f)) return true;
-        return String(f.source || "").toLowerCase() === "original";
-      })
-      .map((f, idx) => {
-        const name = f.name || "";
-        const title = (f.title || "").trim() || decodeURIComponentSafe(name.split("/").pop() || name);
-        const url = buildDownloadUrl(IA_IDENTIFIER_1, name);
-        const localId = name || url || (title + "#" + idx);
-        const id = "S1|" + localId;
-
-        const txtCandidates = buildTxtNameCandidates({ name });
-        const txtName = txtCandidates.length ? txtCandidates[0] : replaceExtToTxt(name);
-        const txtUrl = txtName ? (TXT_BASES[0] + encodeURIComponent(txtName)) : "";
-
-        return { id, title, name, url, src: "S1", txtName, txtUrl };
-      });
-
-    let finalItems = list1;
-
-    try{
-      const res2 = await fetch(`https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_2)}`, {
-        cache: FORCE_REFRESH ? "no-store" : "no-cache"
-      });
-      if (!res2.ok) throw new Error("S2 metadata okunamadı");
-
-      const j2 = await res2.json();
-      const files2 = Array.isArray(j2.files) ? j2.files : [];
-      finalItems = finalItems.concat(__ia2MakeItemsFromFiles(files2));
-    }catch(err){
-      console.warn(err);
+      const it = items.find((x) => x.id === activeId);
+      if (it) loadSrtForItem(it).catch(() => {});
     }
 
-    items = finalItems;
-    statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
-    setSortIcons();
-    render();
-    restoreScrollIfNeeded();
-    scheduleRefreshCounts(100);
-    updateSticky(true);
-  }catch(err){
-    console.error(err);
-    statusEl.textContent = "Liste yüklenemedi.";
-  }
-}
-
-function getVisibleItems(){
-  const q = foldTR((searchEl.value || "").trim());
-
-  let arr = items.filter((it) => {
-    if (q && !foldTR(it.title).includes(q)) return false;
-    if (filterFav && !favs[it.id]) return false;
-    return true;
-  });
-
-  if (sortMode === "dur"){
-    const dir = (durSortDir === "asc") ? 1 : -1;
-    arr.sort((a, b) => {
-      const ha = (durs[a.id] > 0);
-      const hb = (durs[b.id] > 0);
-      if (ha !== hb) return ha ? -1 : 1;
-      if (ha && hb){
-        const da = durs[a.id];
-        const db = durs[b.id];
-        if (da !== db) return (da - db) * dir;
-      }
-      return a.title.localeCompare(b.title, "tr");
-    });
-  } else if (sortMode === "date"){
-    const dir = (dateSortDir === "asc") ? 1 : -1;
-    arr.sort((a, b) => {
-      const ta = parseEndDate(a);
-      const tb = parseEndDate(b);
-      const ha = (ta !== null);
-      const hb = (tb !== null);
-      if (ha !== hb) return ha ? -1 : 1;
-      if (ha && hb && ta !== tb) return (ta - tb) * dir;
-      return a.title.localeCompare(b.title, "tr");
-    });
-  } else if (sortMode === "play"){
-    const dir = (playSortDir === "asc") ? 1 : -1;
-    arr.sort((a, b) => {
-      const ca = Number(globalPlayCounts[a.id]) || 0;
-      const cb = Number(globalPlayCounts[b.id]) || 0;
-      if (ca !== cb) return (ca - cb) * dir;
-      return a.title.localeCompare(b.title, "tr");
-    });
-  } else if (sortMode === "download"){
-    const dir = (dlSortDir === "asc") ? 1 : -1;
-    arr.sort((a, b) => {
-      const ca = Number(globalDownloadCounts[a.id]) || 0;
-      const cb = Number(globalDownloadCounts[b.id]) || 0;
-      if (ca !== cb) return (ca - cb) * dir;
-      return a.title.localeCompare(b.title, "tr");
-    });
-  } else {
-    arr.sort((a, b) => a.title.localeCompare(b.title, "tr"));
-  }
-
-  return arr;
-}
-
-function iconButton(kind, on, title){
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "iconBtn" + (on ? " on" : "");
-  btn.title = title;
-  btn.dataset.kind = kind;
-
-  if (kind === "star"){
-    btn.setAttribute("aria-pressed", String(!!on));
-    btn.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="${on ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
-      </svg>`;
-  } else if (kind === "download"){
-    btn.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <path d="M12 3v12"/>
-        <path d="M7 10l5 5 5-5"/>
-        <path d="M5 21h14"/>
-      </svg>`;
-  }
-
-  return btn;
-}
-
-function render(){
-  const visible = getVisibleItems();
-  metaEl.textContent = `Görünən: ${visible.length} / Toplam: ${items.length}`;
-
-  filterFavBtn.classList.toggle("on", filterFav);
-  filterFavBtn.setAttribute("aria-pressed", String(filterFav));
-  setSortIcons();
-  listEl.innerHTML = "";
-
-  const toMeasure = (sortMode === "dur") ? items : visible;
-  for (const it of toMeasure){
-    if (!(durs[it.id] > 0)) requestDuration(it);
-  }
-
-  for (const it of visible){
-    const row = document.createElement("div");
-    row.className = "itemRow" + (it.id === selectedId ? " active" : "");
-
-    const title = document.createElement("div");
-    title.className = "title";
-    title.innerHTML = highlightDisease(it.title);
-
-    const dur = document.createElement("div");
-    dur.className = "dur";
-    dur.textContent = (durs[it.id] > 0) ? fmtDur(durs[it.id]) : "…";
-
-    const playCount = document.createElement("div");
-    playCount.className = "countCell";
-    playCount.textContent = String(Number(globalPlayCounts[it.id]) || 0);
-
-    const favBtn = iconButton("star", !!favs[it.id], "Favori");
-    const dlBtn = iconButton("download", false, "İndir");
-
-    const dlCount = document.createElement("div");
-    dlCount.className = "countCell";
-    dlCount.textContent = String(Number(globalDownloadCounts[it.id]) || 0);
-
-    favBtn.addEventListener("click", (e) => {
+    ccSmallBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      selectedId = it.id;
-      favs[it.id] = !favs[it.id];
-      saveMap(LS.favs, favs);
+      setModeOrToggle("cc");
+    });
+
+    ccMedBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setModeOrToggle("CC");
+    });
+
+    ccXBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setModeOrToggle("CCx");
+    });
+
+    function parseEndDate(item){
+      const raw0 = (item.name || item.file || item.title || "").toString();
+      let s;
+      try { s = decodeURIComponent(raw0.split("/").pop() || raw0); } catch { s = raw0; }
+
+      s = s.replace(/\.(mp3|m4a|wav|aac|ogg|flac)$/i, "").trim();
+      s = s.normalize("NFKC").replace(/\u00A0/g, " ").trim();
+      s = s.trim().replace(/[)\]\s]+$/g, "").trim();
+
+      const m = s.match(/(\d{1,2})[.\-_\u00B7](\d{1,2})[.\-_\u00B7](\d{2}|\d{4})\s*$/);
+      if (!m) return null;
+
+      const dd = Number(m[1]);
+      const mm = Number(m[2]);
+      let yy = Number(m[3]);
+      if (yy < 100) yy = 2000 + yy;
+      if (!(dd >= 1 && dd <= 31 && mm >= 1 && mm <= 12)) return null;
+
+      const t = Date.UTC(yy, mm - 1, dd);
+      if (!Number.isFinite(t)) return null;
+
+      const d = new Date(t);
+      if (d.getUTCFullYear() !== yy || (d.getUTCMonth() + 1) !== mm || d.getUTCDate() !== dd) return null;
+      return t;
+    }
+
+    function setArrowIcon(svgEl, isAsc){
+      if (!svgEl) return;
+      while (svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
+
+      const ns = "http://www.w3.org/2000/svg";
+      const mkPath = (d) => {
+        const p = document.createElementNS(ns, "path");
+        p.setAttribute("d", d);
+        p.setAttribute("fill", "none");
+        p.setAttribute("stroke", "currentColor");
+        p.setAttribute("stroke-width", "2");
+        p.setAttribute("stroke-linecap", "round");
+        p.setAttribute("stroke-linejoin", "round");
+        return p;
+      };
+
+      svgEl.setAttribute("viewBox", "0 0 24 24");
+      svgEl.setAttribute("aria-hidden", "true");
+      svgEl.setAttribute("focusable", "false");
+      svgEl.appendChild(mkPath(isAsc ? "M12 19V5" : "M12 5v14"));
+      svgEl.appendChild(mkPath(isAsc ? "M7 10l5-5 5 5" : "M7 14l5 5 5-5"));
+    }
+
+    function setSortIcons(){
+      sortDurBtn.classList.remove("on");
+      sortDateBtn.classList.remove("on");
+      sortPlayBtn.classList.remove("on");
+      sortDlCountBtn.classList.remove("on");
+
+      setArrowIcon(sortDurIcon, durSortDir === "asc");
+      setArrowIcon(sortDateIcon, dateSortDir === "asc");
+      setArrowIcon(sortPlayIcon, playSortDir === "asc");
+      setArrowIcon(sortDlCountIcon, dlSortDir === "asc");
+
+      if (sortMode === "dur") sortDurBtn.classList.add("on");
+      if (sortMode === "date") sortDateBtn.classList.add("on");
+      if (sortMode === "play") sortPlayBtn.classList.add("on");
+      if (sortMode === "download") sortDlCountBtn.classList.add("on");
+
+      sbFavBtn.classList.toggle("on", !!filterFav);
+      sbSortDateBtn.classList.toggle("on", sortMode === "date");
+      sbSortDurBtn.classList.toggle("on", sortMode === "dur");
+      sbSortPlayBtn.classList.toggle("on", sortMode === "play");
+      sbSortDlBtn.classList.toggle("on", sortMode === "download");
+    }
+
+    sortDurBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (sortMode !== "dur") sortMode = "dur";
+      else durSortDir = (durSortDir === "asc") ? "desc" : "asc";
+
+      localStorage.setItem(LS.sortMode, sortMode);
+      localStorage.setItem(LS.sortDirDur, durSortDir);
+      setSortIcons();
       render();
     });
 
-    dlBtn.addEventListener("click", (e) => {
+    sortDateBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      selectedId = it.id;
+      if (sortMode !== "date") sortMode = "date";
+      else dateSortDir = (dateSortDir === "asc") ? "desc" : "asc";
 
-      const filename =
-        (it.name || it.file || "").split("/").pop() ||
-        (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
-
-      forceDownload(it.url, filename);
-
-      setTimeout(() => {
-        bumpLocalGlobalCount("download", it.id);
-        sendHit("download", it);
-        scheduleRefreshCounts(1200);
-        trackAudioDownload(it, filename);
-        render();
-      }, 0);
+      localStorage.setItem(LS.sortMode, sortMode);
+      localStorage.setItem(LS.sortDirDate, dateSortDir);
+      setSortIcons();
+      render();
     });
 
-    for (const b of [favBtn, dlBtn]){
-      b.addEventListener("pointerup", (e) => e.stopPropagation());
-      b.addEventListener("pointerdown", (e) => e.stopPropagation());
+    sortPlayBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (sortMode !== "play") sortMode = "play";
+      else playSortDir = (playSortDir === "asc") ? "desc" : "asc";
+
+      localStorage.setItem(LS.sortMode, sortMode);
+      localStorage.setItem(LS.sortDirPlay, playSortDir);
+      setSortIcons();
+      render();
+    });
+
+    sortDlCountBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (sortMode !== "download") sortMode = "download";
+      else dlSortDir = (dlSortDir === "asc") ? "desc" : "asc";
+
+      localStorage.setItem(LS.sortMode, sortMode);
+      localStorage.setItem(LS.sortDirDl, dlSortDir);
+      setSortIcons();
+      render();
+    });
+
+    let stickyStartTop = null;
+    let stickyDocked = false;
+    let stickyHomeParent = null;
+
+    function measureStickyStartTop(){
+      if (!stickyBar || stickyDocked) return;
+      const barRect = stickyBar.getBoundingClientRect();
+      const scRect = scrollArea.getBoundingClientRect();
+      stickyStartTop = (barRect.top - scRect.top) + scrollArea.scrollTop;
     }
 
-    row.appendChild(title);
-    row.appendChild(dur);
-    row.appendChild(playCount);
-    row.appendChild(favBtn);
-    row.appendChild(dlBtn);
-    row.appendChild(dlCount);
+    function getScrollAreaPadding(){
+      const cs = getComputedStyle(scrollArea);
+      const pt = parseFloat(cs.paddingTop) || 0;
+      const pl = parseFloat(cs.paddingLeft) || 0;
+      const pr = parseFloat(cs.paddingRight) || 0;
+      return { pt, pl, pr };
+    }
 
-    row.addEventListener("click", (e) => {
-      const inTitle = !!(e.target && e.target.closest && e.target.closest(".title"));
-      if (!inTitle){
-        selectedId = it.id;
-        render();
+    function dockStickyBar(){
+      if (stickyDocked) return;
+      stickyDocked = true;
+      stickyHomeParent = stickyBar.parentNode;
+      stickyPh.style.height = stickyBar.offsetHeight + "px";
+      stickyBar.classList.add("docked");
+      document.body.appendChild(stickyBar);
+      positionDockedStickyBar();
+    }
+
+    function undockStickyBar(){
+      if (!stickyDocked) return;
+      stickyDocked = false;
+      stickyBar.classList.remove("docked");
+      stickyBar.style.position = "";
+      stickyBar.style.left = "";
+      stickyBar.style.top = "";
+      stickyBar.style.width = "";
+      stickyBar.style.transform = "";
+      stickyBar.style.transformOrigin = "";
+      stickyPh.style.height = "0px";
+      stickyHomeParent.insertBefore(stickyBar, stickyPh);
+      measureStickyStartTop();
+    }
+
+    function positionDockedStickyBar(){
+      if (!stickyDocked) return;
+
+      const rect = scrollArea.getBoundingClientRect();
+      const pad = getScrollAreaPadding();
+      const left = rect.left + pad.pl;
+      const top = rect.top + pad.pt;
+      const width = Math.max(260, rect.width - pad.pl - pad.pr);
+
+      stickyBar.style.position = "fixed";
+      stickyBar.style.transformOrigin = "top left";
+
+      if (useTransformScale){
+        stickyBar.style.left = (left / uiScale) + "px";
+        stickyBar.style.top = (top / uiScale) + "px";
+        stickyBar.style.width = (width / uiScale) + "px";
+        stickyBar.style.transform = `scale(${uiScale})`;
+      } else {
+        stickyBar.style.left = left + "px";
+        stickyBar.style.top = top + "px";
+        stickyBar.style.width = width + "px";
+        stickyBar.style.transform = "";
+      }
+    }
+
+    function updateSticky(forceRecalc = false){
+      if (!stickyBar) return;
+      const needDock = (IS_SAFARI || useTransformScale);
+
+      if (forceRecalc && !stickyDocked){
+        requestAnimationFrame(() => measureStickyStartTop());
+      }
+
+      if (!needDock){
+        if (stickyDocked) undockStickyBar();
         return;
       }
-      playById(it.id);
-    });
 
-    listEl.appendChild(row);
-  }
+      if (stickyStartTop == null || forceRecalc){
+        if (stickyDocked) undockStickyBar();
+        measureStickyStartTop();
+      }
 
-  updateSticky(false);
-}
+      const shouldDock = (scrollArea.scrollTop > (stickyStartTop || 0));
+      if (shouldDock && !stickyDocked) dockStickyBar();
+      if (!shouldDock && stickyDocked) undockStickyBar();
+      if (stickyDocked) positionDockedStickyBar();
+    }
 
-function playById(id){
-  const visible = getVisibleItems();
-  const idx = visible.findIndex((x) => x.id === id);
-  if (idx === -1) return;
-  playAtVisibleIndex(idx);
-}
+    scrollArea.addEventListener("scroll", () => updateSticky(false), { passive: true });
 
-function setMediaSource(url, mime){
-  stopSkipLoop();
+    const durQueue = [];
+    const durLoading = new Set();
+    let durActive = 0;
+    const DUR_CONCURRENCY = 2;
+    let rerenderTimer = null;
 
-  while (playerEl.firstChild) playerEl.removeChild(playerEl.firstChild);
+    function scheduleRerender(){
+      if (rerenderTimer) return;
+      rerenderTimer = setTimeout(() => {
+        rerenderTimer = null;
+        render();
+      }, 120);
+    }
 
-  const s = document.createElement("source");
-  s.src = url;
-  if (mime) s.type = mime;
-  playerEl.appendChild(s);
-  playerEl.load();
-}
+    function requestDuration(it){
+      const id = it.id;
+      if (durs[id] > 0) return;
+      if (durLoading.has(id)) return;
 
-async function ensureMapForItem(it){
-  if (!it) return null;
-  return await primeSilenceMapForItem(it);
-}
+      durLoading.add(id);
+      durQueue.push(it);
+      pumpDurationQueue();
+    }
 
-function playAtVisibleIndex(idx){
-  const visible = getVisibleItems();
-  const it = visible[idx];
-  if (!it) return;
+    function pumpDurationQueue(){
+      while (durActive < DUR_CONCURRENCY && durQueue.length){
+        const it = durQueue.shift();
+        durActive++;
+        loadDurationFor(it).catch(() => {}).finally(() => {
+          durActive--;
+          pumpDurationQueue();
+        });
+      }
+    }
 
-  armPlayGate(it);
-  trackAudioPlay(it);
+    function loadDurationFor(it){
+      return new Promise((resolve, reject) => {
+        const a = new Audio();
+        a.preload = "metadata";
+        a.src = it.url;
+        let done = false;
 
-  statusEl.textContent = "";
-  activeId = it.id;
-  selectedId = it.id;
-  fpTitle.textContent = it.title;
-  render();
+        const cleanup = () => {
+          a.removeEventListener("loadedmetadata", onMeta);
+          a.removeEventListener("error", onErr);
+          try { a.src = ""; } catch {}
+        };
 
-  if (isCaptionsOn()) renderCaptionInfo("Altyazı yükleniyor…");
-  resetSkipRuntimeForNewTrack();
+        const finish = (ok, err) => {
+          if (done) return;
+          done = true;
+          cleanup();
+          durLoading.delete(it.id);
+          ok ? resolve() : reject(err || new Error("metadata error"));
+        };
 
-  const url = it.url;
-  const mime = guessMime(url);
-  const currentSpeed = SPEEDS[speedIndex] || 1;
+        const onMeta = () => {
+          const dur = a.duration;
+          if (Number.isFinite(dur) && dur > 0){
+            durs[it.id] = dur;
+            saveMap(LS.durs, durs);
+            scheduleRerender();
+          }
+          finish(true);
+        };
 
-  try{
-    plyr.speed = currentSpeed;
-    setMediaSource(url, mime);
+        const onErr = () => finish(false, new Error("metadata error"));
 
-    loadSrtForItem(it).catch(() => {});
-    ensureMapForItem(it).catch(() => {});
+        a.addEventListener("loadedmetadata", onMeta, { once: true });
+        a.addEventListener("error", onErr, { once: true });
 
-    const p = plyr.play();
-    if (p && typeof p.catch === "function"){
-      p.catch(() => {
-        statusEl.textContent = "Oynatma engellendi. Player içindeki ▶︎ tuşuna bas.";
+        setTimeout(() => {
+          if (!done) finish(false, new Error("timeout"));
+        }, 12000);
       });
     }
 
-    setTimeout(() => {
-      if (playerEl && playerEl.paused){
-        statusEl.textContent = statusEl.textContent || "Oynatma başlamadı. Player içindeki ▶︎ tuşuna bas.";
-      }
-    }, 900);
-  }catch{
-    statusEl.textContent = "Player başlatılamadı.";
-  }
-}
-
-function playPrev(){
-  const visible = getVisibleItems();
-  if (!visible.length) return;
-
-  let idx = visible.findIndex((x) => x.id === activeId);
-  if (idx === -1) idx = 0;
-  idx = (idx - 1 + visible.length) % visible.length;
-  playAtVisibleIndex(idx);
-}
-
-function playNext(){
-  const visible = getVisibleItems();
-  if (!visible.length) return;
-
-  let idx = visible.findIndex((x) => x.id === activeId);
-  if (idx === -1) idx = 0;
-  idx = (idx + 1) % visible.length;
-  playAtVisibleIndex(idx);
-}
-
-prevBtn.addEventListener("click", playPrev);
-nextBtn.addEventListener("click", playNext);
-plyr.on("ended", () => { setTimeout(() => playNext(), 0); });
-
-function isTypingTarget(){
-  const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
-  return (tag === "input" || tag === "textarea");
-}
-
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape"){
-    if (txPanel.classList.contains("open")){
-      e.preventDefault();
-      closeTranscript();
-      return;
-    }
-    if (sbOverlay.classList.contains("open")){
-      e.preventDefault();
-      closeSidebar();
-      return;
-    }
-  }
-
-  if (isTypingTarget()) return;
-
-  if (e.code === "Space"){
-    e.preventDefault();
-    plyr.togglePlay();
-  } else if (e.code === "ArrowLeft"){
-    e.preventDefault();
-    playPrev();
-  } else if (e.code === "ArrowRight"){
-    e.preventDefault();
-    playNext();
-  }
-});
-
-filterFavBtn.addEventListener("click", () => {
-  filterFav = !filterFav;
-  render();
-});
-
-resetBtn.addEventListener("click", () => {
-  filterFav = false;
-  searchEl.value = "";
-  sortMode = "title";
-  dateSortDir = "desc";
-  localStorage.setItem(LS.sortMode, sortMode);
-  localStorage.setItem(LS.sortDirDate, dateSortDir);
-  setSortIcons();
-  render();
-});
-
-const SEARCH_DEBOUNCE_MS = 900;
-let searchTimer = null;
-let lastSentTermNorm = "";
-
-function sendSearchEvent(termRawInput){
-  const termRaw = (termRawInput || "").trim();
-  const termNorm = foldTR(termRaw);
-  const visibleCount = getVisibleItems().length;
-
-  if (termRaw.length === 0){
-    if (lastSentTermNorm !== ""){
-      lastSentTermNorm = "";
-      gaEvent("search", { search_term: "", results_count: visibleCount });
-    }
-    return;
-  }
-
-  if (termNorm.length < 2) return;
-  if (termNorm === lastSentTermNorm) return;
-
-  lastSentTermNorm = termNorm;
-  const params = { search_term: termNorm, results_count: visibleCount };
-  if (__isDebug) params.search_term_raw = termRaw;
-  gaEvent("search", params);
-}
-
-function renderAndTrackSearch(){
-  render();
-  sendSearchEvent(searchEl.value);
-}
-
-searchEl.addEventListener("input", () => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(renderAndTrackSearch, SEARCH_DEBOUNCE_MS);
-});
-
-searchEl.addEventListener("keydown", (e) => {
-  if (e.key !== "Enter") return;
-  e.preventDefault();
-  clearTimeout(searchTimer);
-  renderAndTrackSearch();
-});
-
-function restorePlayerPos(){
-  try{
-    const s = JSON.parse(localStorage.getItem(LS.pos) || "null");
-    if (!s) return;
-    if (typeof s.x !== "number" || typeof s.y !== "number") return;
-
-    let x = s.x;
-    let y = s.y;
-
-    if (s.ver !== 2 && useTransformScale){
-      x = x * uiScale;
-      y = y * uiScale;
+    function makeProxyUrl(fileUrl, filename){
+      const u = DL_PROXY + "?u=" + encodeURIComponent(fileUrl);
+      return filename ? (u + "&f=" + encodeURIComponent(filename)) : u;
     }
 
-    fp.style.left = x + "px";
-    fp.style.top = y + "px";
-    fp.style.bottom = "auto";
-    fp.style.right = "auto";
-    clampPlayerToViewport();
-  }catch{}
-}
-
-function savePlayerPos(x, y){
-  localStorage.setItem(LS.pos, JSON.stringify({ x, y, ver: 2 }));
-}
-
-function getPlayerRect(){
-  return fp.getBoundingClientRect();
-}
-
-function getPlayerPosPx(){
-  const left = parseFloat(fp.style.left);
-  const top = parseFloat(fp.style.top);
-  if (Number.isFinite(left) && Number.isFinite(top)) return { left, top };
-
-  const r = getPlayerRect();
-  return { left: r.left, top: r.top };
-}
-
-function getPlayerBoundsPx(){
-  const { vw, vh } = getViewportWH();
-  const r = getPlayerRect();
-  const w = r.width;
-  const h = r.height;
-
-  const keepX = Math.max(70, Math.min(w - 16, 180));
-  const keepY = Math.max(56, Math.min(h - 16, 120));
-  const capH = (isCaptionsOn() && captionsEl && !captionsEl.classList.contains("hidden"))
-    ? captionsEl.getBoundingClientRect().height
-    : 0;
-  const drawerH = (!skipDrawer.hidden) ? skipDrawer.getBoundingClientRect().height : 0;
-
-  const minX = -w + keepX;
-  const maxX = vw - keepX;
-  const minY = -h + keepY + capH;
-  const maxY = vh - keepY - Math.min(drawerH, 160);
-
-  return {
-    minX: Math.min(minX, maxX),
-    maxX: Math.max(minX, maxX),
-    minY: Math.min(minY, maxY),
-    maxY: Math.max(minY, maxY),
-  };
-}
-
-function clampPlayerToViewport(){
-  const { minX, maxX, minY, maxY } = getPlayerBoundsPx();
-  const cur = getPlayerPosPx();
-
-  const nx = Math.min(maxX, Math.max(minX, cur.left));
-  const ny = Math.min(maxY, Math.max(minY, cur.top));
-
-  fp.style.left = nx + "px";
-  fp.style.top = ny + "px";
-  fp.style.right = "auto";
-  fp.style.bottom = "auto";
-  savePlayerPos(nx, ny);
-}
-
-const DRAG_IGNORE_SELECTOR =
-  "button, a, input, textarea, select, option, .speedWrap, .speedCtlBtn, .miniBtn, " +
-  ".plyr__controls, .plyr__control, .plyr__progress, .plyr__seek, .plyr__volume, .plyr__time, .plyr__menu";
-
-function shouldStartDrag(target){
-  return !(target && target.closest && target.closest(DRAG_IGNORE_SELECTOR));
-}
-
-let dragging = false;
-let startClientX = 0;
-let startClientY = 0;
-let startLeft = 0;
-let startTop = 0;
-let moved = false;
-let suppressClickUntil = 0;
-
-fpHeader.addEventListener("pointerdown", (e) => {
-  if (!shouldStartDrag(e.target)) return;
-
-  dragging = true;
-  moved = false;
-  fpHeader.setPointerCapture(e.pointerId);
-  fpHeader.style.cursor = "grabbing";
-
-  startClientX = e.clientX;
-  startClientY = e.clientY;
-
-  const cur = getPlayerPosPx();
-  startLeft = cur.left;
-  startTop = cur.top;
-
-  fp.style.left = startLeft + "px";
-  fp.style.top = startTop + "px";
-  fp.style.bottom = "auto";
-  fp.style.right = "auto";
-});
-
-fpHeader.addEventListener("pointermove", (e) => {
-  if (!dragging) return;
-
-  const dx = e.clientX - startClientX;
-  const dy = e.clientY - startClientY;
-
-  if (!moved && (Math.abs(dx) + Math.abs(dy) > 6)) moved = true;
-
-  const { minX, maxX, minY, maxY } = getPlayerBoundsPx();
-  const nx = Math.min(maxX, Math.max(minX, startLeft + dx));
-  const ny = Math.min(maxY, Math.max(minY, startTop + dy));
-
-  fp.style.left = nx + "px";
-  fp.style.top = ny + "px";
-  savePlayerPos(nx, ny);
-});
-
-function endDrag(pointerId){
-  if (!dragging) return;
-
-  dragging = false;
-  fpHeader.style.cursor = "grab";
-  try { fpHeader.releasePointerCapture(pointerId); } catch {}
-  clampPlayerToViewport();
-
-  if (moved){
-    suppressClickUntil = Date.now() + 350;
-    moved = false;
-  }
-}
-
-fpHeader.addEventListener("pointerup", (e) => endDrag(e.pointerId));
-fpHeader.addEventListener("pointercancel", (e) => endDrag(e.pointerId));
-
-fpHeader.addEventListener("click", (e) => {
-  if (Date.now() < suppressClickUntil){
-    e.preventDefault();
-    e.stopPropagation();
-  }
-}, true);
-
-window.addEventListener("resize", () => {
-  clampPlayerToViewport();
-  updateOverlayScale();
-  updateSearchNoZoomFontSizes();
-  clampTxSizeToViewport();
-  clampTxPosToViewport();
-  updateSticky(true);
-});
-
-window.addEventListener("orientationchange", () => setTimeout(() => {
-  clampPlayerToViewport();
-  updateOverlayScale();
-  updateSearchNoZoomFontSizes();
-  clampTxSizeToViewport();
-  clampTxPosToViewport();
-  updateSticky(true);
-}, 150));
-
-if (window.visualViewport){
-  window.visualViewport.addEventListener("resize", () => {
-    clampPlayerToViewport();
-    updateOverlayScale();
-    updateSearchNoZoomFontSizes();
-    clampTxSizeToViewport();
-    clampTxPosToViewport();
-    updateSticky(true);
-  });
-}
-
-(function disablePullToRefresh(){
-  let startY = 0;
-
-  scrollArea.addEventListener("touchstart", (e) => {
-    if (!e.touches || !e.touches.length) return;
-    startY = e.touches[0].clientY;
-  }, { passive: true });
-
-  scrollArea.addEventListener("touchmove", (e) => {
-    if (!e.touches || !e.touches.length) return;
-    const y = e.touches[0].clientY;
-    if (scrollArea.scrollTop <= 0 && y > startY + 4) e.preventDefault();
-  }, { passive: false });
-})();
-
-(function setActiveNav(){
-  const here = location.href.replace(/\/$/, "");
-  document.querySelectorAll(".navRow .navLink").forEach((a) => {
-    a.classList.remove("on");
-    const u = (a.getAttribute("href") || "").replace(/\/$/, "");
-    if (!u) return;
-    if (here === u || here.startsWith(u + "/")) a.classList.add("on");
-  });
-})();
-
-function openSidebar(){
-  sbOverlay.classList.add("open");
-  sbOverlay.setAttribute("aria-hidden", "false");
-  updateOverlayScale();
-  setSortIcons();
-}
-
-function closeSidebar(){
-  sbOverlay.classList.remove("open");
-  sbOverlay.setAttribute("aria-hidden", "true");
-}
-
-sidebarOpenBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  openSidebar();
-});
-
-sbCloseBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  closeSidebar();
-});
-
-sbOverlay.addEventListener("click", (e) => {
-  if (e.target === sbOverlay) closeSidebar();
-});
-
-document.getElementById("sidebar").addEventListener("click", (e) => e.stopPropagation());
-
-sbRefreshBtn.addEventListener("click", async () => {
-  localStorage.setItem(LS.itemsCacheAt, "0");
-  try{
-    await loadItems();
-  } finally {
-    statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
-  }
-});
-
-sbZoomResetBtn.addEventListener("click", () => resetZoom100());
-sbFavBtn.addEventListener("click", () => {
-  filterFav = !filterFav;
-  setSortIcons();
-  render();
-});
-
-function clickSort(kind){
-  if (kind === "date"){
-    if (sortMode !== "date") sortMode = "date";
-    else dateSortDir = (dateSortDir === "asc") ? "desc" : "asc";
-    localStorage.setItem(LS.sortMode, sortMode);
-    localStorage.setItem(LS.sortDirDate, dateSortDir);
-  } else if (kind === "dur"){
-    if (sortMode !== "dur") sortMode = "dur";
-    else durSortDir = (durSortDir === "asc") ? "desc" : "asc";
-    localStorage.setItem(LS.sortMode, sortMode);
-    localStorage.setItem(LS.sortDirDur, durSortDir);
-  } else if (kind === "play"){
-    if (sortMode !== "play") sortMode = "play";
-    else playSortDir = (playSortDir === "asc") ? "desc" : "asc";
-    localStorage.setItem(LS.sortMode, sortMode);
-    localStorage.setItem(LS.sortDirPlay, playSortDir);
-  } else if (kind === "download"){
-    if (sortMode !== "download") sortMode = "download";
-    else dlSortDir = (dlSortDir === "asc") ? "desc" : "asc";
-    localStorage.setItem(LS.sortMode, sortMode);
-    localStorage.setItem(LS.sortDirDl, dlSortDir);
-  }
-
-  setSortIcons();
-  render();
-}
-
-sbSortDateBtn.addEventListener("click", () => clickSort("date"));
-sbSortDurBtn.addEventListener("click", () => clickSort("dur"));
-sbSortPlayBtn.addEventListener("click", () => clickSort("play"));
-sbSortDlBtn.addEventListener("click", () => clickSort("download"));
-
-let txOpen = false;
-let txCurrent = null;
-let txPlainText = "";
-let txMatches = [];
-let txActiveMatch = -1;
-let txSearchTimer = null;
-
-const txCache = new Map();
-const TX_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-
-function clearTxSearchUI(){
-  txMatches = [];
-  txActiveMatch = -1;
-  txMatchCountEl.textContent = "0/0";
-  txPrevMatchBtn.disabled = true;
-  txNextMatchBtn.disabled = true;
-  txContentEl.textContent = txPlainText || "";
-}
-
-function clampTxSizeToViewport(){
-  if (!txOpen) return;
-
-  const saved = loadAny(LS.txSize);
-  if (saved && typeof saved.w === "number" && typeof saved.h === "number"){
-    txPanel.style.width = saved.w + "px";
-    txPanel.style.height = saved.h + "px";
-  } else {
-    txPanel.style.width = TX_DEFAULT_SIZE.w + "px";
-    txPanel.style.height = TX_DEFAULT_SIZE.h + "px";
-  }
-
-  const { vw, vh } = getViewportWH();
-  const vwL = toLayoutPx(vw);
-  const vhL = toLayoutPx(vh);
-  const margin = 28;
-  const maxW = Math.max(TX_MIN_SIZE.w, vwL - margin);
-  const maxH = Math.max(TX_MIN_SIZE.h, vhL - margin);
-  const curW = txPanel.offsetWidth || TX_DEFAULT_SIZE.w;
-  const curH = txPanel.offsetHeight || TX_DEFAULT_SIZE.h;
-  const minW = Math.min(maxW, TX_MIN_SIZE.w);
-  const minH = Math.min(maxH, TX_MIN_SIZE.h);
-
-  const w = Math.min(maxW, Math.max(minW, curW));
-  const h = Math.min(maxH, Math.max(minH, curH));
-
-  txPanel.style.width = w + "px";
-  txPanel.style.height = h + "px";
-  saveAny(LS.txSize, { w, h });
-}
-
-function getTxPosPx(){
-  const cs = getComputedStyle(txPanel);
-  const top = parseFloat(txPanel.style.top || cs.top || "0");
-  const right = parseFloat(txPanel.style.right || cs.right || "0");
-  return {
-    top: Number.isFinite(top) ? top : 0,
-    right: Number.isFinite(right) ? right : 0
-  };
-}
-
-function setTxPosPx(top, right){
-  txPanel.style.top = top + "px";
-  txPanel.style.right = right + "px";
-  txPanel.style.left = "auto";
-  txPanel.style.bottom = "auto";
-}
-
-function saveTxPos(top, right){
-  saveAny(LS.txPos, { top, right });
-}
-
-function restoreTxPos(){
-  const saved = loadAny(LS.txPos);
-  if (!saved) return;
-  if (typeof saved.top === "number" && typeof saved.right === "number"){
-    setTxPosPx(saved.top, saved.right);
-  }
-}
-
-function clampTxPosCandidate(top, right){
-  const { vw, vh } = getViewportWH();
-  const rect = txPanel.getBoundingClientRect();
-  const w = rect.width;
-  const h = rect.height;
-
-  const margin = 14;
-  const minTop = margin;
-  const maxTop = Math.max(minTop, vh - h - margin);
-  const minRight = margin;
-  const maxRight = Math.max(minRight, vw - w - margin);
-
-  return {
-    top: Math.min(maxTop, Math.max(minTop, top)),
-    right: Math.min(maxRight, Math.max(minRight, right))
-  };
-}
-
-function clampTxPosToViewport(){
-  if (!txOpen) return;
-  const cur = getTxPosPx();
-  const cl = clampTxPosCandidate(cur.top, cur.right);
-  setTxPosPx(cl.top, cl.right);
-  saveTxPos(cl.top, cl.right);
-}
-
-function setTxtBtnUi(){
-  fpTxtBtn.classList.toggle("on", !!txOpen);
-  fpTxtBtn.setAttribute("aria-pressed", String(!!txOpen));
-}
-
-function openTranscript(){
-  txOpen = true;
-  txPanel.classList.add("open");
-  txPanel.setAttribute("aria-hidden", "false");
-  updateOverlayScale();
-  updateSearchNoZoomFontSizes();
-  restoreTxPos();
-  clampTxSizeToViewport();
-  clampTxPosToViewport();
-  setTxtBtnUi();
-}
-
-function closeTranscript(){
-  txOpen = false;
-  txPanel.classList.remove("open");
-  txPanel.setAttribute("aria-hidden", "true");
-  txSearchRow.classList.remove("on");
-  setTxtBtnUi();
-}
-
-txCloseBtn.addEventListener("click", () => closeTranscript());
-
-function escapeForRegex(s){
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function buildHighlightedHtml(text, ranges, activeIdx){
-  if (!ranges.length) return escHtml(text);
-
-  const parts = [];
-  let last = 0;
-
-  for (let i = 0; i < ranges.length; i++){
-    const r = ranges[i];
-    const a = Math.max(0, r[0]);
-    const b = Math.max(a, r[1]);
-
-    if (a > last) parts.push(escHtml(text.slice(last, a)));
-
-    const cls = (i === activeIdx) ? "txMark active" : "txMark";
-    parts.push(`<span class="${cls}" data-mi="${i}">${escHtml(text.slice(a, b))}</span>`);
-    last = b;
-  }
-
-  if (last < text.length) parts.push(escHtml(text.slice(last)));
-  return parts.join("");
-}
-
-function computeMatches(text, q){
-  const out = [];
-  if (!q) return out;
-
-  const re = new RegExp(escapeForRegex(q), "gi");
-  let m;
-
-  while ((m = re.exec(text))){
-    const a = m.index;
-    const b = a + (m[0] || "").length;
-    if (b > a) out.push([a, b]);
-    if (out.length >= 2000) break;
-    if (m[0].length === 0) re.lastIndex++;
-  }
-
-  return out;
-}
-
-function applyTxSearch(){
-  const q = (txSearchInput.value || "").trim();
-  if (!q){
-    clearTxSearchUI();
-    return;
-  }
-
-  txMatches = computeMatches(txPlainText, q);
-  txActiveMatch = txMatches.length ? 0 : -1;
-
-  txPrevMatchBtn.disabled = txMatches.length < 2;
-  txNextMatchBtn.disabled = txMatches.length < 2;
-  txMatchCountEl.textContent = txMatches.length ? `1/${txMatches.length}` : "0/0";
-  txContentEl.innerHTML = buildHighlightedHtml(txPlainText, txMatches, txActiveMatch);
-
-  if (txMatches.length) setTimeout(() => scrollToActiveMatch(), 0);
-}
-
-function scrollToActiveMatch(){
-  const el = txContentEl.querySelector(".txMark.active");
-  if (!el) return;
-
-  try{
-    el.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
-  }catch{
-    el.scrollIntoView();
-  }
-}
-
-function setActiveMatch(idx){
-  if (!txMatches.length) return;
-
-  txActiveMatch = ((idx % txMatches.length) + txMatches.length) % txMatches.length;
-  txMatchCountEl.textContent = `${txActiveMatch + 1}/${txMatches.length}`;
-
-  const old = txContentEl.querySelector(".txMark.active");
-  if (old) old.classList.remove("active");
-
-  const next = txContentEl.querySelector(`.txMark[data-mi="${txActiveMatch}"]`);
-  if (next){
-    next.classList.add("active");
-    scrollToActiveMatch();
-  } else {
-    txContentEl.innerHTML = buildHighlightedHtml(txPlainText, txMatches, txActiveMatch);
-    setTimeout(() => scrollToActiveMatch(), 0);
-  }
-}
-
-txSearchBtn.addEventListener("click", () => {
-  const on = txSearchRow.classList.toggle("on");
-  if (on){
-    txSearchInput.focus();
-    txSearchInput.select();
-  }
-});
-
-txSearchInput.addEventListener("input", () => {
-  clearTimeout(txSearchTimer);
-  txSearchTimer = setTimeout(applyTxSearch, 180);
-});
-
-txSearchInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter"){
-    e.preventDefault();
-    if (!txMatches.length){
-      applyTxSearch();
-      return;
+    function clickDownload(href, filename){
+      const a = document.createElement("a");
+      a.href = href;
+      a.rel = "noopener";
+      a.target = "_blank";
+      if (filename) a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
     }
-    if (e.shiftKey) setActiveMatch(txActiveMatch - 1);
-    else setActiveMatch(txActiveMatch + 1);
-  } else if (e.key === "Escape"){
-    e.preventDefault();
-    txSearchRow.classList.remove("on");
-  }
-});
 
-txPrevMatchBtn.addEventListener("click", () => setActiveMatch(txActiveMatch - 1));
-txNextMatchBtn.addEventListener("click", () => setActiveMatch(txActiveMatch + 1));
-
-async function copyToClipboard(text){
-  if (!text) return false;
-
-  try{
-    await navigator.clipboard.writeText(text);
-    return true;
-  }catch{}
-
-  try{
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    ta.style.top = "-9999px";
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-    const ok = document.execCommand("copy");
-    ta.remove();
-    return !!ok;
-  }catch{
-    return false;
-  }
-}
-
-txCopyBtn.addEventListener("click", async () => {
-  const ok = await copyToClipboard(txPlainText);
-  txInfoEl.textContent = ok ? "Kopiert." : "Kopieren fehlgeschlagen.";
-  setTimeout(() => {
-    if (txCurrent) updateTxInfo(txCurrent);
-  }, 1200);
-});
-
-txDownloadBtn.addEventListener("click", () => {
-  if (!txCurrent || !txCurrent.txtUrl) return;
-  const filename = (txCurrent.txtName || "").split("/").pop() || "transkript.txt";
-  forceDownload(txCurrent.txtUrl, filename);
-  trackTranscriptDownload(txCurrent, filename);
-});
-
-function updateTxInfo(it){
-  const file = (it?.txtName || "").split("/").pop() || "—";
-  txInfoEl.textContent = file ? `TXT: ${file}` : "—";
-}
-
-async function fetchTranscriptText(it){
-  const cached = txCache.get(it.id);
-  if (cached && (Date.now() - cached.at) < TX_CACHE_TTL_MS) return cached.text;
-
-  const built = await buildTxtUrlsForItem(it);
-  const urls = [];
-  const seen = new Set();
-
-  for (const u of [it?.txtUrl, ...(built?.urls || [])]){
-    const uu = String(u || "").trim();
-    if (!uu || seen.has(uu)) continue;
-    seen.add(uu);
-    urls.push(uu);
-  }
-
-  let lastErr = null;
-  for (const url of urls){
-    try{
-      const res = await fetch(url, { cache: "no-cache" });
-      if (!res.ok) throw new Error("txt fetch failed: " + res.status);
-
-      const text = await res.text();
+    async function forceDownload(fileUrl, filename){
+      const proxied = makeProxyUrl(fileUrl, filename);
 
       try{
-        const u = new URL(url, location.href);
-        const fn = decodeURIComponentSafe((u.pathname || "").split("/").pop() || "");
-        if (fn) it.txtName = fn;
+        clickDownload(proxied, filename);
+        return;
       }catch{}
 
-      it.txtUrl = url;
-      txCache.set(it.id, { text, at: Date.now() });
-      return text;
-    }catch(err){
-      lastErr = err;
-    }
-  }
-
-  throw (lastErr || new Error("txt fetch failed"));
-}
-
-async function openTranscriptFor(it){
-  if (!it) return;
-
-  txCurrent = it;
-  openTranscript();
-  trackTranscriptOpen(it);
-
-  txTitleEl.textContent = it.title || "Transkript";
-  updateTxInfo(it);
-
-  txCopyBtn.disabled = true;
-  txDownloadBtn.disabled = true;
-  txContentEl.textContent = "Yükleniyor…";
-  txPlainText = "";
-  clearTxSearchUI();
-
-  try{
-    const t = await fetchTranscriptText(it);
-    txPlainText = t || "";
-    txCopyBtn.disabled = !txPlainText;
-    updateTxInfo(it);
-    txDownloadBtn.disabled = false;
-    clearTxSearchUI();
-  }catch{
-    txContentEl.textContent = "TXT yüklenemedi.";
-    txCopyBtn.disabled = true;
-  }
-}
-
-function toggleTranscriptFromPlayer(){
-  if (txOpen){
-    closeTranscript();
-    return;
-  }
-
-  const it = items.find((x) => x.id === activeId) || items.find((x) => x.id === selectedId) || null;
-  if (!it){
-    openTranscript();
-    txTitleEl.textContent = "Transkript";
-    txInfoEl.textContent = "—";
-    txPlainText = "";
-    txContentEl.textContent = "Bir kayıt seç...";
-    txCopyBtn.disabled = true;
-    txDownloadBtn.disabled = true;
-    return;
-  }
-
-  openTranscriptFor(it).catch(() => {});
-}
-
-fpTxtBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  toggleTranscriptFromPlayer();
-});
-
-sbClearTxCacheBtn.addEventListener("click", () => {
-  txCache.clear();
-  txInfoEl.textContent = "TXT Cache temizlendi.";
-  setTimeout(() => {
-    if (txCurrent) updateTxInfo(txCurrent);
-  }, 1200);
-});
-
-txPanel.addEventListener("click", (e) => e.stopPropagation());
-
-const TX_DRAG_IGNORE_SELECTOR = "button, a, input, textarea, select, option";
-
-function shouldStartTxDrag(target){
-  return !(target && target.closest && target.closest(TX_DRAG_IGNORE_SELECTOR));
-}
-
-let txDragging = false;
-let txDragStartX = 0;
-let txDragStartY = 0;
-let txDragStartTop = 0;
-let txDragStartRight = 0;
-
-txHeader.addEventListener("pointerdown", (e) => {
-  if (!txOpen || !shouldStartTxDrag(e.target)) return;
-
-  txDragging = true;
-  txHeader.setPointerCapture(e.pointerId);
-  txHeader.style.cursor = "grabbing";
-
-  txDragStartX = e.clientX;
-  txDragStartY = e.clientY;
-
-  const cur = getTxPosPx();
-  txDragStartTop = cur.top;
-  txDragStartRight = cur.right;
-
-  e.preventDefault();
-  e.stopPropagation();
-});
-
-txHeader.addEventListener("pointermove", (e) => {
-  if (!txDragging) return;
-
-  const dx = e.clientX - txDragStartX;
-  const dy = e.clientY - txDragStartY;
-  const cl = clampTxPosCandidate(txDragStartTop + dy, txDragStartRight - dx);
-  setTxPosPx(cl.top, cl.right);
-  e.preventDefault();
-});
-
-function endTxDrag(pointerId){
-  if (!txDragging) return;
-  txDragging = false;
-  txHeader.style.cursor = "grab";
-  try { txHeader.releasePointerCapture(pointerId); } catch {}
-  clampTxPosToViewport();
-}
-
-txHeader.addEventListener("pointerup", (e) => endTxDrag(e.pointerId));
-txHeader.addEventListener("pointercancel", (e) => endTxDrag(e.pointerId));
-
-let txResizing = false;
-let txResizeStartX = 0;
-let txResizeStartY = 0;
-let txResizeStartW = 0;
-let txResizeStartH = 0;
-
-function saveTxSize(w, h){
-  saveAny(LS.txSize, { w, h });
-}
-
-function clampTxSize(w, h){
-  const { vw, vh } = getViewportWH();
-  const vwL = toLayoutPx(vw);
-  const vhL = toLayoutPx(vh);
-  const margin = 28;
-  const maxW = Math.max(TX_MIN_SIZE.w, vwL - margin);
-  const maxH = Math.max(TX_MIN_SIZE.h, vhL - margin);
-  const minW = Math.min(maxW, TX_MIN_SIZE.w);
-  const minH = Math.min(maxH, TX_MIN_SIZE.h);
-
-  return {
-    w: Math.min(maxW, Math.max(minW, w)),
-    h: Math.min(maxH, Math.max(minH, h))
-  };
-}
-
-txResizeHandle.addEventListener("pointerdown", (e) => {
-  if (!txOpen) return;
-
-  txResizing = true;
-  txResizeStartX = e.clientX;
-  txResizeStartY = e.clientY;
-  txResizeStartW = txPanel.offsetWidth;
-  txResizeStartH = txPanel.offsetHeight;
-  txResizeHandle.setPointerCapture(e.pointerId);
-
-  e.preventDefault();
-  e.stopPropagation();
-});
-
-txResizeHandle.addEventListener("pointermove", (e) => {
-  if (!txResizing) return;
-
-  const dxClient = e.clientX - txResizeStartX;
-  const dyClient = e.clientY - txResizeStartY;
-  const dx = useTransformScale ? (dxClient / uiScale) : dxClient;
-  const dy = useTransformScale ? (dyClient / uiScale) : dyClient;
-
-  const cl = clampTxSize(txResizeStartW - dx, txResizeStartH + dy);
-  txPanel.style.width = cl.w + "px";
-  txPanel.style.height = cl.h + "px";
-  saveTxSize(cl.w, cl.h);
-});
-
-function endTxResize(pointerId){
-  if (!txResizing) return;
-  txResizing = false;
-  try { txResizeHandle.releasePointerCapture(pointerId); } catch {}
-  clampTxSizeToViewport();
-  clampTxPosToViewport();
-}
-
-txResizeHandle.addEventListener("pointerup", (e) => endTxResize(e.pointerId));
-txResizeHandle.addEventListener("pointercancel", (e) => endTxResize(e.pointerId));
-
-function fmtMsHuman(ms){
-  const totalSec = Math.max(0, Math.round((Number(ms) || 0) / 1000));
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-
-  if (h > 0) return `${h} sa ${String(m).padStart(2, "0")} dk ${String(s).padStart(2, "0")} sn`;
-  if (m > 0) return `${m} dk ${String(s).padStart(2, "0")} sn`;
-  return `${s} sn`;
-}
-
-const DEFAULT_SKIP_SETTINGS = {
-  enabled: false,
-  mode: "max",
-  fadeMs: 0,
-  tailKeepMs: 0,
-  resumeOffsetMs: 220,
-  minSegmentMs: 60,
-  cooldownMs: 15,
-  maxAutoSeekMs: 120000
-};
-
-let skipSettings = (() => {
-  try{
-    return { ...DEFAULT_SKIP_SETTINGS, ...(JSON.parse(localStorage.getItem(LS.skipSettings) || "{}")) };
-  }catch{
-    return { ...DEFAULT_SKIP_SETTINGS };
-  }
-})();
-
-const skipState = {
-  rafId: 0,
-  skipInFlight: false,
-  lastSkipAt: 0,
-  manualSuppressUntil: 0,
-  currentMapItemId: null,
-  currentMap: null,
-  mapIndex: null,
-  indexPromise: null,
-  mapPromiseById: new Map(),
-  mapCacheById: new Map(),
-  status: "",
-  estimatedGainMs: 0,
-  fileSavedMs: 0,
-  sessionSavedMs: 0
-};
-
-function saveSkipSettings(){
-  localStorage.setItem(LS.skipSettings, JSON.stringify(skipSettings));
-}
-
-function setSkipStatus(text){
-  skipState.status = String(text || "");
-  if (skipHintEl) skipHintEl.textContent = skipState.status || "Silence map bekleniyor…";
-}
-
-function updateSkipGainUi(){
-  if (skipEstimatedValueEl) skipEstimatedValueEl.textContent = fmtMsHuman(skipState.estimatedGainMs);
-  if (skipFileSavedValueEl) skipFileSavedValueEl.textContent = fmtMsHuman(skipState.fileSavedMs);
-  if (skipSessionSavedValueEl) skipSessionSavedValueEl.textContent = fmtMsHuman(skipState.sessionSavedMs);
-}
-
-function normalizeMapPath(rawPath){
-  const p = String(rawPath || "").trim();
-  if (!p) return "";
-  if (/^https?:\/\//i.test(p)) return p;
-
-  const clean = p.replace(/^\.?\//, "");
-  return new URL(clean, document.baseURI).href;
-}
-
-function getMapMetaForItem(indexData, item){
-  if (!indexData || !item) return null;
-
-  if (indexData.items && indexData.items[item.id]) return indexData.items[item.id];
-  if (indexData.by_id && indexData.by_id[item.id]) return indexData.by_id[item.id];
-
-  if (Array.isArray(indexData.entries)){
-    const found = indexData.entries.find((x) => x && x.id === item.id);
-    if (found) return found;
-  }
-
-  if (Array.isArray(indexData.items)){
-    const found = indexData.items.find((x) => x && x.id === item.id);
-    if (found) return found;
-  }
-
-  return null;
-}
-
-async function loadSilenceMapIndex(force = false){
-  if (!force && skipState.mapIndex) return skipState.mapIndex;
-  if (!force && skipState.indexPromise) return skipState.indexPromise;
-
-  skipState.indexPromise = (async () => {
-    const url = new URL(SILENCE_MAP_INDEX_URL, document.baseURI).href;
-    const res = await fetch(url, { cache: "no-cache" });
-    if (!res.ok) throw new Error(`index fetch failed: ${res.status} ${url}`);
-    const j = await res.json();
-    skipState.mapIndex = j || {};
-    return skipState.mapIndex;
-  })();
-
-  try{
-    return await skipState.indexPromise;
-  } finally {
-    skipState.indexPromise = null;
-  }
-}
-
-async function loadSilenceMapForItem(item, force = false){
-  if (!item?.id) return null;
-
-  if (!force && skipState.mapCacheById.has(item.id)){
-    return skipState.mapCacheById.get(item.id) || null;
-  }
-  if (!force && skipState.mapPromiseById.has(item.id)){
-    return skipState.mapPromiseById.get(item.id);
-  }
-
-  const p = (async () => {
-    const indexData = await loadSilenceMapIndex(force);
-    const meta = getMapMetaForItem(indexData, item);
-    if (!meta) throw new Error(`index entry not found for ${item.id}`);
-
-    const rawPath = meta.path || meta.url || meta.file || "";
-    if (!rawPath) throw new Error(`index entry has no path for ${item.id}`);
-
-    const url = normalizeMapPath(rawPath);
-    const res = await fetch(url, { cache: "no-cache" });
-    if (!res.ok) throw new Error(`map fetch failed: ${res.status} ${url}`);
-
-    const j = await res.json();
-    const segments = Array.isArray(j?.segments) ? j.segments : [];
-
-    const normalized = {
-      ...j,
-      id: j?.id || item.id,
-      name: j?.name || item.name || "",
-      duration: Number(j?.duration) || 0,
-      sourceUrl: url,
-      segments: segments
-        .map((seg) => ({
-          start: Number(seg?.start),
-          end: Number(seg?.end)
-        }))
-        .filter((seg) => Number.isFinite(seg.start) && Number.isFinite(seg.end) && seg.end > seg.start)
-        .sort((a, b) => a.start - b.start)
-    };
-
-    skipState.mapCacheById.set(item.id, normalized);
-    return normalized;
-  })();
-
-  skipState.mapPromiseById.set(item.id, p);
-
-  try{
-    return await p;
-  } finally {
-    skipState.mapPromiseById.delete(item.id);
-  }
-}
-
-function getEligibleSkipMsForSegment(seg){
-  if (!seg) return 0;
-  const segLenMs = (seg.end - seg.start) * 1000;
-  if (!Number.isFinite(segLenMs) || segLenMs < skipSettings.minSegmentMs) return 0;
-
-  const resumeOffsetMs = Math.max(0, Number(skipSettings.resumeOffsetMs) || 0);
-  const tailKeepMs = Math.max(0, Number(skipSettings.tailKeepMs) || 0);
-  return Math.max(0, segLenMs - tailKeepMs - resumeOffsetMs);
-}
-
-function recomputeEstimatedGain(){
-  const segs = skipState.currentMap?.segments || [];
-  let total = 0;
-  for (const seg of segs) total += getEligibleSkipMsForSegment(seg);
-  skipState.estimatedGainMs = total;
-  updateSkipGainUi();
-}
-
-async function primeSilenceMapForItem(item){
-  skipState.currentMapItemId = item?.id || null;
-  skipState.currentMap = null;
-  skipState.estimatedGainMs = 0;
-  updateSkipGainUi();
-
-  if (!item){
-    setSkipStatus("Silence map yok.");
-    syncSkipUi();
-    return null;
-  }
-
-  try{
-    setSkipStatus("Silence map aranıyor…");
-    const map = await loadSilenceMapForItem(item, false);
-
-    if (!map || !map.segments.length){
-      skipState.currentMap = null;
-      skipState.estimatedGainMs = 0;
-      setSkipStatus("Bu kayıtta silence map boş.");
-      syncSkipUi();
-      updateSkipGainUi();
-      return null;
+      try{
+        const res = await fetch(proxied, { mode: "cors", cache: "no-store" });
+        if (!res.ok) throw new Error("fetch failed");
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        clickDownload(url, filename);
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      }catch{
+        window.location.href = fileUrl;
+      }
     }
 
-    if (skipState.currentMapItemId === item.id){
-      skipState.currentMap = map;
-      recomputeEstimatedGain();
-      setSkipStatus(`Silence map hazır · ${map.segments.length} segment`);
-      syncSkipUi();
-      if (skipSettings.enabled && !playerEl.paused) startSkipLoop();
+    function buildDownloadUrl(identifier, name){
+      const parts = (name || "").split("/").map((p) => encodeURIComponent(p));
+      return `https://archive.org/download/${identifier}/${parts.join("/")}`;
     }
 
-    return map;
-  }catch(err){
-    console.error("Silence map yüklenemedi:", err);
-    skipState.currentMap = null;
-    skipState.estimatedGainMs = 0;
-    updateSkipGainUi();
-    setSkipStatus(`Silence map yüklenemedi. ${err.message || ""}`.trim());
-    syncSkipUi();
-    return null;
-  }
-}
-
-function findSilenceSegmentAt(t){
-  const map = skipState.currentMap;
-  if (!map?.segments?.length) return null;
-
-  let lo = 0;
-  let hi = map.segments.length - 1;
-
-  while (lo <= hi){
-    const mid = (lo + hi) >> 1;
-    const seg = map.segments[mid];
-    if (t < seg.start) hi = mid - 1;
-    else if (t >= seg.end) lo = mid + 1;
-    else return seg;
-  }
-
-  return null;
-}
-
-async function fadePlayerVolume(from, to, ms){
-  const duration = Math.max(0, Number(ms) || 0);
-  if (duration <= 0){
-    try { playerEl.volume = Math.max(0, Math.min(1, to)); } catch {}
-    return;
-  }
-
-  const start = performance.now();
-  const diff = to - from;
-
-  return new Promise((resolve) => {
-    function step(now){
-      const p = Math.min(1, (now - start) / duration);
-      const eased = p < 1 ? (1 - Math.pow(1 - p, 3)) : 1;
-      try { playerEl.volume = Math.max(0, Math.min(1, from + diff * eased)); } catch {}
-      if (p < 1) requestAnimationFrame(step);
-      else resolve();
-    }
-    requestAnimationFrame(step);
-  });
-}
-
-function stopSkipLoop(){
-  if (skipState.rafId){
-    cancelAnimationFrame(skipState.rafId);
-    skipState.rafId = 0;
-  }
-}
-
-function startSkipLoop(){
-  if (!skipSettings.enabled) return;
-  if (!skipState.currentMap?.segments?.length) return;
-  if (skipState.rafId) return;
-  skipState.rafId = requestAnimationFrame(skipLoop);
-}
-
-function canSkipNow(nowMs){
-  if (!skipSettings.enabled) return false;
-  if (!skipState.currentMap?.segments?.length) return false;
-  if (!playerEl || playerEl.paused || playerEl.seeking) return false;
-  if (!Number.isFinite(playerEl.currentTime)) return false;
-  if (!Number.isFinite(playerEl.duration) || playerEl.duration <= 0) return false;
-  if (segEndTime != null) return false;
-  if (skipState.skipInFlight) return false;
-  if (nowMs < skipState.manualSuppressUntil) return false;
-  if ((nowMs - skipState.lastSkipAt) < skipSettings.cooldownMs) return false;
-  return true;
-}
-
-async function performMapSkip(seg){
-  if (!seg || skipState.skipInFlight) return false;
-
-  const segLenMs = (seg.end - seg.start) * 1000;
-  if (segLenMs < skipSettings.minSegmentMs) return false;
-
-  const current = Number(playerEl.currentTime) || 0;
-  const duration = Number(playerEl.duration) || 0;
-  const tailKeepSec = (Number(skipSettings.tailKeepMs) || 0) / 1000;
-  const resumeOffsetSec = (Number(skipSettings.resumeOffsetMs) || 0) / 1000;
-  const maxAutoSeekSec = (Number(skipSettings.maxAutoSeekMs) || 45000) / 1000;
-
-  let target = seg.end - tailKeepSec + resumeOffsetSec;
-  target = Math.min(target, seg.start + maxAutoSeekSec);
-
-  if (duration > 0){
-    target = Math.min(target, Math.max(0, duration - 0.05));
-  }
-
-  if (!(target > current + 0.03)) return false;
-
-  skipState.skipInFlight = true;
-  const fadeMs = Math.max(0, Number(skipSettings.fadeMs) || 0);
-  const originalVol = Number(playerEl.volume);
-
-  try{
-    if (fadeMs > 0){
-      await fadePlayerVolume(originalVol, Math.max(0, originalVol * 0.08), Math.floor(fadeMs / 2));
+    function replaceExtToTxt(name){
+      return String(name || "").replace(/\.(m4a|mp3)$/i, ".txt");
     }
 
-    const before = Number(playerEl.currentTime) || 0;
-    playerEl.currentTime = Math.max(0, target);
-    const after = Number(playerEl.currentTime) || target;
-    const gainedMs = Math.max(0, Math.round((after - before) * 1000));
+    function __ia2IsBlockedByPrefix(fileName){
+      const blockPrefixes = ["Dusseldorf", "Düsseldorf", "Stuttgart", "Rheutlingen", "Reutlingen", "Sachsen", "Hessen", "Karlsruhe"];
+      let base = (fileName || "").toString();
+      base = base.split("/").pop() || base;
+      base = decodeURIComponentSafe(base);
+      base = base.replace(/\.(m4a|mp3)$/i, "").trim();
+      base = base.replace(/^A[\s_-]+/i, "").trim();
 
-    skipState.fileSavedMs += gainedMs;
-    skipState.sessionSavedMs += gainedMs;
-    updateSkipGainUi();
-
-    skipState.manualSuppressUntil = performance.now() + Math.max(35, fadeMs + 25);
-
-    if (fadeMs > 0){
-      await fadePlayerVolume(Math.max(0, originalVol * 0.08), originalVol, Math.ceil(fadeMs / 2));
+      const folded = foldTR(base);
+      for (const p of blockPrefixes){
+        const c = foldTR(p);
+        if (folded.startsWith(c)){
+          const next = folded.slice(c.length, c.length + 1);
+          if (!next || /[\s\-_0-9.:]/.test(next)) return true;
+        }
+      }
+      return false;
     }
 
-    skipState.lastSkipAt = performance.now();
-    return true;
-  }catch(err){
-    console.warn("performMapSkip failed:", err);
-    return false;
-  }finally{
-    skipState.skipInFlight = false;
-  }
-}
+    function __ia2MakeItemsFromFiles(files){
+      return (files || [])
+        .filter((f) => typeof f?.name === "string")
+        .filter((f) => {
+          const name = String(f.name).toLowerCase();
+          if (!name.endsWith(".m4a")) return false;
+          if (!("source" in f)) return true;
+          return String(f.source || "").toLowerCase() === "original";
+        })
+        .filter((f) => !__ia2IsBlockedByPrefix(f.name))
+        .map((f, idx) => {
+          const name = f.name || "";
+          const title = (String(f.title || "").trim()) || decodeURIComponentSafe(name.split("/").pop() || name);
+          const url = buildDownloadUrl(IA_IDENTIFIER_2, name);
+          const localId = name || url || (title + "#" + idx);
+          const id = IA2_SRC + "|" + localId;
 
-async function skipLoop(){
-  skipState.rafId = 0;
+          const txtCandidates = buildTxtNameCandidates({ name });
+          const txtName = txtCandidates.length ? txtCandidates[0] : replaceExtToTxt(name);
+          const txtUrl = txtName ? (__IA2_TXT_BASES[0] + encodeURIComponent(txtName)) : "";
 
-  if (!skipSettings.enabled){
-    stopSkipLoop();
-    return;
-  }
+          return { id, title, name, url, src: IA2_SRC, txtName, txtUrl };
+        });
+    }
 
-  const nowMs = performance.now();
-  if (canSkipNow(nowMs)){
-    const t = Number(playerEl.currentTime) || 0;
-    const seg = findSilenceSegmentAt(t);
-    if (seg) await performMapSkip(seg);
-  }
+    async function loadItems(){
+      try{
+        const res1 = await fetch(`https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}`, {
+          cache: FORCE_REFRESH ? "no-store" : "no-cache"
+        });
+        if (!res1.ok) throw new Error("S1 metadata okunamadı");
 
-  startSkipLoop();
-}
+        const j1 = await res1.json();
+        const files1 = Array.isArray(j1.files) ? j1.files : [];
 
-function syncSkipUi(){
-  const open = !skipDrawer.hidden;
-  skipDrawerBtn.classList.toggle("on", open || skipSettings.enabled);
-  skipDrawerBtn.classList.toggle("breathing", !!skipSettings.enabled);
-  skipDrawerBtn.setAttribute("aria-expanded", String(open));
+        const list1 = files1
+          .filter((f) => {
+            const name = (f.name || "").toLowerCase();
+            if (!(name.endsWith(".m4a") || name.endsWith(".mp3"))) return false;
+            if (!("source" in f)) return true;
+            return String(f.source || "").toLowerCase() === "original";
+          })
+          .map((f, idx) => {
+            const name = f.name || "";
+            const title = (f.title || "").trim() || decodeURIComponentSafe(name.split("/").pop() || name);
+            const url = buildDownloadUrl(IA_IDENTIFIER_1, name);
+            const localId = name || url || (title + "#" + idx);
+            const id = "S1|" + localId;
 
-  skipEnableBtn.textContent = "Sessiz atlama: " + (skipSettings.enabled ? "Açık" : "Kapalı");
-  skipEnableBtn.classList.toggle("on", !!skipSettings.enabled);
+            const txtCandidates = buildTxtNameCandidates({ name });
+            const txtName = txtCandidates.length ? txtCandidates[0] : replaceExtToTxt(name);
+            const txtUrl = txtName ? (TXT_BASES[0] + encodeURIComponent(txtName)) : "";
 
-  skipModeLight.classList.toggle("on", skipSettings.mode === "light");
-  skipModeBalanced.classList.toggle("on", skipSettings.mode === "balanced");
-  skipModeAggressive.classList.toggle("on", skipSettings.mode === "aggressive");
-  skipModeUltra.classList.toggle("on", skipSettings.mode === "ultra");
-  skipModeMax.classList.toggle("on", skipSettings.mode === "max");
+            return { id, title, name, url, src: "S1", txtName, txtUrl };
+          });
 
-  skipMinGapRange.value = String(skipSettings.minSegmentMs);
-  skipMinGapValue.textContent = `${Math.round(skipSettings.minSegmentMs)}ms`;
+        let finalItems = list1;
 
-  skipFadeRange.value = String(skipSettings.fadeMs);
-  skipFadeValue.textContent = `${Math.round(skipSettings.fadeMs)}ms`;
+        try{
+          const res2 = await fetch(`https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_2)}`, {
+            cache: FORCE_REFRESH ? "no-store" : "no-cache"
+          });
+          if (!res2.ok) throw new Error("S2 metadata okunamadı");
 
-  skipEngineLabel.textContent = (skipState.currentMap?.segments?.length || 0) ? `MAP ${skipState.currentMap.segments.length}` : "MAP";
-  updateSkipGainUi();
+          const j2 = await res2.json();
+          const files2 = Array.isArray(j2.files) ? j2.files : [];
+          finalItems = finalItems.concat(__ia2MakeItemsFromFiles(files2));
+        }catch(err){
+          console.warn(err);
+        }
 
-  if (!skipState.status){
-    setSkipStatus((skipState.currentMap?.segments?.length || 0)
-      ? `Silence map hazır · ${skipState.currentMap.segments.length} segment`
-      : "Silence map bekleniyor…");
-  }
-}
+        items = finalItems;
+        statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
+        setSortIcons();
+        render();
+        restoreScrollIfNeeded();
+        scheduleRefreshCounts(100);
+        updateSticky(true);
+      }catch(err){
+        console.error(err);
+        statusEl.textContent = "Liste yüklenemedi.";
+      }
+    }
 
-function toggleSkipDrawer(force){
-  const shouldOpen = typeof force === "boolean" ? force : skipDrawer.hidden;
-  skipDrawer.hidden = !shouldOpen;
-  localStorage.setItem(LS.skipDrawerOpen, shouldOpen ? "1" : "0");
-  syncSkipUi();
-  setTimeout(() => clampPlayerToViewport(), 0);
-}
+    function getVisibleItems(){
+      const q = foldTR((searchEl.value || "").trim());
 
-function resetSkipRuntimeForNewTrack(){
-  stopSkipLoop();
-  skipState.skipInFlight = false;
-  skipState.lastSkipAt = 0;
-  skipState.manualSuppressUntil = performance.now() + 900;
-  skipState.fileSavedMs = 0;
-  skipState.estimatedGainMs = 0;
-  updateSkipGainUi();
-}
+      let arr = items.filter((it) => {
+        if (q && !foldTR(it.title).includes(q)) return false;
+        if (filterFav && !favs[it.id]) return false;
+        return true;
+      });
 
-function applySkipPreset(mode){
-  if (mode === "light"){
-    Object.assign(skipSettings, {
-      mode: "light",
-      fadeMs: 35,
-      tailKeepMs: 0,
-      resumeOffsetMs: 80,
-      minSegmentMs: 350,
-      cooldownMs: 90,
-      maxAutoSeekMs: 30000
+      if (sortMode === "dur"){
+        const dir = (durSortDir === "asc") ? 1 : -1;
+        arr.sort((a, b) => {
+          const ha = (durs[a.id] > 0);
+          const hb = (durs[b.id] > 0);
+          if (ha !== hb) return ha ? -1 : 1;
+          if (ha && hb){
+            const da = durs[a.id];
+            const db = durs[b.id];
+            if (da !== db) return (da - db) * dir;
+          }
+          return a.title.localeCompare(b.title, "tr");
+        });
+      } else if (sortMode === "date"){
+        const dir = (dateSortDir === "asc") ? 1 : -1;
+        arr.sort((a, b) => {
+          const ta = parseEndDate(a);
+          const tb = parseEndDate(b);
+          const ha = (ta !== null);
+          const hb = (tb !== null);
+          if (ha !== hb) return ha ? -1 : 1;
+          if (ha && hb && ta !== tb) return (ta - tb) * dir;
+          return a.title.localeCompare(b.title, "tr");
+        });
+      } else if (sortMode === "play"){
+        const dir = (playSortDir === "asc") ? 1 : -1;
+        arr.sort((a, b) => {
+          const ca = Number(globalPlayCounts[a.id]) || 0;
+          const cb = Number(globalPlayCounts[b.id]) || 0;
+          if (ca !== cb) return (ca - cb) * dir;
+          return a.title.localeCompare(b.title, "tr");
+        });
+      } else if (sortMode === "download"){
+        const dir = (dlSortDir === "asc") ? 1 : -1;
+        arr.sort((a, b) => {
+          const ca = Number(globalDownloadCounts[a.id]) || 0;
+          const cb = Number(globalDownloadCounts[b.id]) || 0;
+          if (ca !== cb) return (ca - cb) * dir;
+          return a.title.localeCompare(b.title, "tr");
+        });
+      } else {
+        arr.sort((a, b) => a.title.localeCompare(b.title, "tr"));
+      }
+
+      return arr;
+    }
+
+    function iconButton(kind, on, title){
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "iconBtn" + (on ? " on" : "");
+      btn.title = title;
+      btn.dataset.kind = kind;
+
+      if (kind === "star"){
+        btn.setAttribute("aria-pressed", String(!!on));
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="${on ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z"/>
+          </svg>`;
+      } else if (kind === "download"){
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 3v12"/>
+            <path d="M7 10l5 5 5-5"/>
+            <path d="M5 21h14"/>
+          </svg>`;
+      }
+
+      return btn;
+    }
+
+    function render(){
+      const visible = getVisibleItems();
+      metaEl.textContent = `Görünən: ${visible.length} / Toplam: ${items.length}`;
+
+      filterFavBtn.classList.toggle("on", filterFav);
+      filterFavBtn.setAttribute("aria-pressed", String(filterFav));
+      setSortIcons();
+      listEl.innerHTML = "";
+
+      const toMeasure = (sortMode === "dur") ? items : visible;
+      for (const it of toMeasure){
+        if (!(durs[it.id] > 0)) requestDuration(it);
+      }
+
+      for (const it of visible){
+        const row = document.createElement("div");
+        row.className = "itemRow" + (it.id === selectedId ? " active" : "");
+
+        const title = document.createElement("div");
+        title.className = "title";
+        title.innerHTML = highlightDisease(it.title);
+
+        const dur = document.createElement("div");
+        dur.className = "dur";
+        dur.textContent = (durs[it.id] > 0) ? fmtDur(durs[it.id]) : "…";
+
+        const playCount = document.createElement("div");
+        playCount.className = "countCell";
+        playCount.textContent = String(Number(globalPlayCounts[it.id]) || 0);
+
+        const favBtn = iconButton("star", !!favs[it.id], "Favori");
+        const dlBtn = iconButton("download", false, "İndir");
+
+        const dlCount = document.createElement("div");
+        dlCount.className = "countCell";
+        dlCount.textContent = String(Number(globalDownloadCounts[it.id]) || 0);
+
+        favBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          selectedId = it.id;
+          favs[it.id] = !favs[it.id];
+          saveMap(LS.favs, favs);
+          render();
+        });
+
+        dlBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          selectedId = it.id;
+
+          const filename =
+            (it.name || it.file || "").split("/").pop() ||
+            (it.title || "audio").replace(/[\\/:*?"<>|]+/g, "_") + ".m4a";
+
+          forceDownload(it.url, filename);
+
+          setTimeout(() => {
+            bumpLocalGlobalCount("download", it.id);
+            sendHit("download", it);
+            scheduleRefreshCounts(1200);
+            trackAudioDownload(it, filename);
+            render();
+          }, 0);
+        });
+
+        for (const b of [favBtn, dlBtn]){
+          b.addEventListener("pointerup", (e) => e.stopPropagation());
+          b.addEventListener("pointerdown", (e) => e.stopPropagation());
+        }
+
+        row.appendChild(title);
+        row.appendChild(dur);
+        row.appendChild(playCount);
+        row.appendChild(favBtn);
+        row.appendChild(dlBtn);
+        row.appendChild(dlCount);
+
+        row.addEventListener("click", (e) => {
+          const inTitle = !!(e.target && e.target.closest && e.target.closest(".title"));
+          if (!inTitle){
+            selectedId = it.id;
+            render();
+            return;
+          }
+          playById(it.id);
+        });
+
+        listEl.appendChild(row);
+      }
+
+      updateSticky(false);
+    }
+
+    function playById(id){
+      const visible = getVisibleItems();
+      const idx = visible.findIndex((x) => x.id === id);
+      if (idx === -1) return;
+      playAtVisibleIndex(idx);
+    }
+
+    function setMediaSource(url, mime){
+      stopSkipLoop();
+
+      while (playerEl.firstChild) playerEl.removeChild(playerEl.firstChild);
+
+      const s = document.createElement("source");
+      s.src = url;
+      if (mime) s.type = mime;
+      playerEl.appendChild(s);
+      playerEl.load();
+    }
+
+    async function ensureMapForItem(it){
+      if (!it) return null;
+      return await primeSilenceMapForItem(it);
+    }
+
+    function playAtVisibleIndex(idx){
+      const visible = getVisibleItems();
+      const it = visible[idx];
+      if (!it) return;
+
+      armPlayGate(it);
+      trackAudioPlay(it);
+
+      statusEl.textContent = "";
+      activeId = it.id;
+      selectedId = it.id;
+      fpTitle.textContent = it.title;
+      render();
+
+      if (isCaptionsOn()) renderCaptionInfo("Altyazı yükleniyor…");
+      resetSkipRuntimeForNewTrack();
+
+      const url = it.url;
+      const mime = guessMime(url);
+      const currentSpeed = SPEEDS[speedIndex] || 1;
+
+      try{
+        plyr.speed = currentSpeed;
+        setMediaSource(url, mime);
+
+        loadSrtForItem(it).catch(() => {});
+        ensureMapForItem(it).catch(() => {});
+
+        const p = plyr.play();
+        if (p && typeof p.catch === "function"){
+          p.catch(() => {
+            statusEl.textContent = "Oynatma engellendi. Player içindeki ▶︎ tuşuna bas.";
+          });
+        }
+
+        setTimeout(() => {
+          if (playerEl && playerEl.paused){
+            statusEl.textContent = statusEl.textContent || "Oynatma başlamadı. Player içindeki ▶︎ tuşuna bas.";
+          }
+        }, 900);
+      }catch{
+        statusEl.textContent = "Player başlatılamadı.";
+      }
+    }
+
+    function playPrev(){
+      const visible = getVisibleItems();
+      if (!visible.length) return;
+
+      let idx = visible.findIndex((x) => x.id === activeId);
+      if (idx === -1) idx = 0;
+      idx = (idx - 1 + visible.length) % visible.length;
+      playAtVisibleIndex(idx);
+    }
+
+    function playNext(){
+      const visible = getVisibleItems();
+      if (!visible.length) return;
+
+      let idx = visible.findIndex((x) => x.id === activeId);
+      if (idx === -1) idx = 0;
+      idx = (idx + 1) % visible.length;
+      playAtVisibleIndex(idx);
+    }
+
+    prevBtn.addEventListener("click", playPrev);
+    nextBtn.addEventListener("click", playNext);
+    plyr.on("ended", () => { setTimeout(() => playNext(), 0); });
+
+    function isTypingTarget(){
+      const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
+      return (tag === "input" || tag === "textarea");
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape"){
+        if (txPanel.classList.contains("open")){
+          e.preventDefault();
+          closeTranscript();
+          return;
+        }
+        if (sbOverlay.classList.contains("open")){
+          e.preventDefault();
+          closeSidebar();
+          return;
+        }
+      }
+
+      if (isTypingTarget()) return;
+
+      if (e.code === "Space"){
+        e.preventDefault();
+        plyr.togglePlay();
+      } else if (e.code === "ArrowLeft"){
+        e.preventDefault();
+        playPrev();
+      } else if (e.code === "ArrowRight"){
+        e.preventDefault();
+        playNext();
+      }
     });
-  } else if (mode === "balanced"){
-    Object.assign(skipSettings, {
-      mode: "balanced",
-      fadeMs: 8,
-      tailKeepMs: 0,
-      resumeOffsetMs: 140,
-      minSegmentMs: 140,
-      cooldownMs: 30,
-      maxAutoSeekMs: 60000
+
+    filterFavBtn.addEventListener("click", () => {
+      filterFav = !filterFav;
+      render();
     });
-  } else if (mode === "aggressive"){
-    Object.assign(skipSettings, {
-      mode: "aggressive",
-      fadeMs: 0,
-      tailKeepMs: 0,
-      resumeOffsetMs: 180,
-      minSegmentMs: 90,
-      cooldownMs: 18,
-      maxAutoSeekMs: 90000
+
+    resetBtn.addEventListener("click", () => {
+      filterFav = false;
+      searchEl.value = "";
+      sortMode = "title";
+      dateSortDir = "desc";
+      localStorage.setItem(LS.sortMode, sortMode);
+      localStorage.setItem(LS.sortDirDate, dateSortDir);
+      setSortIcons();
+      render();
     });
-  } else if (mode === "ultra"){
-    Object.assign(skipSettings, {
-      mode: "ultra",
-      fadeMs: 0,
-      tailKeepMs: 0,
-      resumeOffsetMs: 220,
-      minSegmentMs: 60,
-      cooldownMs: 15,
-      maxAutoSeekMs: 120000
+
+    const SEARCH_DEBOUNCE_MS = 900;
+    let searchTimer = null;
+    let lastSentTermNorm = "";
+
+    function sendSearchEvent(termRawInput){
+      const termRaw = (termRawInput || "").trim();
+      const termNorm = foldTR(termRaw);
+      const visibleCount = getVisibleItems().length;
+
+      if (termRaw.length === 0){
+        if (lastSentTermNorm !== ""){
+          lastSentTermNorm = "";
+          gaEvent("search", { search_term: "", results_count: visibleCount });
+        }
+        return;
+      }
+
+      if (termNorm.length < 2) return;
+      if (termNorm === lastSentTermNorm) return;
+
+      lastSentTermNorm = termNorm;
+      const params = { search_term: termNorm, results_count: visibleCount };
+      if (__isDebug) params.search_term_raw = termRaw;
+      gaEvent("search", params);
+    }
+
+    function renderAndTrackSearch(){
+      render();
+      sendSearchEvent(searchEl.value);
+    }
+
+    searchEl.addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(renderAndTrackSearch, SEARCH_DEBOUNCE_MS);
     });
-  } else if (mode === "max"){
-    Object.assign(skipSettings, {
+
+    searchEl.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      clearTimeout(searchTimer);
+      renderAndTrackSearch();
+    });
+
+    function restorePlayerPos(){
+      try{
+        const s = JSON.parse(localStorage.getItem(LS.pos) || "null");
+        if (!s) return;
+        if (typeof s.x !== "number" || typeof s.y !== "number") return;
+
+        let x = s.x;
+        let y = s.y;
+
+        if (s.ver !== 2 && useTransformScale){
+          x = x * uiScale;
+          y = y * uiScale;
+        }
+
+        fp.style.left = x + "px";
+        fp.style.top = y + "px";
+        fp.style.bottom = "auto";
+        fp.style.right = "auto";
+        clampPlayerToViewport();
+      }catch{}
+    }
+
+    function savePlayerPos(x, y){
+      localStorage.setItem(LS.pos, JSON.stringify({ x, y, ver: 2 }));
+    }
+
+    function getPlayerRect(){
+      return fp.getBoundingClientRect();
+    }
+
+    function getPlayerPosPx(){
+      const left = parseFloat(fp.style.left);
+      const top = parseFloat(fp.style.top);
+      if (Number.isFinite(left) && Number.isFinite(top)) return { left, top };
+
+      const r = getPlayerRect();
+      return { left: r.left, top: r.top };
+    }
+
+    function getPlayerBoundsPx(){
+      const { vw, vh } = getViewportWH();
+      const r = getPlayerRect();
+      const w = r.width;
+      const h = r.height;
+
+      const keepX = Math.max(70, Math.min(w - 16, 180));
+      const keepY = Math.max(56, Math.min(h - 16, 120));
+      const capH = (isCaptionsOn() && captionsEl && !captionsEl.classList.contains("hidden"))
+        ? captionsEl.getBoundingClientRect().height
+        : 0;
+      const drawerH = (!skipDrawer.hidden) ? skipDrawer.getBoundingClientRect().height : 0;
+
+      const minX = -w + keepX;
+      const maxX = vw - keepX;
+      const minY = -h + keepY + capH;
+      const maxY = vh - keepY - Math.min(drawerH, 160);
+
+      return {
+        minX: Math.min(minX, maxX),
+        maxX: Math.max(minX, maxX),
+        minY: Math.min(minY, maxY),
+        maxY: Math.max(minY, maxY),
+      };
+    }
+
+    function clampPlayerToViewport(){
+      const { minX, maxX, minY, maxY } = getPlayerBoundsPx();
+      const cur = getPlayerPosPx();
+
+      const nx = Math.min(maxX, Math.max(minX, cur.left));
+      const ny = Math.min(maxY, Math.max(minY, cur.top));
+
+      fp.style.left = nx + "px";
+      fp.style.top = ny + "px";
+      fp.style.right = "auto";
+      fp.style.bottom = "auto";
+      savePlayerPos(nx, ny);
+    }
+
+    const DRAG_IGNORE_SELECTOR =
+      "button, a, input, textarea, select, option, .speedWrap, .speedCtlBtn, .miniBtn, " +
+      ".plyr__controls, .plyr__control, .plyr__progress, .plyr__seek, .plyr__volume, .plyr__time, .plyr__menu";
+
+    function shouldStartDrag(target){
+      return !(target && target.closest && target.closest(DRAG_IGNORE_SELECTOR));
+    }
+
+    let dragging = false;
+    let startClientX = 0;
+    let startClientY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+    let moved = false;
+    let suppressClickUntil = 0;
+
+    fpHeader.addEventListener("pointerdown", (e) => {
+      if (!shouldStartDrag(e.target)) return;
+
+      dragging = true;
+      moved = false;
+      fpHeader.setPointerCapture(e.pointerId);
+      fpHeader.style.cursor = "grabbing";
+
+      startClientX = e.clientX;
+      startClientY = e.clientY;
+
+      const cur = getPlayerPosPx();
+      startLeft = cur.left;
+      startTop = cur.top;
+
+      fp.style.left = startLeft + "px";
+      fp.style.top = startTop + "px";
+      fp.style.bottom = "auto";
+      fp.style.right = "auto";
+    });
+
+    fpHeader.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+
+      const dx = e.clientX - startClientX;
+      const dy = e.clientY - startClientY;
+
+      if (!moved && (Math.abs(dx) + Math.abs(dy) > 6)) moved = true;
+
+      const { minX, maxX, minY, maxY } = getPlayerBoundsPx();
+      const nx = Math.min(maxX, Math.max(minX, startLeft + dx));
+      const ny = Math.min(maxY, Math.max(minY, startTop + dy));
+
+      fp.style.left = nx + "px";
+      fp.style.top = ny + "px";
+      savePlayerPos(nx, ny);
+    });
+
+    function endDrag(pointerId){
+      if (!dragging) return;
+
+      dragging = false;
+      fpHeader.style.cursor = "grab";
+      try { fpHeader.releasePointerCapture(pointerId); } catch {}
+      clampPlayerToViewport();
+
+      if (moved){
+        suppressClickUntil = Date.now() + 350;
+        moved = false;
+      }
+    }
+
+    fpHeader.addEventListener("pointerup", (e) => endDrag(e.pointerId));
+    fpHeader.addEventListener("pointercancel", (e) => endDrag(e.pointerId));
+
+    fpHeader.addEventListener("click", (e) => {
+      if (Date.now() < suppressClickUntil){
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+
+    window.addEventListener("resize", () => {
+      clampPlayerToViewport();
+      updateOverlayScale();
+      updateSearchNoZoomFontSizes();
+      clampTxSizeToViewport();
+      clampTxPosToViewport();
+      updateSticky(true);
+    });
+
+    window.addEventListener("orientationchange", () => setTimeout(() => {
+      clampPlayerToViewport();
+      updateOverlayScale();
+      updateSearchNoZoomFontSizes();
+      clampTxSizeToViewport();
+      clampTxPosToViewport();
+      updateSticky(true);
+    }, 150));
+
+    if (window.visualViewport){
+      window.visualViewport.addEventListener("resize", () => {
+        clampPlayerToViewport();
+        updateOverlayScale();
+        updateSearchNoZoomFontSizes();
+        clampTxSizeToViewport();
+        clampTxPosToViewport();
+        updateSticky(true);
+      });
+    }
+
+    (function disablePullToRefresh(){
+      let startY = 0;
+
+      scrollArea.addEventListener("touchstart", (e) => {
+        if (!e.touches || !e.touches.length) return;
+        startY = e.touches[0].clientY;
+      }, { passive: true });
+
+      scrollArea.addEventListener("touchmove", (e) => {
+        if (!e.touches || !e.touches.length) return;
+        const y = e.touches[0].clientY;
+        if (scrollArea.scrollTop <= 0 && y > startY + 4) e.preventDefault();
+      }, { passive: false });
+    })();
+
+    (function setActiveNav(){
+      const here = location.href.replace(/\/$/, "");
+      document.querySelectorAll(".navRow .navLink").forEach((a) => {
+        a.classList.remove("on");
+        const u = (a.getAttribute("href") || "").replace(/\/$/, "");
+        if (!u) return;
+        if (here === u || here.startsWith(u + "/")) a.classList.add("on");
+      });
+    })();
+
+    function openSidebar(){
+      sbOverlay.classList.add("open");
+      sbOverlay.setAttribute("aria-hidden", "false");
+      updateOverlayScale();
+      setSortIcons();
+    }
+
+    function closeSidebar(){
+      sbOverlay.classList.remove("open");
+      sbOverlay.setAttribute("aria-hidden", "true");
+    }
+
+    sidebarOpenBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openSidebar();
+    });
+
+    sbCloseBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeSidebar();
+    });
+
+    sbOverlay.addEventListener("click", (e) => {
+      if (e.target === sbOverlay) closeSidebar();
+    });
+
+    document.getElementById("sidebar").addEventListener("click", (e) => e.stopPropagation());
+
+    sbRefreshBtn.addEventListener("click", async () => {
+      localStorage.setItem(LS.itemsCacheAt, "0");
+      try{
+        await loadItems();
+      } finally {
+        statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
+      }
+    });
+
+    sbZoomResetBtn.addEventListener("click", () => resetZoom100());
+    sbFavBtn.addEventListener("click", () => {
+      filterFav = !filterFav;
+      setSortIcons();
+      render();
+    });
+
+    function clickSort(kind){
+      if (kind === "date"){
+        if (sortMode !== "date") sortMode = "date";
+        else dateSortDir = (dateSortDir === "asc") ? "desc" : "asc";
+        localStorage.setItem(LS.sortMode, sortMode);
+        localStorage.setItem(LS.sortDirDate, dateSortDir);
+      } else if (kind === "dur"){
+        if (sortMode !== "dur") sortMode = "dur";
+        else durSortDir = (durSortDir === "asc") ? "desc" : "asc";
+        localStorage.setItem(LS.sortMode, sortMode);
+        localStorage.setItem(LS.sortDirDur, durSortDir);
+      } else if (kind === "play"){
+        if (sortMode !== "play") sortMode = "play";
+        else playSortDir = (playSortDir === "asc") ? "desc" : "asc";
+        localStorage.setItem(LS.sortMode, sortMode);
+        localStorage.setItem(LS.sortDirPlay, playSortDir);
+      } else if (kind === "download"){
+        if (sortMode !== "download") sortMode = "download";
+        else dlSortDir = (dlSortDir === "asc") ? "desc" : "asc";
+        localStorage.setItem(LS.sortMode, sortMode);
+        localStorage.setItem(LS.sortDirDl, dlSortDir);
+      }
+
+      setSortIcons();
+      render();
+    }
+
+    sbSortDateBtn.addEventListener("click", () => clickSort("date"));
+    sbSortDurBtn.addEventListener("click", () => clickSort("dur"));
+    sbSortPlayBtn.addEventListener("click", () => clickSort("play"));
+    sbSortDlBtn.addEventListener("click", () => clickSort("download"));
+
+    let txOpen = false;
+    let txCurrent = null;
+    let txPlainText = "";
+    let txMatches = [];
+    let txActiveMatch = -1;
+    let txSearchTimer = null;
+
+    const txCache = new Map();
+    const TX_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+    function clearTxSearchUI(){
+      txMatches = [];
+      txActiveMatch = -1;
+      txMatchCountEl.textContent = "0/0";
+      txPrevMatchBtn.disabled = true;
+      txNextMatchBtn.disabled = true;
+      txContentEl.textContent = txPlainText || "";
+    }
+
+    function clampTxSizeToViewport(){
+      if (!txOpen) return;
+
+      const saved = loadAny(LS.txSize);
+      if (saved && typeof saved.w === "number" && typeof saved.h === "number"){
+        txPanel.style.width = saved.w + "px";
+        txPanel.style.height = saved.h + "px";
+      } else {
+        txPanel.style.width = TX_DEFAULT_SIZE.w + "px";
+        txPanel.style.height = TX_DEFAULT_SIZE.h + "px";
+      }
+
+      const { vw, vh } = getViewportWH();
+      const vwL = toLayoutPx(vw);
+      const vhL = toLayoutPx(vh);
+      const margin = 28;
+      const maxW = Math.max(TX_MIN_SIZE.w, vwL - margin);
+      const maxH = Math.max(TX_MIN_SIZE.h, vhL - margin);
+      const curW = txPanel.offsetWidth || TX_DEFAULT_SIZE.w;
+      const curH = txPanel.offsetHeight || TX_DEFAULT_SIZE.h;
+      const minW = Math.min(maxW, TX_MIN_SIZE.w);
+      const minH = Math.min(maxH, TX_MIN_SIZE.h);
+
+      const w = Math.min(maxW, Math.max(minW, curW));
+      const h = Math.min(maxH, Math.max(minH, curH));
+
+      txPanel.style.width = w + "px";
+      txPanel.style.height = h + "px";
+      saveAny(LS.txSize, { w, h });
+    }
+
+    function getTxPosPx(){
+      const cs = getComputedStyle(txPanel);
+      const top = parseFloat(txPanel.style.top || cs.top || "0");
+      const right = parseFloat(txPanel.style.right || cs.right || "0");
+      return {
+        top: Number.isFinite(top) ? top : 0,
+        right: Number.isFinite(right) ? right : 0
+      };
+    }
+
+    function setTxPosPx(top, right){
+      txPanel.style.top = top + "px";
+      txPanel.style.right = right + "px";
+      txPanel.style.left = "auto";
+      txPanel.style.bottom = "auto";
+    }
+
+    function saveTxPos(top, right){
+      saveAny(LS.txPos, { top, right });
+    }
+
+    function restoreTxPos(){
+      const saved = loadAny(LS.txPos);
+      if (!saved) return;
+      if (typeof saved.top === "number" && typeof saved.right === "number"){
+        setTxPosPx(saved.top, saved.right);
+      }
+    }
+
+    function clampTxPosCandidate(top, right){
+      const { vw, vh } = getViewportWH();
+      const rect = txPanel.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+
+      const margin = 14;
+      const minTop = margin;
+      const maxTop = Math.max(minTop, vh - h - margin);
+      const minRight = margin;
+      const maxRight = Math.max(minRight, vw - w - margin);
+
+      return {
+        top: Math.min(maxTop, Math.max(minTop, top)),
+        right: Math.min(maxRight, Math.max(minRight, right))
+      };
+    }
+
+    function clampTxPosToViewport(){
+      if (!txOpen) return;
+      const cur = getTxPosPx();
+      const cl = clampTxPosCandidate(cur.top, cur.right);
+      setTxPosPx(cl.top, cl.right);
+      saveTxPos(cl.top, cl.right);
+    }
+
+    function setTxtBtnUi(){
+      fpTxtBtn.classList.toggle("on", !!txOpen);
+      fpTxtBtn.setAttribute("aria-pressed", String(!!txOpen));
+    }
+
+    function openTranscript(){
+      txOpen = true;
+      txPanel.classList.add("open");
+      txPanel.setAttribute("aria-hidden", "false");
+      updateOverlayScale();
+      updateSearchNoZoomFontSizes();
+      restoreTxPos();
+      clampTxSizeToViewport();
+      clampTxPosToViewport();
+      setTxtBtnUi();
+    }
+
+    function closeTranscript(){
+      txOpen = false;
+      txPanel.classList.remove("open");
+      txPanel.setAttribute("aria-hidden", "true");
+      txSearchRow.classList.remove("on");
+      setTxtBtnUi();
+    }
+
+    txCloseBtn.addEventListener("click", () => closeTranscript());
+
+    function escapeForRegex(s){
+      return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    function buildHighlightedHtml(text, ranges, activeIdx){
+      if (!ranges.length) return escHtml(text);
+
+      const parts = [];
+      let last = 0;
+
+      for (let i = 0; i < ranges.length; i++){
+        const r = ranges[i];
+        const a = Math.max(0, r[0]);
+        const b = Math.max(a, r[1]);
+
+        if (a > last) parts.push(escHtml(text.slice(last, a)));
+
+        const cls = (i === activeIdx) ? "txMark active" : "txMark";
+        parts.push(`<span class="${cls}" data-mi="${i}">${escHtml(text.slice(a, b))}</span>`);
+        last = b;
+      }
+
+      if (last < text.length) parts.push(escHtml(text.slice(last)));
+      return parts.join("");
+    }
+
+    function computeMatches(text, q){
+      const out = [];
+      if (!q) return out;
+
+      const re = new RegExp(escapeForRegex(q), "gi");
+      let m;
+
+      while ((m = re.exec(text))){
+        const a = m.index;
+        const b = a + (m[0] || "").length;
+        if (b > a) out.push([a, b]);
+        if (out.length >= 2000) break;
+        if (m[0].length === 0) re.lastIndex++;
+      }
+
+      return out;
+    }
+
+    function applyTxSearch(){
+      const q = (txSearchInput.value || "").trim();
+      if (!q){
+        clearTxSearchUI();
+        return;
+      }
+
+      txMatches = computeMatches(txPlainText, q);
+      txActiveMatch = txMatches.length ? 0 : -1;
+
+      txPrevMatchBtn.disabled = txMatches.length < 2;
+      txNextMatchBtn.disabled = txMatches.length < 2;
+      txMatchCountEl.textContent = txMatches.length ? `1/${txMatches.length}` : "0/0";
+      txContentEl.innerHTML = buildHighlightedHtml(txPlainText, txMatches, txActiveMatch);
+
+      if (txMatches.length) setTimeout(() => scrollToActiveMatch(), 0);
+    }
+
+    function scrollToActiveMatch(){
+      const el = txContentEl.querySelector(".txMark.active");
+      if (!el) return;
+
+      try{
+        el.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+      }catch{
+        el.scrollIntoView();
+      }
+    }
+
+    function setActiveMatch(idx){
+      if (!txMatches.length) return;
+
+      txActiveMatch = ((idx % txMatches.length) + txMatches.length) % txMatches.length;
+      txMatchCountEl.textContent = `${txActiveMatch + 1}/${txMatches.length}`;
+
+      const old = txContentEl.querySelector(".txMark.active");
+      if (old) old.classList.remove("active");
+
+      const next = txContentEl.querySelector(`.txMark[data-mi="${txActiveMatch}"]`);
+      if (next){
+        next.classList.add("active");
+        scrollToActiveMatch();
+      } else {
+        txContentEl.innerHTML = buildHighlightedHtml(txPlainText, txMatches, txActiveMatch);
+        setTimeout(() => scrollToActiveMatch(), 0);
+      }
+    }
+
+    txSearchBtn.addEventListener("click", () => {
+      const on = txSearchRow.classList.toggle("on");
+      if (on){
+        txSearchInput.focus();
+        txSearchInput.select();
+      }
+    });
+
+    txSearchInput.addEventListener("input", () => {
+      clearTimeout(txSearchTimer);
+      txSearchTimer = setTimeout(applyTxSearch, 180);
+    });
+
+    txSearchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter"){
+        e.preventDefault();
+        if (!txMatches.length){
+          applyTxSearch();
+          return;
+        }
+        if (e.shiftKey) setActiveMatch(txActiveMatch - 1);
+        else setActiveMatch(txActiveMatch + 1);
+      } else if (e.key === "Escape"){
+        e.preventDefault();
+        txSearchRow.classList.remove("on");
+      }
+    });
+
+    txPrevMatchBtn.addEventListener("click", () => setActiveMatch(txActiveMatch - 1));
+    txNextMatchBtn.addEventListener("click", () => setActiveMatch(txActiveMatch + 1));
+
+    async function copyToClipboard(text){
+      if (!text) return false;
+
+      try{
+        await navigator.clipboard.writeText(text);
+        return true;
+      }catch{}
+
+      try{
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        ta.style.top = "-9999px";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand("copy");
+        ta.remove();
+        return !!ok;
+      }catch{
+        return false;
+      }
+    }
+
+    txCopyBtn.addEventListener("click", async () => {
+      const ok = await copyToClipboard(txPlainText);
+      txInfoEl.textContent = ok ? "Kopiert." : "Kopieren fehlgeschlagen.";
+      setTimeout(() => {
+        if (txCurrent) updateTxInfo(txCurrent);
+      }, 1200);
+    });
+
+    txDownloadBtn.addEventListener("click", () => {
+      if (!txCurrent || !txCurrent.txtUrl) return;
+      const filename = (txCurrent.txtName || "").split("/").pop() || "transkript.txt";
+      forceDownload(txCurrent.txtUrl, filename);
+      trackTranscriptDownload(txCurrent, filename);
+    });
+
+    function updateTxInfo(it){
+      const file = (it?.txtName || "").split("/").pop() || "—";
+      txInfoEl.textContent = file ? `TXT: ${file}` : "—";
+    }
+
+    async function fetchTranscriptText(it){
+      const cached = txCache.get(it.id);
+      if (cached && (Date.now() - cached.at) < TX_CACHE_TTL_MS) return cached.text;
+
+      const built = await buildTxtUrlsForItem(it);
+      const urls = [];
+      const seen = new Set();
+
+      for (const u of [it?.txtUrl, ...(built?.urls || [])]){
+        const uu = String(u || "").trim();
+        if (!uu || seen.has(uu)) continue;
+        seen.add(uu);
+        urls.push(uu);
+      }
+
+      let lastErr = null;
+      for (const url of urls){
+        try{
+          const res = await fetch(url, { cache: "no-cache" });
+          if (!res.ok) throw new Error("txt fetch failed: " + res.status);
+
+          const text = await res.text();
+
+          try{
+            const u = new URL(url, location.href);
+            const fn = decodeURIComponentSafe((u.pathname || "").split("/").pop() || "");
+            if (fn) it.txtName = fn;
+          }catch{}
+
+          it.txtUrl = url;
+          txCache.set(it.id, { text, at: Date.now() });
+          return text;
+        }catch(err){
+          lastErr = err;
+        }
+      }
+
+      throw (lastErr || new Error("txt fetch failed"));
+    }
+
+    async function openTranscriptFor(it){
+      if (!it) return;
+
+      txCurrent = it;
+      openTranscript();
+      trackTranscriptOpen(it);
+
+      txTitleEl.textContent = it.title || "Transkript";
+      updateTxInfo(it);
+
+      txCopyBtn.disabled = true;
+      txDownloadBtn.disabled = true;
+      txContentEl.textContent = "Yükleniyor…";
+      txPlainText = "";
+      clearTxSearchUI();
+
+      try{
+        const t = await fetchTranscriptText(it);
+        txPlainText = t || "";
+        txCopyBtn.disabled = !txPlainText;
+        updateTxInfo(it);
+        txDownloadBtn.disabled = false;
+        clearTxSearchUI();
+      }catch{
+        txContentEl.textContent = "TXT yüklenemedi.";
+        txCopyBtn.disabled = true;
+      }
+    }
+
+    function toggleTranscriptFromPlayer(){
+      if (txOpen){
+        closeTranscript();
+        return;
+      }
+
+      const it = items.find((x) => x.id === activeId) || items.find((x) => x.id === selectedId) || null;
+      if (!it){
+        openTranscript();
+        txTitleEl.textContent = "Transkript";
+        txInfoEl.textContent = "—";
+        txPlainText = "";
+        txContentEl.textContent = "Bir kayıt seç...";
+        txCopyBtn.disabled = true;
+        txDownloadBtn.disabled = true;
+        return;
+      }
+
+      openTranscriptFor(it).catch(() => {});
+    }
+
+    fpTxtBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleTranscriptFromPlayer();
+    });
+
+    sbClearTxCacheBtn.addEventListener("click", () => {
+      txCache.clear();
+      txInfoEl.textContent = "TXT Cache temizlendi.";
+      setTimeout(() => {
+        if (txCurrent) updateTxInfo(txCurrent);
+      }, 1200);
+    });
+
+    txPanel.addEventListener("click", (e) => e.stopPropagation());
+
+    const TX_DRAG_IGNORE_SELECTOR = "button, a, input, textarea, select, option";
+
+    function shouldStartTxDrag(target){
+      return !(target && target.closest && target.closest(TX_DRAG_IGNORE_SELECTOR));
+    }
+
+    let txDragging = false;
+    let txDragStartX = 0;
+    let txDragStartY = 0;
+    let txDragStartTop = 0;
+    let txDragStartRight = 0;
+
+    txHeader.addEventListener("pointerdown", (e) => {
+      if (!txOpen || !shouldStartTxDrag(e.target)) return;
+
+      txDragging = true;
+      txHeader.setPointerCapture(e.pointerId);
+      txHeader.style.cursor = "grabbing";
+
+      txDragStartX = e.clientX;
+      txDragStartY = e.clientY;
+
+      const cur = getTxPosPx();
+      txDragStartTop = cur.top;
+      txDragStartRight = cur.right;
+
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    txHeader.addEventListener("pointermove", (e) => {
+      if (!txDragging) return;
+
+      const dx = e.clientX - txDragStartX;
+      const dy = e.clientY - txDragStartY;
+      const cl = clampTxPosCandidate(txDragStartTop + dy, txDragStartRight - dx);
+      setTxPosPx(cl.top, cl.right);
+      e.preventDefault();
+    });
+
+    function endTxDrag(pointerId){
+      if (!txDragging) return;
+      txDragging = false;
+      txHeader.style.cursor = "grab";
+      try { txHeader.releasePointerCapture(pointerId); } catch {}
+      clampTxPosToViewport();
+    }
+
+    txHeader.addEventListener("pointerup", (e) => endTxDrag(e.pointerId));
+    txHeader.addEventListener("pointercancel", (e) => endTxDrag(e.pointerId));
+
+    let txResizing = false;
+    let txResizeStartX = 0;
+    let txResizeStartY = 0;
+    let txResizeStartW = 0;
+    let txResizeStartH = 0;
+
+    function saveTxSize(w, h){
+      saveAny(LS.txSize, { w, h });
+    }
+
+    function clampTxSize(w, h){
+      const { vw, vh } = getViewportWH();
+      const vwL = toLayoutPx(vw);
+      const vhL = toLayoutPx(vh);
+      const margin = 28;
+      const maxW = Math.max(TX_MIN_SIZE.w, vwL - margin);
+      const maxH = Math.max(TX_MIN_SIZE.h, vhL - margin);
+      const minW = Math.min(maxW, TX_MIN_SIZE.w);
+      const minH = Math.min(maxH, TX_MIN_SIZE.h);
+
+      return {
+        w: Math.min(maxW, Math.max(minW, w)),
+        h: Math.min(maxH, Math.max(minH, h))
+      };
+    }
+
+    txResizeHandle.addEventListener("pointerdown", (e) => {
+      if (!txOpen) return;
+
+      txResizing = true;
+      txResizeStartX = e.clientX;
+      txResizeStartY = e.clientY;
+      txResizeStartW = txPanel.offsetWidth;
+      txResizeStartH = txPanel.offsetHeight;
+      txResizeHandle.setPointerCapture(e.pointerId);
+
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    txResizeHandle.addEventListener("pointermove", (e) => {
+      if (!txResizing) return;
+
+      const dxClient = e.clientX - txResizeStartX;
+      const dyClient = e.clientY - txResizeStartY;
+      const dx = useTransformScale ? (dxClient / uiScale) : dxClient;
+      const dy = useTransformScale ? (dyClient / uiScale) : dyClient;
+
+      const cl = clampTxSize(txResizeStartW - dx, txResizeStartH + dy);
+      txPanel.style.width = cl.w + "px";
+      txPanel.style.height = cl.h + "px";
+      saveTxSize(cl.w, cl.h);
+    });
+
+    function endTxResize(pointerId){
+      if (!txResizing) return;
+      txResizing = false;
+      try { txResizeHandle.releasePointerCapture(pointerId); } catch {}
+      clampTxSizeToViewport();
+      clampTxPosToViewport();
+    }
+
+    txResizeHandle.addEventListener("pointerup", (e) => endTxResize(e.pointerId));
+    txResizeHandle.addEventListener("pointercancel", (e) => endTxResize(e.pointerId));
+
+    const DEFAULT_SKIP_SETTINGS = {
+      enabled: false,
       mode: "max",
       fadeMs: 0,
       tailKeepMs: 0,
@@ -4680,149 +4224,700 @@ function applySkipPreset(mode){
       minSegmentMs: 40,
       cooldownMs: 10,
       maxAutoSeekMs: 180000
-    });
-  }
+    };
 
-  saveSkipSettings();
-  recomputeEstimatedGain();
-  syncSkipUi();
-}
+    let skipSettings = (() => {
+      try{
+        return { ...DEFAULT_SKIP_SETTINGS, ...(JSON.parse(localStorage.getItem(LS.skipSettings) || "{}")) };
+      }catch{
+        return { ...DEFAULT_SKIP_SETTINGS };
+      }
+    })();
 
-skipDrawerBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  toggleSkipDrawer();
-});
+    const skipState = {
+      rafId: 0,
+      skipInFlight: false,
+      lastSkipAt: 0,
+      manualSuppressUntil: 0,
+      currentMapItemId: null,
+      currentMap: null,
+      mapIndex: null,
+      indexPromise: null,
+      mapPromiseById: new Map(),
+      mapCacheById: new Map(),
+      status: "",
+      estimatedGainMs: 0,
+      fileSavedMs: 0,
+      sessionSavedMs: 0,
+      lastError: ""
+    };
 
-skipEnableBtn.addEventListener("click", async () => {
-  skipSettings.enabled = !skipSettings.enabled;
-  saveSkipSettings();
-  syncSkipUi();
-
-  if (!skipSettings.enabled){
-    stopSkipLoop();
-    skipState.manualSuppressUntil = performance.now() + 900;
-    return;
-  }
-
-  const it = items.find((x) => x.id === activeId) || null;
-  if (it && (!skipState.currentMap || skipState.currentMapItemId !== it.id)){
-    await primeSilenceMapForItem(it);
-  }
-
-  if (skipState.currentMap?.segments?.length && !playerEl.paused){
-    startSkipLoop();
-  }
-});
-
-skipModeLight.addEventListener("click", () => applySkipPreset("light"));
-skipModeBalanced.addEventListener("click", () => applySkipPreset("balanced"));
-skipModeAggressive.addEventListener("click", () => applySkipPreset("aggressive"));
-skipModeUltra.addEventListener("click", () => applySkipPreset("ultra"));
-skipModeMax.addEventListener("click", () => applySkipPreset("max"));
-
-skipMinGapRange.addEventListener("input", () => {
-  skipSettings.minSegmentMs = Number(skipMinGapRange.value);
-  saveSkipSettings();
-  recomputeEstimatedGain();
-  syncSkipUi();
-});
-
-skipFadeRange.addEventListener("input", () => {
-  skipSettings.fadeMs = Number(skipFadeRange.value);
-  saveSkipSettings();
-  syncSkipUi();
-});
-
-playerEl.addEventListener("play", () => {
-  if (skipSettings.enabled) startSkipLoop();
-});
-
-playerEl.addEventListener("pause", () => stopSkipLoop());
-playerEl.addEventListener("ended", () => stopSkipLoop());
-
-playerEl.addEventListener("seeking", () => {
-  skipState.skipInFlight = false;
-  skipState.manualSuppressUntil = performance.now() + 900;
-});
-
-playerEl.addEventListener("seeked", () => {
-  if (skipSettings.enabled) startSkipLoop();
-});
-
-setSortIcons();
-restoreUiState();
-restorePlayerPos();
-restoreSpeed();
-restoreZoom();
-setCaptionUi();
-updateOverlayScale();
-setTxtBtnUi();
-
-skipDrawer.hidden = localStorage.getItem(LS.skipDrawerOpen) !== "1";
-syncSkipUi();
-
-requestAnimationFrame(() => {
-  measureStickyStartTop();
-  updateSticky(true);
-});
-
-async function checkSrtAvailability(){
-  if (!SRT_CHECK || !items.length) return;
-
-  const maxN = Math.min(items.length, 350);
-  const subset = items.slice(0, maxN);
-  let missing = 0;
-  let checked = 0;
-  const concurrency = 8;
-  const q = subset.slice();
-
-  async function headOk(url){
-    try{
-      const r = await fetch(url, { method: "HEAD", cache: "no-store" });
-      if (r.ok) return true;
-    }catch{}
-
-    try{
-      const r = await fetch(url, {
-        method: "GET",
-        cache: "no-store",
-        headers: { range: "bytes=0-1" }
-      });
-      return r.ok;
-    }catch{
-      return false;
+    function saveSkipSettings(){
+      localStorage.setItem(LS.skipSettings, JSON.stringify(skipSettings));
     }
-  }
 
-  async function worker(){
-    while (q.length){
-      const it = q.shift();
-      const built = await buildSrtUrlsForItem(it);
-      const urls = built.urls || [];
-      let ok = false;
+    function setSkipStatus(text){
+      skipState.status = String(text || "");
+      if (skipHintEl) skipHintEl.textContent = skipState.status || "Silence map bekleniyor…";
+    }
 
-      for (const u of urls){
-        if (await headOk(u)){
-          ok = true;
-          break;
+    function updateSkipGainUi(){
+      if (skipEstimatedValueEl) skipEstimatedValueEl.textContent = fmtMsHuman(skipState.estimatedGainMs);
+      if (skipFileSavedValueEl) skipFileSavedValueEl.textContent = fmtMsHuman(skipState.fileSavedMs);
+      if (skipSessionSavedValueEl) skipSessionSavedValueEl.textContent = fmtMsHuman(skipState.sessionSavedMs);
+    }
+
+    function normalizeMapPath(rawPath){
+      const p = String(rawPath || "").trim();
+      if (!p) return "";
+      if (/^https?:\/\//i.test(p)) return p;
+
+      const clean = p.replace(/^\.?\//, "");
+      return new URL(clean, document.baseURI).href;
+    }
+
+    function itemLocalFileName(item){
+      const raw = String(item?.name || "").split("/").pop() || "";
+      return decodeURIComponentSafe(raw);
+    }
+
+    function itemIdCandidates(item){
+      const out = new Set();
+
+      const id = String(item?.id || "").trim();
+      const src = String(item?.src || "").trim();
+      const name = String(item?.name || "").trim();
+      const base = itemLocalFileName(item);
+      const stem = base.replace(/\.(m4a|mp3)$/i, "");
+
+      if (id) out.add(id);
+      if (name) out.add(name);
+      if (base) out.add(base);
+      if (stem) out.add(stem);
+      if (src && name) out.add(`${src}|${name}`);
+      if (src && base) out.add(`${src}|${base}`);
+      if (src && stem) out.add(`${src}|${stem}`);
+
+      return [...out];
+    }
+
+    function mapPathCandidatesForItem(item){
+      const src = String(item?.src || "S1").trim();
+      const base = itemLocalFileName(item);
+      const stem = base.replace(/\.(m4a|mp3)$/i, "");
+      const encodedBase = encodeURIComponent(base);
+      const encodedStem = encodeURIComponent(stem);
+
+      const raw = [
+        `${SILENCE_MAP_DIR}/${src}/${stem}.json`,
+        `${SILENCE_MAP_DIR}/${src}/${base}.json`,
+        `${SILENCE_MAP_DIR}/${src}/${encodedStem}.json`,
+        `${SILENCE_MAP_DIR}/${src}/${encodedBase}.json`,
+        `${SILENCE_MAP_DIR}/${stem}.json`,
+        `${SILENCE_MAP_DIR}/${base}.json`,
+        `${SILENCE_MAP_DIR}/${encodedStem}.json`,
+        `${SILENCE_MAP_DIR}/${encodedBase}.json`
+      ];
+
+      return [...new Set(raw.map(normalizeMapPath))];
+    }
+
+    function getMapMetaForItem(indexData, item){
+      if (!indexData || !item) return null;
+
+      const keys = itemIdCandidates(item);
+
+      for (const k of keys){
+        if (indexData.items && indexData.items[k]) return indexData.items[k];
+        if (indexData.by_id && indexData.by_id[k]) return indexData.by_id[k];
+        if (indexData.maps && indexData.maps[k]) return indexData.maps[k];
+      }
+
+      if (Array.isArray(indexData.entries)){
+        for (const k of keys){
+          const found = indexData.entries.find((x) => x && (x.id === k || x.key === k || x.name === k || x.file === k));
+          if (found) return found;
         }
       }
 
-      checked++;
-      if (!ok){
-        missing++;
-        console.warn("SRT eksik:", it.title, it.name);
+      if (Array.isArray(indexData.items)){
+        for (const k of keys){
+          const found = indexData.items.find((x) => x && (x.id === k || x.key === k || x.name === k || x.file === k));
+          if (found) return found;
+        }
       }
 
-      if (checked % 25 === 0){
-        statusEl.textContent = `SRT kontrol: ${checked}/${maxN} (eksik: ${missing})`;
+      return null;
+    }
+
+    async function tryFetchJson(url){
+      const res = await fetch(url, { cache: "no-cache" });
+      if (!res.ok) throw new Error(`${res.status} ${url}`);
+      return await res.json();
+    }
+
+    function normalizeSegments(rawSegments){
+      return (Array.isArray(rawSegments) ? rawSegments : [])
+        .map((seg) => ({
+          start: Number(seg?.start),
+          end: Number(seg?.end)
+        }))
+        .filter((seg) => Number.isFinite(seg.start) && Number.isFinite(seg.end) && seg.end > seg.start)
+        .sort((a, b) => a.start - b.start);
+    }
+
+    function normalizeMapJson(j, item, sourceUrl){
+      return {
+        ...j,
+        id: String(j?.id || item?.id || ""),
+        name: String(j?.name || itemLocalFileName(item) || ""),
+        duration: Number(j?.duration) || 0,
+        sourceUrl,
+        segments: normalizeSegments(j?.segments)
+      };
+    }
+
+    async function loadSilenceMapIndex(force = false){
+      if (!force && skipState.mapIndex) return skipState.mapIndex;
+      if (!force && skipState.indexPromise) return skipState.indexPromise;
+
+      skipState.indexPromise = (async () => {
+        const url = new URL(SILENCE_MAP_INDEX_URL, document.baseURI).href;
+        const j = await tryFetchJson(url);
+        skipState.mapIndex = j || {};
+        return skipState.mapIndex;
+      })();
+
+      try{
+        return await skipState.indexPromise;
+      } finally {
+        skipState.indexPromise = null;
       }
     }
-  }
 
-  await Promise.all(Array.from({ length: concurrency }, () => worker()));
-  statusEl.textContent = `SRT kontrol bitti: ${checked}/${maxN} (eksik: ${missing})`;
-}
+    async function loadSilenceMapForItem(item, force = false){
+      if (!item?.id) return null;
 
-loadItems();
-setTimeout(() => checkSrtAvailability().catch(() => {}), 1200);
+      if (!force && skipState.mapCacheById.has(item.id)){
+        return skipState.mapCacheById.get(item.id) || null;
+      }
+      if (!force && skipState.mapPromiseById.has(item.id)){
+        return skipState.mapPromiseById.get(item.id);
+      }
+
+      const p = (async () => {
+        const tried = [];
+        let indexData = null;
+
+        try{
+          indexData = await loadSilenceMapIndex(force);
+        }catch(err){
+          tried.push(`index:${err?.message || err}`);
+        }
+
+        const candidates = [];
+        const seen = new Set();
+
+        const pushCandidate = (u) => {
+          const url = normalizeMapPath(u);
+          if (!url || seen.has(url)) return;
+          seen.add(url);
+          candidates.push(url);
+        };
+
+        if (indexData){
+          const meta = getMapMetaForItem(indexData, item);
+          if (meta){
+            [meta.path, meta.url, meta.file, meta.json].forEach(pushCandidate);
+          }
+        }
+
+        mapPathCandidatesForItem(item).forEach(pushCandidate);
+
+        if (!candidates.length){
+          throw new Error(`map adayı bulunamadı: ${item.id}`);
+        }
+
+        let lastErr = null;
+        for (const url of candidates){
+          try{
+            const j = await tryFetchJson(url);
+            const normalized = normalizeMapJson(j, item, url);
+            skipState.mapCacheById.set(item.id, normalized);
+            return normalized;
+          }catch(err){
+            lastErr = err;
+            tried.push(url);
+          }
+        }
+
+        throw new Error(`map fetch failed for ${item.id}\n${tried.join("\n")}\n${lastErr?.message || ""}`);
+      })();
+
+      skipState.mapPromiseById.set(item.id, p);
+
+      try{
+        return await p;
+      } finally {
+        skipState.mapPromiseById.delete(item.id);
+      }
+    }
+
+    function getEligibleSkipMsForSegment(seg){
+      if (!seg) return 0;
+      const segLenMs = (seg.end - seg.start) * 1000;
+      if (!Number.isFinite(segLenMs) || segLenMs < skipSettings.minSegmentMs) return 0;
+
+      const resumeOffsetMs = Math.max(0, Number(skipSettings.resumeOffsetMs) || 0);
+      const tailKeepMs = Math.max(0, Number(skipSettings.tailKeepMs) || 0);
+      return Math.max(0, segLenMs - tailKeepMs - resumeOffsetMs);
+    }
+
+    function recomputeEstimatedGain(){
+      const segs = skipState.currentMap?.segments || [];
+      let total = 0;
+      for (const seg of segs) total += getEligibleSkipMsForSegment(seg);
+      skipState.estimatedGainMs = total;
+      updateSkipGainUi();
+    }
+
+    async function primeSilenceMapForItem(item){
+      skipState.currentMapItemId = item?.id || null;
+      skipState.currentMap = null;
+      skipState.estimatedGainMs = 0;
+      skipState.lastError = "";
+      updateSkipGainUi();
+
+      if (!item){
+        setSkipStatus("Silence map yok.");
+        syncSkipUi();
+        return null;
+      }
+
+      try{
+        setSkipStatus("Silence map aranıyor…");
+        const map = await loadSilenceMapForItem(item, false);
+
+        if (!map || !map.segments.length){
+          skipState.currentMap = null;
+          skipState.estimatedGainMs = 0;
+          setSkipStatus("Bu kayıtta silence map boş.");
+          syncSkipUi();
+          updateSkipGainUi();
+          return null;
+        }
+
+        if (skipState.currentMapItemId === item.id){
+          skipState.currentMap = map;
+          recomputeEstimatedGain();
+          setSkipStatus(`Silence map hazır · ${map.segments.length} segment`);
+          syncSkipUi();
+          if (skipSettings.enabled && !playerEl.paused) startSkipLoop();
+        }
+
+        return map;
+      }catch(err){
+        skipState.lastError = err?.message || String(err || "");
+        console.error("Silence map yüklenemedi:", err);
+        skipState.currentMap = null;
+        skipState.estimatedGainMs = 0;
+        updateSkipGainUi();
+        setSkipStatus(`Silence map yüklenemedi. ${skipState.lastError}`);
+        syncSkipUi();
+        return null;
+      }
+    }
+
+    function findSilenceSegmentAt(t){
+      const map = skipState.currentMap;
+      if (!map?.segments?.length) return null;
+
+      let lo = 0;
+      let hi = map.segments.length - 1;
+
+      while (lo <= hi){
+        const mid = (lo + hi) >> 1;
+        const seg = map.segments[mid];
+        if (t < seg.start) hi = mid - 1;
+        else if (t >= seg.end) lo = mid + 1;
+        else return seg;
+      }
+
+      return null;
+    }
+
+    async function fadePlayerVolume(from, to, ms){
+      const duration = Math.max(0, Number(ms) || 0);
+      if (duration <= 0){
+        try { playerEl.volume = Math.max(0, Math.min(1, to)); } catch {}
+        return;
+      }
+
+      const start = performance.now();
+      const diff = to - from;
+
+      return new Promise((resolve) => {
+        function step(now){
+          const p = Math.min(1, (now - start) / duration);
+          const eased = p < 1 ? (1 - Math.pow(1 - p, 3)) : 1;
+          try { playerEl.volume = Math.max(0, Math.min(1, from + diff * eased)); } catch {}
+          if (p < 1) requestAnimationFrame(step);
+          else resolve();
+        }
+        requestAnimationFrame(step);
+      });
+    }
+
+    function stopSkipLoop(){
+      if (skipState.rafId){
+        cancelAnimationFrame(skipState.rafId);
+        skipState.rafId = 0;
+      }
+    }
+
+    function startSkipLoop(){
+      if (!skipSettings.enabled) return;
+      if (!skipState.currentMap?.segments?.length) return;
+      if (skipState.rafId) return;
+      skipState.rafId = requestAnimationFrame(skipLoop);
+    }
+
+    function canSkipNow(nowMs){
+      if (!skipSettings.enabled) return false;
+      if (!skipState.currentMap?.segments?.length) return false;
+      if (!playerEl || playerEl.paused || playerEl.seeking) return false;
+      if (!Number.isFinite(playerEl.currentTime)) return false;
+      if (!Number.isFinite(playerEl.duration) || playerEl.duration <= 0) return false;
+      if (segEndTime != null) return false;
+      if (skipState.skipInFlight) return false;
+      if (nowMs < skipState.manualSuppressUntil) return false;
+      if ((nowMs - skipState.lastSkipAt) < skipSettings.cooldownMs) return false;
+      return true;
+    }
+
+    async function performMapSkip(seg){
+      if (!seg || skipState.skipInFlight) return false;
+
+      const segLenMs = (seg.end - seg.start) * 1000;
+      if (segLenMs < skipSettings.minSegmentMs) return false;
+
+      const current = Number(playerEl.currentTime) || 0;
+      const duration = Number(playerEl.duration) || 0;
+      const tailKeepSec = (Number(skipSettings.tailKeepMs) || 0) / 1000;
+      const resumeOffsetSec = (Number(skipSettings.resumeOffsetMs) || 0) / 1000;
+      const maxAutoSeekSec = (Number(skipSettings.maxAutoSeekMs) || 45000) / 1000;
+
+      let target = seg.end - tailKeepSec + resumeOffsetSec;
+      target = Math.min(target, seg.start + maxAutoSeekSec);
+
+      if (duration > 0){
+        target = Math.min(target, Math.max(0, duration - 0.05));
+      }
+
+      if (!(target > current + 0.03)) return false;
+
+      skipState.skipInFlight = true;
+      const fadeMs = Math.max(0, Number(skipSettings.fadeMs) || 0);
+      const originalVol = Number(playerEl.volume);
+
+      try{
+        if (fadeMs > 0){
+          await fadePlayerVolume(originalVol, Math.max(0, originalVol * 0.08), Math.floor(fadeMs / 2));
+        }
+
+        const before = Number(playerEl.currentTime) || 0;
+        playerEl.currentTime = Math.max(0, target);
+        const after = Number(playerEl.currentTime) || target;
+        const gainedMs = Math.max(0, Math.round((after - before) * 1000));
+
+        skipState.fileSavedMs += gainedMs;
+        skipState.sessionSavedMs += gainedMs;
+        updateSkipGainUi();
+
+        skipState.manualSuppressUntil = performance.now() + Math.max(35, fadeMs + 25);
+
+        if (fadeMs > 0){
+          await fadePlayerVolume(Math.max(0, originalVol * 0.08), originalVol, Math.ceil(fadeMs / 2));
+        }
+
+        skipState.lastSkipAt = performance.now();
+        return true;
+      }catch(err){
+        console.warn("performMapSkip failed:", err);
+        return false;
+      }finally{
+        skipState.skipInFlight = false;
+      }
+    }
+
+    async function skipLoop(){
+      skipState.rafId = 0;
+
+      if (!skipSettings.enabled){
+        stopSkipLoop();
+        return;
+      }
+
+      const nowMs = performance.now();
+      if (canSkipNow(nowMs)){
+        const t = Number(playerEl.currentTime) || 0;
+        const seg = findSilenceSegmentAt(t);
+        if (seg) await performMapSkip(seg);
+      }
+
+      startSkipLoop();
+    }
+
+    function syncSkipUi(){
+      const open = !skipDrawer.hidden;
+      skipDrawerBtn.classList.toggle("on", open || skipSettings.enabled);
+      skipDrawerBtn.classList.toggle("breathing", !!skipSettings.enabled);
+      skipDrawerBtn.setAttribute("aria-expanded", String(open));
+
+      skipEnableBtn.textContent = "Sessiz atlama: " + (skipSettings.enabled ? "Açık" : "Kapalı");
+      skipEnableBtn.classList.toggle("on", !!skipSettings.enabled);
+
+      skipModeLight.classList.toggle("on", skipSettings.mode === "light");
+      skipModeBalanced.classList.toggle("on", skipSettings.mode === "balanced");
+      skipModeAggressive.classList.toggle("on", skipSettings.mode === "aggressive");
+      skipModeUltra.classList.toggle("on", skipSettings.mode === "ultra");
+      skipModeMax.classList.toggle("on", skipSettings.mode === "max");
+
+      skipMinGapRange.value = String(skipSettings.minSegmentMs);
+      skipMinGapValue.textContent = `${Math.round(skipSettings.minSegmentMs)}ms`;
+
+      skipFadeRange.value = String(skipSettings.fadeMs);
+      skipFadeValue.textContent = `${Math.round(skipSettings.fadeMs)}ms`;
+
+      skipEngineLabel.textContent = (skipState.currentMap?.segments?.length || 0)
+        ? `MAP ${skipState.currentMap.segments.length}`
+        : "MAP";
+
+      updateSkipGainUi();
+
+      if (!skipState.status){
+        setSkipStatus(
+          (skipState.currentMap?.segments?.length || 0)
+            ? `Silence map hazır · ${skipState.currentMap.segments.length} segment`
+            : "Silence map bekleniyor…"
+        );
+      }
+    }
+
+    function toggleSkipDrawer(force){
+      const shouldOpen = typeof force === "boolean" ? force : skipDrawer.hidden;
+      skipDrawer.hidden = !shouldOpen;
+      localStorage.setItem(LS.skipDrawerOpen, shouldOpen ? "1" : "0");
+      syncSkipUi();
+      setTimeout(() => clampPlayerToViewport(), 0);
+    }
+
+    function resetSkipRuntimeForNewTrack(){
+      stopSkipLoop();
+      skipState.skipInFlight = false;
+      skipState.lastSkipAt = 0;
+      skipState.manualSuppressUntil = performance.now() + 900;
+      skipState.fileSavedMs = 0;
+      skipState.estimatedGainMs = 0;
+      updateSkipGainUi();
+    }
+
+    function applySkipPreset(mode){
+      if (mode === "light"){
+        Object.assign(skipSettings, {
+          mode: "light",
+          fadeMs: 35,
+          tailKeepMs: 0,
+          resumeOffsetMs: 80,
+          minSegmentMs: 350,
+          cooldownMs: 90,
+          maxAutoSeekMs: 30000
+        });
+      } else if (mode === "balanced"){
+        Object.assign(skipSettings, {
+          mode: "balanced",
+          fadeMs: 8,
+          tailKeepMs: 0,
+          resumeOffsetMs: 140,
+          minSegmentMs: 140,
+          cooldownMs: 30,
+          maxAutoSeekMs: 60000
+        });
+      } else if (mode === "aggressive"){
+        Object.assign(skipSettings, {
+          mode: "aggressive",
+          fadeMs: 0,
+          tailKeepMs: 0,
+          resumeOffsetMs: 180,
+          minSegmentMs: 90,
+          cooldownMs: 18,
+          maxAutoSeekMs: 90000
+        });
+      } else if (mode === "ultra"){
+        Object.assign(skipSettings, {
+          mode: "ultra",
+          fadeMs: 0,
+          tailKeepMs: 0,
+          resumeOffsetMs: 220,
+          minSegmentMs: 60,
+          cooldownMs: 15,
+          maxAutoSeekMs: 120000
+        });
+      } else if (mode === "max"){
+        Object.assign(skipSettings, {
+          mode: "max",
+          fadeMs: 0,
+          tailKeepMs: 0,
+          resumeOffsetMs: 260,
+          minSegmentMs: 40,
+          cooldownMs: 10,
+          maxAutoSeekMs: 180000
+        });
+      }
+
+      saveSkipSettings();
+      recomputeEstimatedGain();
+      syncSkipUi();
+    }
+
+    skipDrawerBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleSkipDrawer();
+    });
+
+    skipEnableBtn.addEventListener("click", async () => {
+      skipSettings.enabled = !skipSettings.enabled;
+      saveSkipSettings();
+      syncSkipUi();
+
+      if (!skipSettings.enabled){
+        stopSkipLoop();
+        skipState.manualSuppressUntil = performance.now() + 900;
+        return;
+      }
+
+      const it = items.find((x) => x.id === activeId) || null;
+      if (it && (!skipState.currentMap || skipState.currentMapItemId !== it.id)){
+        await primeSilenceMapForItem(it);
+      }
+
+      if (skipState.currentMap?.segments?.length && !playerEl.paused){
+        startSkipLoop();
+      }
+    });
+
+    skipModeLight.addEventListener("click", () => applySkipPreset("light"));
+    skipModeBalanced.addEventListener("click", () => applySkipPreset("balanced"));
+    skipModeAggressive.addEventListener("click", () => applySkipPreset("aggressive"));
+    skipModeUltra.addEventListener("click", () => applySkipPreset("ultra"));
+    skipModeMax.addEventListener("click", () => applySkipPreset("max"));
+
+    skipMinGapRange.addEventListener("input", () => {
+      skipSettings.minSegmentMs = Number(skipMinGapRange.value);
+      saveSkipSettings();
+      recomputeEstimatedGain();
+      syncSkipUi();
+    });
+
+    skipFadeRange.addEventListener("input", () => {
+      skipSettings.fadeMs = Number(skipFadeRange.value);
+      saveSkipSettings();
+      syncSkipUi();
+    });
+
+    playerEl.addEventListener("play", () => {
+      if (skipSettings.enabled) startSkipLoop();
+    });
+
+    playerEl.addEventListener("pause", () => stopSkipLoop());
+    playerEl.addEventListener("ended", () => stopSkipLoop());
+
+    playerEl.addEventListener("seeking", () => {
+      skipState.skipInFlight = false;
+      skipState.manualSuppressUntil = performance.now() + 900;
+    });
+
+    playerEl.addEventListener("seeked", () => {
+      if (skipSettings.enabled) startSkipLoop();
+    });
+
+    setSortIcons();
+    restoreUiState();
+    restorePlayerPos();
+    restoreSpeed();
+    restoreZoom();
+    setCaptionUi();
+    updateOverlayScale();
+    setTxtBtnUi();
+
+    skipDrawer.hidden = localStorage.getItem(LS.skipDrawerOpen) !== "1";
+    syncSkipUi();
+
+    requestAnimationFrame(() => {
+      measureStickyStartTop();
+      updateSticky(true);
+    });
+
+    async function checkSrtAvailability(){
+      if (!SRT_CHECK || !items.length) return;
+
+      const maxN = Math.min(items.length, 350);
+      const subset = items.slice(0, maxN);
+      let missing = 0;
+      let checked = 0;
+      const concurrency = 8;
+      const q = subset.slice();
+
+      async function headOk(url){
+        try{
+          const r = await fetch(url, { method: "HEAD", cache: "no-store" });
+          if (r.ok) return true;
+        }catch{}
+
+        try{
+          const r = await fetch(url, {
+            method: "GET",
+            cache: "no-store",
+            headers: { range: "bytes=0-1" }
+          });
+          return r.ok;
+        }catch{
+          return false;
+        }
+      }
+
+      async function worker(){
+        while (q.length){
+          const it = q.shift();
+          const built = await buildSrtUrlsForItem(it);
+          const urls = built.urls || [];
+          let ok = false;
+
+          for (const u of urls){
+            if (await headOk(u)){
+              ok = true;
+              break;
+            }
+          }
+
+          checked++;
+          if (!ok){
+            missing++;
+            console.warn("SRT eksik:", it.title, it.name);
+          }
+
+          if (checked % 25 === 0){
+            statusEl.textContent = `SRT kontrol: ${checked}/${maxN} (eksik: ${missing})`;
+          }
+        }
+      }
+
+      await Promise.all(Array.from({ length: concurrency }, () => worker()));
+      statusEl.textContent = `SRT kontrol bitti: ${checked}/${maxN} (eksik: ${missing})`;
+    }
+
+    loadItems();
+    setTimeout(() => checkSrtAvailability().catch(() => {}), 1200);
+  </script>
+</body>
+</html>
