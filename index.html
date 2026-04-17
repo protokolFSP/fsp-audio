@@ -1,4 +1,3 @@
-<!-- /index.html -->
 <!doctype html>
 <html lang="tr">
 <head>
@@ -338,10 +337,7 @@
       display: block;
       flex: 0 0 auto;
     }
-    .sortBtn .mainIcon{
-      width: 20px;
-      height: 20px;
-    }
+    .sortBtn .mainIcon{ width: 20px; height: 20px; }
     .sortBtn .dirIcon{
       position: absolute;
       right: 4px;
@@ -553,6 +549,11 @@
     }
     .miniBtn:hover{ background: var(--hover); }
     .miniBtn svg{ width:16px; height:16px; }
+    .miniBtn.on{
+      border-color: var(--blue);
+      background: rgba(43,124,255,.10);
+      box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
+    }
 
     .speedWrap{
       display:flex;
@@ -968,12 +969,6 @@
     }
     #txResizeHandle svg{ width: 22px; height: 22px; opacity: .88; }
 
-    .miniBtn.on{
-      border-color: var(--blue);
-      background: rgba(43,124,255,.10);
-      box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
-    }
-
     #captions{
       margin: 0;
       padding: 10px 12px;
@@ -1067,7 +1062,7 @@
       box-shadow: var(--greenGlow);
     }
     #skipDrawerBtn.breathing{
-      animation: skipBreath 1.8s ease-in-out infinite;
+      animation: skipBreath 1.45s ease-in-out infinite;
     }
 
     @keyframes skipBreath{
@@ -1076,8 +1071,8 @@
         box-shadow: 0 0 0 0 rgba(22,163,74,.18), 0 0 0 3px rgba(22,163,74,.10) inset;
       }
       50%{
-        transform: scale(1.04);
-        box-shadow: 0 0 0 10px rgba(22,163,74,0), 0 0 0 3px rgba(22,163,74,.16) inset, 0 0 14px rgba(22,163,74,.16);
+        transform: scale(1.05);
+        box-shadow: 0 0 0 12px rgba(22,163,74,0), 0 0 0 3px rgba(22,163,74,.16) inset, 0 0 16px rgba(22,163,74,.16);
       }
     }
 
@@ -1119,7 +1114,6 @@
       font-size: .88rem;
       line-height: 1.25;
       margin-top: 4px;
-      white-space: pre-wrap;
       word-break: break-word;
     }
     .skipEngineLabel{
@@ -1159,7 +1153,6 @@
       font-variant-numeric: tabular-nums;
       line-height: 1.1;
     }
-
     @keyframes skipDrawerIn{
       from{ opacity:0; transform:translateY(-6px); }
       to{ opacity:1; transform:translateY(0); }
@@ -1173,7 +1166,7 @@
       <div class="pageTitle">
         <div class="pageTitleMain">
           <span>FSP Audio — Güncel</span>
-          <div id="buildMeta" class="buildMeta">v1.87 · Güncelleme: 17.04.2026 · 23:25</div>
+          <div id="buildMeta" class="buildMeta">v1.88 · Güncelleme: 17.04.2026 · 23:45</div>
         </div>
         <button id="sidebarOpenBtn" type="button" aria-label="Menü" title="Menü">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -1384,13 +1377,13 @@
 
         <div class="skipRow skipRangeRow">
           <label for="skipMinGapRange">Min. segment</label>
-          <input id="skipMinGapRange" type="range" min="40" max="800" step="10" value="40" />
-          <span id="skipMinGapValue">40ms</span>
+          <input id="skipMinGapRange" type="range" min="15" max="800" step="5" value="15" />
+          <span id="skipMinGapValue">15ms</span>
         </div>
 
         <div class="skipRow skipRangeRow">
           <label for="skipFadeRange">Geçiş</label>
-          <input id="skipFadeRange" type="range" min="0" max="120" step="2" value="0" />
+          <input id="skipFadeRange" type="range" min="0" max="120" step="1" value="0" />
           <span id="skipFadeValue">0ms</span>
         </div>
 
@@ -1469,8 +1462,8 @@
   <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
   <script>
-    const BUILD_VERSION = "v1.87";
-    const BUILD_UPDATED = "17.04.2026 · 23:25";
+    const BUILD_VERSION = "v1.88";
+    const BUILD_UPDATED = "17.04.2026 · 23:45";
 
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
     const IA_IDENTIFIER_2 = "FSPneu";
@@ -1479,9 +1472,6 @@
 
     const DL_PROXY = "https://fspdownload.protokolfsp.workers.dev/";
     const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
-
-    const SILENCE_MAP_BASE = "https://raw.githubusercontent.com/protokolFSP/stummskip/main/silence-maps/";
-    const SILENCE_MAP_INDEX_URL = SILENCE_MAP_BASE + "index.json";
 
     const SRT_BASES = [
       "https://protokolfsp.github.io/FSPtranskript/transcripts/",
@@ -1497,6 +1487,9 @@
     const FORCE_REFRESH = new URLSearchParams(location.search).has("refresh");
     const SRT_DEBUG = new URLSearchParams(location.search).has("srtdebug");
     const SRT_CHECK = new URLSearchParams(location.search).has("srtcheck");
+
+    const STUMMSKIP_RAW_BASE = "https://raw.githubusercontent.com/protokolFSP/stummskip/main/silence-maps";
+    const STUMMSKIP_INDEX_URL = `${STUMMSKIP_RAW_BASE}/index.json`;
 
     const IS_SAFARI = (() => {
       const ua = navigator.userAgent || "";
@@ -1707,10 +1700,13 @@
       speed: "fsp1.speed.v1",
       zoom: "fsp1.ui.zoom.v1",
       captionsMode: "fsp1.captions.mode.v1",
+      itemsCache: "fsp1.items.cache.s1.v2",
+      itemsCacheAt: "fsp1.items.cache.s1.at.v1",
+      metaUpdated: "fsp1.items.meta.updated.s1.v1",
       uiState: "fsp1.ui.state.v1",
       txSize: "fsp1.tx.size.v1",
       txPos: "fsp1.tx.pos.v1",
-      skipSettings: "fsp1.skip.settings.map.v5",
+      skipSettings: "fsp1.skip.settings.map.v6",
       skipDrawerOpen: "fsp1.skip.drawer.open.v1"
     };
 
@@ -1725,6 +1721,8 @@
     let items = [];
     let activeId = null;
     let selectedId = null;
+
+    const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
     let pendingScrollTop = null;
 
     function saveUiState(){
@@ -1803,11 +1801,13 @@
       const parts = chunk(ids, 200);
       const playAll = {};
       const dlAll = {};
+
       for (const part of parts){
         const [p, d] = await Promise.all([fetchCounts("play", part), fetchCounts("download", part)]);
         Object.assign(playAll, p);
         Object.assign(dlAll, d);
       }
+
       if (Object.keys(playAll).length) globalPlayCounts = playAll;
       if (Object.keys(dlAll).length) globalDownloadCounts = dlAll;
       render();
@@ -1821,6 +1821,7 @@
           title: it?.title || "",
           file_name: (it?.name || "").split("/").pop() || ""
         };
+
         const url = COUNTER_API + "/hit";
         const data = JSON.stringify(payload);
 
@@ -1856,6 +1857,7 @@
     function trySendPlayOnPlaying(){
       if (!playGate.armed || playGate.sent || !playGate.id) return;
       if (!playerEl || playerEl.paused) return;
+
       playGate.sent = true;
       const it = items.find(x => x.id === playGate.id) || { id: playGate.id, title: "", name: "" };
       bumpLocalGlobalCount("play", it.id);
@@ -2057,7 +2059,10 @@
     attachDoubleTapReset(zoomInBtn);
 
     function setTypingMode(on){ fp.classList.toggle("hiddenWhileTyping", !!on); }
-    function setMomentumScroll(el, on){ try { if (el) el.style.webkitOverflowScrolling = on ? "auto" : "touch"; } catch {} }
+
+    function setMomentumScroll(el, on){
+      try { if (el) el.style.webkitOverflowScrolling = on ? "auto" : "touch"; } catch {}
+    }
 
     searchEl.addEventListener("focus", () => { setTypingMode(true); setMomentumScroll(scrollArea, true); });
     searchEl.addEventListener("blur", () => { setTypingMode(false); setMomentumScroll(scrollArea, false); });
@@ -2073,6 +2078,7 @@
       const leftRaw = raw.slice(0, i);
       const leftTrim = leftRaw.trimEnd();
       if (!leftTrim.trim()) return escHtml(raw);
+
       const trailing = leftRaw.slice(leftTrim.length);
       return `<span class="diseaseName">${escHtml(leftTrim)}</span>${escHtml(trailing)}${escHtml(raw.slice(i))}`;
     }
@@ -2091,11 +2097,13 @@
     let lastCueIdx = -1;
 
     function isCaptionsOn(){ return !!captionMode; }
+
     function getCaptionMaxLines(){
       if (captionMode === "CC") return CAPTION_MAX_LINES_9;
       if (captionMode === "CCx") return CAPTION_MAX_LINES_13;
       return CAPTION_MAX_LINES;
     }
+
     function getCaptionTargetLines(){
       if (captionMode === "CC") return CAPTION_MAX_LINES_9;
       if (captionMode === "CCx") return CAPTION_MAX_LINES_13;
@@ -2104,6 +2112,7 @@
 
     function setCaptionUi(){
       const on = isCaptionsOn();
+
       const setBtn = (btn, active) => {
         if (!btn) return;
         btn.classList.toggle("on", !!active);
@@ -2124,6 +2133,7 @@
         captionsEl.textContent = "…";
         captionsEl.classList.add("isEmpty");
       }
+
       setTimeout(() => clampPlayerToViewport(), 0);
     }
 
@@ -2194,6 +2204,7 @@
 
     function composeCaptionParts(cues, idx){
       if (!cues || idx < 0 || idx >= cues.length) return [];
+
       const parts = [];
       const target = getCaptionTargetLines();
       const wide = getCaptionMaxLines() > CAPTION_MAX_LINES;
@@ -2274,6 +2285,7 @@
 
     function maybeStopAtSegmentEnd(){
       if (segEndTime == null) return;
+
       const t = Number(playerEl.currentTime) || 0;
       if (t < (segEndTime - 0.03)) return;
 
@@ -2291,6 +2303,7 @@
           const safeTarget = Number.isFinite(dur) && dur > 0
             ? Math.min(Math.max(0, target), Math.max(0, dur - 0.05))
             : Math.max(0, target);
+
           playerEl.currentTime = safeTarget;
           const p = plyr.play();
           if (p && typeof p.catch === "function") p.catch(() => {});
@@ -2305,11 +2318,14 @@
 
     function playSegment(start, end){
       if (!Number.isFinite(start) || !Number.isFinite(end) || !(end > start)) return;
+
       const resumeAfter = !playerEl.paused;
       const resumeTime = end + 0.01;
+
       try{
         armSegmentEnd(end, resumeAfter, resumeTime);
         playerEl.currentTime = Math.max(0, start + 0.01);
+
         const p = plyr.play();
         if (p && typeof p.catch === "function") p.catch(() => {});
       }catch{}
@@ -2323,6 +2339,7 @@
 
       const maxLines = getCaptionMaxLines();
       captionsEl.style.setProperty("--capLines", String(maxLines));
+
       const { lines: trimmed, activeStart, activeEnd } = trimLinesAroundActive(lines, maxLines);
       const out = [];
 
@@ -2342,7 +2359,9 @@
         const ds = Number.isFinite(ln.start) ? ` data-start="${ln.start}"` : "";
         const de = Number.isFinite(ln.end) ? ` data-end="${ln.end}"` : "";
 
-        out.push(`<span class="capLine" style="opacity:${opacity.toFixed(2)};font-weight:${weight}"${ds}${de}>${escHtml(ln.text)}</span>`);
+        out.push(
+          `<span class="capLine" style="opacity:${opacity.toFixed(2)};font-weight:${weight}"${ds}${de}>${escHtml(ln.text)}</span>`
+        );
       }
 
       const html = out.join("<br>");
@@ -2380,7 +2399,12 @@
 
       for (const p of parts){
         for (const line of splitCaptionLines(p.text)){
-          flat.push({ text: line, isActive: !!p.isActive, start: p.start, end: p.end });
+          flat.push({
+            text: line,
+            isActive: !!p.isActive,
+            start: p.start,
+            end: p.end
+          });
         }
       }
 
@@ -2392,11 +2416,15 @@
     captionsEl.addEventListener("click", (e) => {
       if (!isCaptionsOn()) return;
       if (!activeCues.length) return;
+
       const span = e.target && e.target.closest ? e.target.closest(".capLine") : null;
       if (!span) return;
+
       const s = Number(span.getAttribute("data-start"));
       const en = Number(span.getAttribute("data-end"));
-      if (Number.isFinite(s) && Number.isFinite(en) && en > s) playSegment(s, en);
+      if (Number.isFinite(s) && Number.isFinite(en) && en > s){
+        playSegment(s, en);
+      }
     });
 
     function buildSrtNameCandidates(it){
@@ -2408,7 +2436,8 @@
       const hasA = /^A\s+/i.test(baseDecoded);
 
       const names = [
-        baseDecoded, baseRaw,
+        baseDecoded,
+        baseRaw,
         hasA ? baseDecoded : ("A " + baseDecoded),
         hasA ? baseRaw : ("A " + baseRaw),
         hasA ? baseDecoded : ("A_" + baseDecoded),
@@ -2419,7 +2448,7 @@
         rawName + ".srt"
       ];
 
-      return [...new Set(names.map(x => String(x || "").trim()).filter(Boolean))];
+      return [...new Set(names.map((x) => String(x || "").trim()).filter(Boolean))];
     }
 
     function buildTxtNameCandidates(it){
@@ -2431,7 +2460,8 @@
       const hasA = /^A\s+/i.test(baseDecoded);
 
       const names = [
-        baseDecoded, baseRaw,
+        baseDecoded,
+        baseRaw,
         hasA ? baseDecoded : ("A " + baseDecoded),
         hasA ? baseRaw : ("A " + baseRaw),
         hasA ? baseDecoded : ("A_" + baseDecoded),
@@ -2442,7 +2472,7 @@
         rawName + ".txt"
       ];
 
-      return [...new Set(names.map(x => String(x || "").trim()).filter(Boolean))];
+      return [...new Set(names.map((x) => String(x || "").trim()).filter(Boolean))];
     }
 
     function __ia2EnsureSlashEnd(s){
@@ -2452,7 +2482,7 @@
 
     function __ia2BasesWithSubdir(bases, subdir){
       const sd = String(subdir || "").replace(/^\/+|\/+$/g, "");
-      return (bases || []).map(b => __ia2EnsureSlashEnd(b) + sd + "/");
+      return (bases || []).map((b) => __ia2EnsureSlashEnd(b) + sd + "/");
     }
 
     const __IA2_SRT_BASES = __ia2BasesWithSubdir(SRT_BASES, IA2_TX_SUBDIR);
@@ -2462,7 +2492,11 @@
       const names = buildTxtNameCandidates(it);
       const urls = [];
       const bases = (it && it.src === IA2_SRC) ? __IA2_TXT_BASES : TXT_BASES;
-      for (const name of names) for (const base of bases) urls.push(base + encodeURIComponent(name));
+      for (const name of names){
+        for (const base of bases){
+          urls.push(base + encodeURIComponent(name));
+        }
+      }
       return { urls, triedNames: names };
     }
 
@@ -2470,7 +2504,11 @@
       const names = buildSrtNameCandidates(it);
       const urls = [];
       const bases = (it && it.src === IA2_SRC) ? __IA2_SRT_BASES : SRT_BASES;
-      for (const name of names) for (const base of bases) urls.push(base + encodeURIComponent(name));
+      for (const name of names){
+        for (const base of bases){
+          urls.push(base + encodeURIComponent(name));
+        }
+      }
       return { urls, triedNames: names };
     }
 
@@ -2500,10 +2538,12 @@
 
       try{
         let cues = null;
+
         for (const u of urls){
           lastUrl = u;
           const res = await fetch(u, { cache: "no-store", signal: srtCtrl.signal });
           if (!res.ok) continue;
+
           const body = await res.text();
           const parsed = parseSrtToCues(body);
           if (parsed && parsed.length){
@@ -2513,12 +2553,14 @@
         }
 
         if (!cues) throw new Error("srt not found");
+
         srtCache.set(it.id, cues);
         activeCues = cues;
         renderCaptionInfo("…");
         onCaptionsTimeupdate();
       }catch(err){
         if (err && err.name === "AbortError") return;
+
         if (SRT_DEBUG){
           renderCaptionInfo("SRT yok. Denenen isimler: " + (triedNames.join(" | ") || "-") + "\nSon URL: " + lastUrl);
         } else {
@@ -2535,14 +2577,27 @@
         captionMode = nextMode;
         localStorage.setItem(LS.captionsMode, nextMode);
       }
-      setCaptionUi();
-      const it = items.find(x => x.id === activeId);
+
+          setCaptionUi();
+
+      const it = items.find((x) => x.id === activeId);
       if (it) loadSrtForItem(it).catch(() => {});
     }
 
-    ccSmallBtn.addEventListener("click", (e) => { e.stopPropagation(); setModeOrToggle("cc"); });
-    ccMedBtn.addEventListener("click", (e) => { e.stopPropagation(); setModeOrToggle("CC"); });
-    ccXBtn.addEventListener("click", (e) => { e.stopPropagation(); setModeOrToggle("CCx"); });
+    ccSmallBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setModeOrToggle("cc");
+    });
+
+    ccMedBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setModeOrToggle("CC");
+    });
+
+    ccXBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setModeOrToggle("CCx");
+    });
 
     function parseEndDate(item){
       const raw0 = (item.name || item.file || item.title || "").toString();
@@ -2620,6 +2675,7 @@
       e.stopPropagation();
       if (sortMode !== "dur") sortMode = "dur";
       else durSortDir = (durSortDir === "asc") ? "desc" : "asc";
+
       localStorage.setItem(LS.sortMode, sortMode);
       localStorage.setItem(LS.sortDirDur, durSortDir);
       setSortIcons();
@@ -2630,6 +2686,7 @@
       e.stopPropagation();
       if (sortMode !== "date") sortMode = "date";
       else dateSortDir = (dateSortDir === "asc") ? "desc" : "asc";
+
       localStorage.setItem(LS.sortMode, sortMode);
       localStorage.setItem(LS.sortDirDate, dateSortDir);
       setSortIcons();
@@ -2640,6 +2697,7 @@
       e.stopPropagation();
       if (sortMode !== "play") sortMode = "play";
       else playSortDir = (playSortDir === "asc") ? "desc" : "asc";
+
       localStorage.setItem(LS.sortMode, sortMode);
       localStorage.setItem(LS.sortDirPlay, playSortDir);
       setSortIcons();
@@ -2650,6 +2708,7 @@
       e.stopPropagation();
       if (sortMode !== "download") sortMode = "download";
       else dlSortDir = (dlSortDir === "asc") ? "desc" : "asc";
+
       localStorage.setItem(LS.sortMode, sortMode);
       localStorage.setItem(LS.sortDirDl, dlSortDir);
       setSortIcons();
@@ -2702,6 +2761,7 @@
 
     function positionDockedStickyBar(){
       if (!stickyDocked) return;
+
       const rect = scrollArea.getBoundingClientRect();
       const pad = getScrollAreaPadding();
       const left = rect.left + pad.pl;
@@ -2728,7 +2788,9 @@
       if (!stickyBar) return;
       const needDock = (IS_SAFARI || useTransformScale);
 
-      if (forceRecalc && !stickyDocked) requestAnimationFrame(() => measureStickyStartTop());
+      if (forceRecalc && !stickyDocked){
+        requestAnimationFrame(() => measureStickyStartTop());
+      }
 
       if (!needDock){
         if (stickyDocked) undockStickyBar();
@@ -2766,6 +2828,7 @@
       const id = it.id;
       if (durs[id] > 0) return;
       if (durLoading.has(id)) return;
+
       durLoading.add(id);
       durQueue.push(it);
       pumpDurationQueue();
@@ -2814,9 +2877,13 @@
         };
 
         const onErr = () => finish(false, new Error("metadata error"));
+
         a.addEventListener("loadedmetadata", onMeta, { once: true });
         a.addEventListener("error", onErr, { once: true });
-        setTimeout(() => { if (!done) finish(false, new Error("timeout")); }, 12000);
+
+        setTimeout(() => {
+          if (!done) finish(false, new Error("timeout"));
+        }, 12000);
       });
     }
 
@@ -2838,6 +2905,7 @@
 
     async function forceDownload(fileUrl, filename){
       const proxied = makeProxyUrl(fileUrl, filename);
+
       try{
         clickDownload(proxied, filename);
         return;
@@ -2856,16 +2924,12 @@
     }
 
     function buildDownloadUrl(identifier, name){
-      const parts = (name || "").split("/").map(p => encodeURIComponent(p));
+      const parts = (name || "").split("/").map((p) => encodeURIComponent(p));
       return `https://archive.org/download/${identifier}/${parts.join("/")}`;
     }
 
     function replaceExtToTxt(name){
       return String(name || "").replace(/\.(m4a|mp3)$/i, ".txt");
-    }
-
-    function replaceExtToJson(name){
-      return String(name || "").replace(/\.(m4a|mp3)$/i, ".json");
     }
 
     function __ia2IsBlockedByPrefix(fileName){
@@ -2889,14 +2953,14 @@
 
     function __ia2MakeItemsFromFiles(files){
       return (files || [])
-        .filter(f => typeof f?.name === "string")
-        .filter(f => {
+        .filter((f) => typeof f?.name === "string")
+        .filter((f) => {
           const name = String(f.name).toLowerCase();
           if (!name.endsWith(".m4a")) return false;
           if (!("source" in f)) return true;
           return String(f.source || "").toLowerCase() === "original";
         })
-        .filter(f => !__ia2IsBlockedByPrefix(f.name))
+        .filter((f) => !__ia2IsBlockedByPrefix(f.name))
         .map((f, idx) => {
           const name = f.name || "";
           const title = (String(f.title || "").trim()) || decodeURIComponentSafe(name.split("/").pop() || name);
@@ -2907,11 +2971,11 @@
           const txtCandidates = buildTxtNameCandidates({ name });
           const txtName = txtCandidates.length ? txtCandidates[0] : replaceExtToTxt(name);
           const txtUrl = txtName ? (__IA2_TXT_BASES[0] + encodeURIComponent(txtName)) : "";
+
           return { id, title, name, url, src: IA2_SRC, txtName, txtUrl };
         });
     }
-
-    async function loadItems(){
+        async function loadItems(){
       try{
         const res1 = await fetch(`https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}`, {
           cache: FORCE_REFRESH ? "no-store" : "no-cache"
@@ -2922,7 +2986,7 @@
         const files1 = Array.isArray(j1.files) ? j1.files : [];
 
         const list1 = files1
-          .filter(f => {
+          .filter((f) => {
             const name = (f.name || "").toLowerCase();
             if (!(name.endsWith(".m4a") || name.endsWith(".mp3"))) return false;
             if (!("source" in f)) return true;
@@ -2938,6 +3002,7 @@
             const txtCandidates = buildTxtNameCandidates({ name });
             const txtName = txtCandidates.length ? txtCandidates[0] : replaceExtToTxt(name);
             const txtUrl = txtName ? (TXT_BASES[0] + encodeURIComponent(txtName)) : "";
+
             return { id, title, name, url, src: "S1", txtName, txtUrl };
           });
 
@@ -2948,6 +3013,7 @@
             cache: FORCE_REFRESH ? "no-store" : "no-cache"
           });
           if (!res2.ok) throw new Error("S2 metadata okunamadı");
+
           const j2 = await res2.json();
           const files2 = Array.isArray(j2.files) ? j2.files : [];
           finalItems = finalItems.concat(__ia2MakeItemsFromFiles(files2));
@@ -2971,7 +3037,7 @@
     function getVisibleItems(){
       const q = foldTR((searchEl.value || "").trim());
 
-      let arr = items.filter(it => {
+      let arr = items.filter((it) => {
         if (q && !foldTR(it.title).includes(q)) return false;
         if (filterFav && !favs[it.id]) return false;
         return true;
@@ -3045,6 +3111,7 @@
             <path d="M5 21h14"/>
           </svg>`;
       }
+
       return btn;
     }
 
@@ -3142,14 +3209,16 @@
 
     function playById(id){
       const visible = getVisibleItems();
-      const idx = visible.findIndex(x => x.id === id);
+      const idx = visible.findIndex((x) => x.id === id);
       if (idx === -1) return;
       playAtVisibleIndex(idx);
     }
 
     function setMediaSource(url, mime){
       stopSkipLoop();
+
       while (playerEl.firstChild) playerEl.removeChild(playerEl.firstChild);
+
       const s = document.createElement("source");
       s.src = url;
       if (mime) s.type = mime;
@@ -3210,7 +3279,8 @@
     function playPrev(){
       const visible = getVisibleItems();
       if (!visible.length) return;
-      let idx = visible.findIndex(x => x.id === activeId);
+
+      let idx = visible.findIndex((x) => x.id === activeId);
       if (idx === -1) idx = 0;
       idx = (idx - 1 + visible.length) % visible.length;
       playAtVisibleIndex(idx);
@@ -3219,7 +3289,8 @@
     function playNext(){
       const visible = getVisibleItems();
       if (!visible.length) return;
-      let idx = visible.findIndex(x => x.id === activeId);
+
+      let idx = visible.findIndex((x) => x.id === activeId);
       if (idx === -1) idx = 0;
       idx = (idx + 1) % visible.length;
       playAtVisibleIndex(idx);
@@ -3347,12 +3418,15 @@
       localStorage.setItem(LS.pos, JSON.stringify({ x, y, ver: 2 }));
     }
 
-    function getPlayerRect(){ return fp.getBoundingClientRect(); }
+    function getPlayerRect(){
+      return fp.getBoundingClientRect();
+    }
 
     function getPlayerPosPx(){
       const left = parseFloat(fp.style.left);
       const top = parseFloat(fp.style.top);
       if (Number.isFinite(left) && Number.isFinite(top)) return { left, top };
+
       const r = getPlayerRect();
       return { left: r.left, top: r.top };
     }
@@ -3386,6 +3460,7 @@
     function clampPlayerToViewport(){
       const { minX, maxX, minY, maxY } = getPlayerBoundsPx();
       const cur = getPlayerPosPx();
+
       const nx = Math.min(maxX, Math.max(minX, cur.left));
       const ny = Math.min(maxY, Math.max(minY, cur.top));
 
@@ -3405,17 +3480,21 @@
     }
 
     let dragging = false;
-    let startClientX = 0, startClientY = 0;
-    let startLeft = 0, startTop = 0;
+    let startClientX = 0;
+    let startClientY = 0;
+    let startLeft = 0;
+    let startTop = 0;
     let moved = false;
     let suppressClickUntil = 0;
 
     fpHeader.addEventListener("pointerdown", (e) => {
       if (!shouldStartDrag(e.target)) return;
+
       dragging = true;
       moved = false;
       fpHeader.setPointerCapture(e.pointerId);
       fpHeader.style.cursor = "grabbing";
+
       startClientX = e.clientX;
       startClientY = e.clientY;
 
@@ -3431,8 +3510,10 @@
 
     fpHeader.addEventListener("pointermove", (e) => {
       if (!dragging) return;
+
       const dx = e.clientX - startClientX;
       const dy = e.clientY - startClientY;
+
       if (!moved && (Math.abs(dx) + Math.abs(dy) > 6)) moved = true;
 
       const { minX, maxX, minY, maxY } = getPlayerBoundsPx();
@@ -3446,6 +3527,7 @@
 
     function endDrag(pointerId){
       if (!dragging) return;
+
       dragging = false;
       fpHeader.style.cursor = "grab";
       try { fpHeader.releasePointerCapture(pointerId); } catch {}
@@ -3498,6 +3580,7 @@
 
     (function disablePullToRefresh(){
       let startY = 0;
+
       scrollArea.addEventListener("touchstart", (e) => {
         if (!e.touches || !e.touches.length) return;
         startY = e.touches[0].clientY;
@@ -3532,12 +3615,24 @@
       sbOverlay.setAttribute("aria-hidden", "true");
     }
 
-    sidebarOpenBtn.addEventListener("click", (e) => { e.stopPropagation(); openSidebar(); });
-    sbCloseBtn.addEventListener("click", (e) => { e.stopPropagation(); closeSidebar(); });
-    sbOverlay.addEventListener("click", (e) => { if (e.target === sbOverlay) closeSidebar(); });
+    sidebarOpenBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openSidebar();
+    });
+
+    sbCloseBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeSidebar();
+    });
+
+    sbOverlay.addEventListener("click", (e) => {
+      if (e.target === sbOverlay) closeSidebar();
+    });
+
     document.getElementById("sidebar").addEventListener("click", (e) => e.stopPropagation());
 
     sbRefreshBtn.addEventListener("click", async () => {
+      localStorage.setItem(LS.itemsCacheAt, "0");
       try{
         await loadItems();
       } finally {
@@ -3546,7 +3641,11 @@
     });
 
     sbZoomResetBtn.addEventListener("click", () => resetZoom100());
-    sbFavBtn.addEventListener("click", () => { filterFav = !filterFav; setSortIcons(); render(); });
+    sbFavBtn.addEventListener("click", () => {
+      filterFav = !filterFav;
+      setSortIcons();
+      render();
+    });
 
     function clickSort(kind){
       if (kind === "date"){
@@ -3570,6 +3669,7 @@
         localStorage.setItem(LS.sortMode, sortMode);
         localStorage.setItem(LS.sortDirDl, dlSortDir);
       }
+
       setSortIcons();
       render();
     }
@@ -3585,6 +3685,7 @@
     let txMatches = [];
     let txActiveMatch = -1;
     let txSearchTimer = null;
+
     const txCache = new Map();
     const TX_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -3609,7 +3710,7 @@
         txPanel.style.height = TX_DEFAULT_SIZE.h + "px";
       }
 
-            const { vw, vh } = getViewportWH();
+      const { vw, vh } = getViewportWH();
       const vwL = toLayoutPx(vw);
       const vhL = toLayoutPx(vh);
       const margin = 28;
@@ -4104,10 +4205,10 @@
       mode: "max",
       fadeMs: 0,
       tailKeepMs: 0,
-      resumeOffsetMs: 260,
-      minSegmentMs: 40,
-      cooldownMs: 10,
-      maxAutoSeekMs: 180000
+      resumeOffsetMs: 420,
+      minSegmentMs: 15,
+      cooldownMs: 0,
+      maxAutoSeekMs: 240000
     };
 
     let skipSettings = (() => {
@@ -4276,7 +4377,7 @@
 
       const resumeOffsetMs = Math.max(0, Number(skipSettings.resumeOffsetMs) || 0);
       const tailKeepMs = Math.max(0, Number(skipSettings.tailKeepMs) || 0);
-      return Math.max(0, segLenMs - tailKeepMs - resumeOffsetMs);
+      return Math.max(0, segLenMs - tailKeepMs + resumeOffsetMs);
     }
 
     function recomputeEstimatedGain(){
@@ -4395,7 +4496,7 @@
       if (segEndTime != null) return false;
       if (skipState.skipInFlight) return false;
       if (nowMs < skipState.manualSuppressUntil) return false;
-      if ((nowMs - skipState.lastSkipAt) < skipSettings.cooldownMs) return false;
+      if ((nowMs - skipState.lastSkipAt) < Math.max(0, skipSettings.cooldownMs)) return false;
       return true;
     }
 
@@ -4572,10 +4673,10 @@
           mode: "max",
           fadeMs: 0,
           tailKeepMs: 0,
-          resumeOffsetMs: 260,
-          minSegmentMs: 40,
-          cooldownMs: 10,
-          maxAutoSeekMs: 180000
+          resumeOffsetMs: 420,
+          minSegmentMs: 15,
+          cooldownMs: 0,
+          maxAutoSeekMs: 240000
         });
       }
 
