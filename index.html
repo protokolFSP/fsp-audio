@@ -1,3 +1,37 @@
+<!--
+PSEUDOCODE PLAN
+1. Keep the current page/player/transcript structure unchanged as much as possible.
+2. Make map-based silence skip clearly more aggressive:
+   2.1 Default mode -> ultra.
+   2.2 Lower min segment threshold.
+   2.3 Lower cooldown.
+   2.4 Lower fade.
+   2.5 Add resume offset after a skipped silent region.
+   2.6 Keep Max preset even more aggressive.
+3. Add visible gain metrics inside the SKIP drawer:
+   3.1 Estimated gain from current map with current skip settings.
+   3.2 Real gain for the current file.
+   3.3 Real gain for the current session.
+4. When a map loads:
+   4.1 Calculate eligible skip segments.
+   4.2 Calculate estimated savable milliseconds.
+   4.3 Refresh drawer labels.
+5. When a skip happens:
+   5.1 Compute actual skipped milliseconds.
+   5.2 Add to current-file counter.
+   5.3 Add to session counter.
+   5.4 Refresh drawer labels immediately.
+6. When track changes:
+   6.1 Reset only current-file saved counter.
+   6.2 Keep session counter.
+7. Preserve:
+   7.1 Current list rendering.
+   7.2 Transcript popup.
+   7.3 SRT captions.
+   7.4 Drag/drop player behavior.
+   7.5 Count fetching and sorting.
+-->
+
 <!doctype html>
 <html lang="tr">
 <head>
@@ -1074,7 +1108,7 @@
       box-shadow: var(--greenGlow);
     }
     #skipDrawerBtn.breathing{
-      animation: skipBreath 1.5s ease-in-out infinite;
+      animation: skipBreath 1.25s ease-in-out infinite;
     }
 
     @keyframes skipBreath{
@@ -1083,8 +1117,8 @@
         box-shadow: 0 0 0 0 rgba(22,163,74,.18), 0 0 0 3px rgba(22,163,74,.10) inset;
       }
       50%{
-        transform: scale(1.05);
-        box-shadow: 0 0 0 12px rgba(22,163,74,0), 0 0 0 3px rgba(22,163,74,.16) inset, 0 0 14px rgba(22,163,74,.18);
+        transform: scale(1.06);
+        box-shadow: 0 0 0 14px rgba(22,163,74,0), 0 0 0 3px rgba(22,163,74,.18) inset, 0 0 16px rgba(22,163,74,.18);
       }
     }
 
@@ -1141,6 +1175,28 @@
       font-weight: 800;
       line-height: 1;
     }
+    .skipGainGrid{
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:8px 12px;
+      padding: 10px;
+      border: 1px solid #e2e2e2;
+      border-radius: 12px;
+      background: white;
+      margin-top: 6px;
+    }
+    .skipGainLabel{
+      color:#404040;
+      font-size:.9rem;
+      line-height:1.2;
+    }
+    .skipGainValue{
+      font-weight:800;
+      font-variant-numeric: tabular-nums;
+      color:#166534;
+      text-align:right;
+      line-height:1.2;
+    }
     @keyframes skipDrawerIn{
       from{ opacity:0; transform:translateY(-6px); }
       to{ opacity:1; transform:translateY(0); }
@@ -1154,7 +1210,7 @@
       <div class="pageTitle">
         <div class="pageTitleMain">
           <span>FSP Audio — Güncel</span>
-          <div id="buildMeta" class="buildMeta">v1.84 · Güncelleme: 17.04.2026</div>
+          <div id="buildMeta" class="buildMeta">v1.85 · Güncelleme: 17.04.2026 · 15:25</div>
         </div>
         <button id="sidebarOpenBtn" type="button" aria-label="Menü" title="Menü">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -1365,19 +1421,28 @@
 
         <div class="skipRow skipRangeRow">
           <label for="skipMinGapRange">Min. segment</label>
-          <input id="skipMinGapRange" type="range" min="120" max="2000" step="20" value="220" />
-          <span id="skipMinGapValue">220ms</span>
+          <input id="skipMinGapRange" type="range" min="80" max="1600" step="20" value="160" />
+          <span id="skipMinGapValue">160ms</span>
         </div>
 
         <div class="skipRow skipRangeRow">
           <label for="skipFadeRange">Geçiş</label>
-          <input id="skipFadeRange" type="range" min="0" max="250" step="10" value="16" />
-          <span id="skipFadeValue">16ms</span>
+          <input id="skipFadeRange" type="range" min="0" max="150" step="5" value="8" />
+          <span id="skipFadeValue">8ms</span>
         </div>
 
-        <div class="skipHint" id="skipHint">
-          Silence map bekleniyor…
+        <div class="skipGainGrid">
+          <div class="skipGainLabel">Tahmini kazanç</div>
+          <div id="skipEstimatedValue" class="skipGainValue">—</div>
+
+          <div class="skipGainLabel">Bu dosyada kazanılan</div>
+          <div id="skipFileSavedValue" class="skipGainValue">0 sn</div>
+
+          <div class="skipGainLabel">Bu oturumda kazanılan</div>
+          <div id="skipSessionSavedValue" class="skipGainValue">0 sn</div>
         </div>
+
+        <div class="skipHint" id="skipHint">Silence map bekleniyor…</div>
       </div>
     </div>
   </div>
@@ -1437,8 +1502,8 @@
   <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
   <script>
-    const BUILD_VERSION = "v1.84";
-    const BUILD_UPDATED = "17.04.2026";
+    const BUILD_VERSION = "v1.85";
+    const BUILD_UPDATED = "17.04.2026 · 15:25";
 
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
     const IA_IDENTIFIER_2 = "FSPneu";
@@ -1513,6 +1578,9 @@
     const skipFadeRange = document.getElementById("skipFadeRange");
     const skipFadeValue = document.getElementById("skipFadeValue");
     const skipHintEl = document.getElementById("skipHint");
+    const skipEstimatedValueEl = document.getElementById("skipEstimatedValue");
+    const skipFileSavedValueEl = document.getElementById("skipFileSavedValue");
+    const skipSessionSavedValueEl = document.getElementById("skipSessionSavedValue");
 
     const captionsEl = document.getElementById("captions");
     const filterFavBtn = document.getElementById("filterFav");
@@ -1737,7 +1805,7 @@
       uiState: "fsp1.ui.state.v1",
       txSize: "fsp1.tx.size.v1",
       txPos: "fsp1.tx.pos.v1",
-      skipSettings: "fsp1.skip.settings.map.v2",
+      skipSettings: "fsp1.skip.settings.map.v3",
       skipDrawerOpen: "fsp1.skip.drawer.open.v1"
     };
 
@@ -1755,6 +1823,16 @@
 
     const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
     let pendingScrollTop = null;
+
+    function fmtMsHuman(ms){
+      const totalSec = Math.max(0, Math.round((Number(ms) || 0) / 1000));
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      if (h > 0) return `${h} sa ${String(m).padStart(2,"0")} dk ${String(s).padStart(2,"0")} sn`;
+      if (m > 0) return `${m} dk ${String(s).padStart(2,"0")} sn`;
+      return `${s} sn`;
+    }
 
     function saveUiState(){
       try{
@@ -3369,7 +3447,7 @@
       const minX = -w + keepX;
       const maxX = vw - keepX;
       const minY = -h + keepY + capH;
-      const maxY = vh - keepY - Math.min(drawerH, 160);
+      const maxY = vh - keepY - Math.min(drawerH, 180);
 
       return {
         minX: Math.min(minX, maxX),
@@ -4049,14 +4127,14 @@
 
     const DEFAULT_SKIP_SETTINGS = {
       enabled: false,
-      mode: "aggressive",
-      fadeMs: 16,
+      mode: "ultra",
+      fadeMs: 8,
       leadInMs: 0,
       tailKeepMs: 0,
-      resumeOffsetMs: 90,
-      minSegmentMs: 220,
-      cooldownMs: 110,
-      maxAutoSeekMs: 45000
+      resumeOffsetMs: 120,
+      minSegmentMs: 160,
+      cooldownMs: 70,
+      maxAutoSeekMs: 60000
     };
 
     const skipState = {
@@ -4070,7 +4148,10 @@
       indexPromise: null,
       mapPromiseById: new Map(),
       mapCacheById: new Map(),
-      status: "idle"
+      status: "",
+      estimatedGainMs: 0,
+      fileSavedMs: 0,
+      sessionSavedMs: 0
     };
 
     function loadSkipSettings(){
@@ -4101,11 +4182,20 @@
       skipHintEl.textContent = skipState.status || "Silence map bekleniyor…";
     }
 
+    function updateSkipGainUi(){
+      skipEstimatedValueEl.textContent = fmtMsHuman(skipState.estimatedGainMs);
+      skipFileSavedValueEl.textContent = fmtMsHuman(skipState.fileSavedMs);
+      skipSessionSavedValueEl.textContent = fmtMsHuman(skipState.sessionSavedMs);
+    }
+
     function resetSkipRuntimeForNewTrack(){
       stopSkipLoop();
       skipState.skipInFlight = false;
       skipState.lastSkipAt = 0;
       skipState.manualSuppressUntil = performance.now() + 900;
+      skipState.fileSavedMs = 0;
+      skipState.estimatedGainMs = 0;
+      updateSkipGainUi();
     }
 
     function resetSkipRuntimeForManualAction(){
@@ -4211,9 +4301,32 @@
       }
     }
 
+    function getEligibleSkipMsForSegment(seg){
+      if (!seg) return 0;
+      const segLenMs = (seg.end - seg.start) * 1000;
+      if (!Number.isFinite(segLenMs) || segLenMs < skipSettings.minSegmentMs) return 0;
+
+      const resumeOffsetMs = Math.max(0, Number(skipSettings.resumeOffsetMs) || 0);
+      const tailKeepMs = Math.max(0, Number(skipSettings.tailKeepMs) || 0);
+      const rawSavedMs = segLenMs - tailKeepMs - resumeOffsetMs;
+      return Math.max(0, rawSavedMs);
+    }
+
+    function recomputeEstimatedGain(){
+      const segs = skipState.currentMap?.segments || [];
+      let total = 0;
+      for (const seg of segs){
+        total += getEligibleSkipMsForSegment(seg);
+      }
+      skipState.estimatedGainMs = total;
+      updateSkipGainUi();
+    }
+
     async function primeSilenceMapForItem(item){
       skipState.currentMapItemId = item?.id || null;
       skipState.currentMap = null;
+      skipState.estimatedGainMs = 0;
+      updateSkipGainUi();
 
       if (!item){
         setSkipStatus("Silence map yok.");
@@ -4227,13 +4340,16 @@
 
         if (!map || !map.segments.length){
           skipState.currentMap = null;
+          skipState.estimatedGainMs = 0;
           setSkipStatus("Bu kayıtta silence map yok.");
           syncSkipUi();
+          updateSkipGainUi();
           return null;
         }
 
         if (skipState.currentMapItemId === item.id){
           skipState.currentMap = map;
+          recomputeEstimatedGain();
           setSkipStatus(`Silence map hazır · ${map.segments.length} segment`);
           syncSkipUi();
           if (skipSettings.enabled && !playerEl.paused) startSkipLoop();
@@ -4243,6 +4359,8 @@
       }catch(err){
         console.warn("Silence map load failed:", err);
         skipState.currentMap = null;
+        skipState.estimatedGainMs = 0;
+        updateSkipGainUi();
         setSkipStatus("Silence map yüklenemedi.");
         syncSkipUi();
         return null;
@@ -4334,14 +4452,22 @@
 
       try{
         if (fadeMs > 0){
-          await fadePlayerVolume(originalVol, Math.max(0, originalVol * 0.10), Math.floor(fadeMs / 2));
+          await fadePlayerVolume(originalVol, Math.max(0, originalVol * 0.08), Math.floor(fadeMs / 2));
         }
 
+        const before = Number(playerEl.currentTime) || 0;
         playerEl.currentTime = Math.max(0, target);
-        skipState.manualSuppressUntil = performance.now() + Math.max(40, fadeMs + 30);
+        const after = Number(playerEl.currentTime) || target;
+        const gainedMs = Math.max(0, Math.round((after - before) * 1000));
+
+        skipState.fileSavedMs += gainedMs;
+        skipState.sessionSavedMs += gainedMs;
+        updateSkipGainUi();
+
+        skipState.manualSuppressUntil = performance.now() + Math.max(35, fadeMs + 25);
 
         if (fadeMs > 0){
-          await fadePlayerVolume(Math.max(0, originalVol * 0.10), originalVol, Math.ceil(fadeMs / 2));
+          await fadePlayerVolume(Math.max(0, originalVol * 0.08), originalVol, Math.ceil(fadeMs / 2));
         }
 
         skipState.lastSkipAt = performance.now();
@@ -4377,35 +4503,35 @@
       if (mode === "light"){
         Object.assign(skipSettings, {
           mode: "light",
-          fadeMs: 70,
+          fadeMs: 55,
           leadInMs: 0,
           tailKeepMs: 0,
           resumeOffsetMs: 40,
-          minSegmentMs: 700,
-          cooldownMs: 260,
+          minSegmentMs: 520,
+          cooldownMs: 220,
           maxAutoSeekMs: 14000
         });
       } else if (mode === "balanced"){
         Object.assign(skipSettings, {
           mode: "balanced",
-          fadeMs: 35,
+          fadeMs: 20,
           leadInMs: 0,
           tailKeepMs: 0,
-          resumeOffsetMs: 60,
-          minSegmentMs: 350,
-          cooldownMs: 170,
-          maxAutoSeekMs: 26000
+          resumeOffsetMs: 80,
+          minSegmentMs: 260,
+          cooldownMs: 110,
+          maxAutoSeekMs: 30000
         });
       } else if (mode === "aggressive"){
         Object.assign(skipSettings, {
           mode: "aggressive",
-          fadeMs: 16,
+          fadeMs: 12,
           leadInMs: 0,
           tailKeepMs: 0,
-          resumeOffsetMs: 90,
-          minSegmentMs: 220,
-          cooldownMs: 110,
-          maxAutoSeekMs: 45000
+          resumeOffsetMs: 110,
+          minSegmentMs: 180,
+          cooldownMs: 65,
+          maxAutoSeekMs: 50000
         });
       } else if (mode === "ultra"){
         Object.assign(skipSettings, {
@@ -4424,25 +4550,26 @@
           fadeMs: 0,
           leadInMs: 0,
           tailKeepMs: 0,
-          resumeOffsetMs: 150,
-          minSegmentMs: 120,
-          cooldownMs: 40,
+          resumeOffsetMs: 170,
+          minSegmentMs: 80,
+          cooldownMs: 25,
           maxAutoSeekMs: 90000
         });
       } else {
         Object.assign(skipSettings, {
-          mode: "balanced",
-          fadeMs: 35,
+          mode: "ultra",
+          fadeMs: 8,
           leadInMs: 0,
           tailKeepMs: 0,
-          resumeOffsetMs: 60,
-          minSegmentMs: 350,
-          cooldownMs: 170,
-          maxAutoSeekMs: 26000
+          resumeOffsetMs: 120,
+          minSegmentMs: 160,
+          cooldownMs: 70,
+          maxAutoSeekMs: 60000
         });
       }
 
       saveSkipSettings();
+      recomputeEstimatedGain();
       syncSkipUi();
     }
 
@@ -4461,17 +4588,22 @@
       skipModeUltra.classList.toggle("on", skipSettings.mode === "ultra");
       skipModeMax.classList.toggle("on", skipSettings.mode === "max");
 
-      skipMinGapRange.min = "120";
-      skipMinGapRange.max = "2000";
+      skipMinGapRange.min = "80";
+      skipMinGapRange.max = "1600";
       skipMinGapRange.step = "20";
       skipMinGapRange.value = String(skipSettings.minSegmentMs);
       skipMinGapValue.textContent = `${Math.round(skipSettings.minSegmentMs)}ms`;
 
+      skipFadeRange.min = "0";
+      skipFadeRange.max = "150";
+      skipFadeRange.step = "5";
       skipFadeRange.value = String(skipSettings.fadeMs);
       skipFadeValue.textContent = `${Math.round(skipSettings.fadeMs)}ms`;
 
       const segCount = skipState.currentMap?.segments?.length || 0;
       skipEngineLabel.textContent = segCount ? `MAP ${segCount}` : "MAP";
+
+      updateSkipGainUi();
 
       if (!skipState.status){
         setSkipStatus(segCount ? `Silence map hazır · ${segCount} segment` : "Silence map bekleniyor…");
@@ -4521,6 +4653,7 @@
     skipMinGapRange.addEventListener("input", () => {
       skipSettings.minSegmentMs = Number(skipMinGapRange.value);
       saveSkipSettings();
+      recomputeEstimatedGain();
       syncSkipUi();
     });
 
@@ -4558,6 +4691,7 @@
     setTxtBtnUi();
     skipDrawer.hidden = !loadSkipDrawerOpen();
     syncSkipUi();
+    updateSkipGainUi();
 
     requestAnimationFrame(() => {
       measureStickyStartTop();
