@@ -2278,7 +2278,7 @@
 
         <a class="navLink" href="https://protokolfsp.github.io/MenschiB/">MenschiB</a>
 
-              <a class="navLink" href="https://protokolfsp.github.io/FSP-pdfs/">FSP-PDFs</a>
+        <a class="navLink" href="https://protokolfsp.github.io/FSP-pdfs/">FSP-PDFs</a>
 
         <a class="navLink" href="https://protokolfsp.github.io/FSP_DrYemliha/">DrYemliha Notları</a>
 
@@ -2368,15 +2368,7 @@
 
           </div>
 
-          <div class="headIconCell">
-
-            <button id="sortPlayBtn" class="sortBtn" type="button" title="Dinlenme sayısına göre sırala">
-
-              <svg class="mainIcon" viewBox="0 0 24 24" aria-hidden="true">
-
-                <path class="iconBlue" d="M3 10v4c0 .55.45 1 1 1h3l5 4V5L7 9H4c-.55 0-1 .45-1 1z"/>
-
-                <path class="iconOrange" d="M16.5 8.5a1 1 0 0 1 1.4.1c1 1.2 1.6 2.7 1.6 4.4s-.6 3.2-1.6 4.4a1 1 0 1 1-1.5-1.3c.7-.9 1.1-2 1.1-3.1s-.4-2.2-1.1-3.1a1 1 0 0 1 .1-1.4z"/>
+       d="M16.5 8.5a1 1 0 0 1 1.4.1c1 1.2 1.6 2.7 1.6 4.4s-.6 3.2-1.6 4.4a1 1 0 1 1-1.5-1.3c.7-.9 1.1-2 1.1-3.1s-.4-2.2-1.1-3.1a1 1 0 0 1 .1-1.4z"/>
 
               </svg>
 
@@ -6056,7 +6048,7 @@
 
       btn.type = "button";
 
-      btn.className = "iconBtn" + (on ? " on" : "");
+      btn.className = "iconBtn" + (kind === "download" ? " audioDlBtn" : "") + (on ? " on" : "");
 
       btn.title = title;
 
