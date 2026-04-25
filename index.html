@@ -78,7 +78,7 @@
 
       --orangeGlow: 0 0 0 4px rgba(245,158,11,.20), 0 10px 22px rgba(245,158,11,.10);
 
-      --pdf:#e61b23;
+      --red:#e53935;
 
     }
 
@@ -206,7 +206,7 @@
 
       gap:8px;
 
-      flex: 0 0 auto;
+      flex:0 0 auto;
 
     }
 
@@ -846,6 +846,34 @@
 
     .iconBtn svg{ width: 14px; height: 14px; opacity: .9; }
 
+    .pdfBtn svg{
+
+      width: 15px;
+
+      height: 15px;
+
+      opacity: 1;
+
+      display:block;
+
+    }
+
+    .pdfBtn.hasPdf{
+
+      border-color: rgba(229,57,53,.35);
+
+      background: rgba(229,57,53,.06);
+
+    }
+
+    .pdfBtn.noPdf{
+
+      opacity: .35;
+
+      border-style: dashed;
+
+    }
+
     .filterBtn{
 
       width: 30px;
@@ -881,36 +909,6 @@
     }
 
     .filterBtn svg{ width:14px; height:14px; }
-
-    .pdfIconBtn{
-
-      border-color: rgba(230,27,35,.35);
-
-    }
-
-    .pdfIconBtn svg{
-
-      width: 16px;
-
-      height: 16px;
-
-    }
-
-    .pdfIconBtn.pdfOn{
-
-      border-color: rgba(230,27,35,.75);
-
-      background: rgba(230,27,35,.10);
-
-      box-shadow: 0 0 0 3px rgba(230,27,35,.10) inset;
-
-    }
-
-    .pdfIconBtn.pdfOff{
-
-      opacity: .28;
-
-    }
 
     #floatingPlayer{
 
@@ -958,11 +956,13 @@
 
     }
 
-    #floatingPlayer.hiddenWhileTyping{ opacity: .35; }
+    #floatingPlayer.hiddenWhileTyping{
 
-    #floatingPlayer.hiddenWhileTypingFull{
+      opacity:0;
 
-      display: none !important;
+      visibility:hidden;
+
+      pointer-events:none;
 
     }
 
@@ -2176,7 +2176,7 @@
 
       inset: 0;
 
-      z-index: 10120;
+      z-index: 10080;
 
       display:none;
 
@@ -2184,33 +2184,23 @@
 
     }
 
-    #pdfOverlay.open{
-
-      display:block;
-
-    }
+    #pdfOverlay.open{ display:block; }
 
     #pdfPanel{
 
-      position: absolute;
+      position:absolute;
 
-      left: max(12px, env(safe-area-inset-left));
-
-      top: max(12px, env(safe-area-inset-top));
-
-      width: calc(100vw - max(24px, env(safe-area-inset-left) + env(safe-area-inset-right) + 24px));
-
-      height: calc(100vh - max(24px, env(safe-area-inset-top) + env(safe-area-inset-bottom) + 24px));
+      inset: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
 
       background:#fff;
+
+      border-radius: 18px;
 
       border: 1.5px solid #d6d6d6;
 
       border-right-color: #bdbdbd;
 
       border-bottom-color:#b3b3b3;
-
-      border-radius: 18px;
 
       box-shadow:
 
@@ -2220,11 +2210,11 @@
 
         0px 2px 6px rgba(0,0,0,.06);
 
-      overflow: hidden;
-
       display:flex;
 
       flex-direction:column;
+
+      overflow:hidden;
 
     }
 
@@ -2232,37 +2222,35 @@
 
       padding: 10px 12px;
 
-      background: #fbfbfb;
+      background:#fbfbfb;
 
       display:flex;
 
       align-items:center;
 
-      justify-content: space-between;
+      justify-content:space-between;
 
-      gap: 10px;
+      gap:10px;
 
-      border-bottom: 1px solid #ececec;
-
-      line-height: 1.05;
+      border-bottom:1px solid #ececec;
 
     }
 
     #pdfTitle{
 
-      font-weight: 750;
+      font-weight:750;
 
-      font-size: 1rem;
+      font-size:1rem;
 
-      flex: 1 1 auto;
+      min-width:0;
 
-      min-width: 0;
+      flex:1 1 auto;
 
-      white-space: nowrap;
+      white-space:nowrap;
 
-      overflow: hidden;
+      overflow:hidden;
 
-      text-overflow: ellipsis;
+      text-overflow:ellipsis;
 
     }
 
@@ -2270,19 +2258,19 @@
 
       display:flex;
 
-      gap: 8px;
-
       flex-wrap:wrap;
 
-      justify-content:flex-end;
+      gap:8px;
+
+      flex:0 0 auto;
 
     }
 
-    .pdfBtn{
+    .pdfActionBtn{
 
       height: 38px;
 
-      padding: 0 14px;
+      padding: 0 12px;
 
       border-radius: 12px;
 
@@ -2298,69 +2286,29 @@
 
       justify-content:center;
 
-      gap: 8px;
+      gap:8px;
 
-      font-weight: 700;
+      font-weight:700;
 
-      font-size: .92rem;
+      font-size:.92rem;
 
       user-select:none;
 
-      line-height: 1;
-
-      white-space: nowrap;
-
     }
 
-    .pdfBtn:hover{ background: var(--hover); }
-
-    .pdfBtn:disabled{ opacity:.45; cursor:default; }
-
-    #pdfBody{
-
-      flex: 1 1 auto;
-
-      background: #f6f6f6;
-
-      position: relative;
-
-    }
+    .pdfActionBtn:hover{ background: var(--hover); }
 
     #pdfFrame{
 
-      width: 100%;
+      width:100%;
 
-      height: 100%;
+      height:100%;
 
-      border: 0;
+      border:0;
 
-      background: white;
+      background:#fff;
 
-    }
-
-    #pdfStatus{
-
-      position:absolute;
-
-      left:12px;
-
-      bottom:12px;
-
-      padding: 8px 10px;
-
-      border-radius: 12px;
-
-      background: rgba(255,255,255,.94);
-
-      border: 1px solid #e5e5e5;
-
-      color:#444;
-
-      font-size:.9rem;
-
-      line-height:1.2;
-
-      max-width:min(520px, calc(100% - 24px));
+      flex:1 1 auto;
 
     }
 
@@ -2368,11 +2316,7 @@
 
       #scrollArea{ padding: 14px; }
 
-      .headerRow, .itemRow{
-
-        grid-template-columns: minmax(0, 1fr) 8ch 46px 34px 34px 46px 34px;
-
-      }
+      .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 46px 34px 34px 46px 34px; }
 
       .title{
 
@@ -2384,9 +2328,11 @@
 
       }
 
-      #search{ flex: 1 1 100%; font-size: 16px; }
+      #search{ flex: 1 1 100%; }
 
       .zoomWrap{ margin-left: 0; }
+
+      .buildMeta{ font-size: .78rem; }
 
       #mobileFiltersToggle{ display:inline-flex; }
 
@@ -2436,7 +2382,7 @@
 
       #fpHeaderRight{ width: 100%; justify-content: flex-end; }
 
-      .buildMeta{ font-size: .78rem; }
+      #search{ font-size: 16px; }
 
       #txHeader{ flex-wrap: wrap; gap: 8px; }
 
@@ -2458,27 +2404,21 @@
 
       #txSearchInput{ font-size: 16px; }
 
-      #pdfHeader{
-
-        flex-wrap:wrap;
-
-        gap:8px;
-
-      }
+      #pdfHeader{ flex-wrap:wrap; }
 
       #pdfTitle{
 
-        flex: 1 1 100%;
+        flex:1 1 100%;
 
-        white-space: normal;
+        white-space:normal;
 
-      }
+        overflow:visible;
 
-      #pdfBtns{
-
-        width:100%;
+        text-overflow:clip;
 
       }
+
+      #pdfBtns{ width:100%; }
 
     }
 
@@ -2498,13 +2438,17 @@
 
           <span>FSP Audio — Güncel</span>
 
-          <div id="buildMeta" class="buildMeta">v1.91</div>
+          <div id="buildMeta" class="buildMeta">v1.87 · Güncelleme: 25.04.2026 · 00:00</div>
 
         </div>
 
         <div class="pageTitleActions">
 
-          <button id="mobileFiltersToggle" type="button" aria-label="Filtreleri göster" aria-expanded="false" title="Filtreler">Filtreler</button>
+          <button id="mobileFiltersToggle" type="button" aria-label="Filtreleri göster" aria-expanded="false" title="Filtreler">
+
+            Filtreler
+
+          </button>
 
           <button id="sidebarOpenBtn" type="button" aria-label="Menü" title="Menü">
 
@@ -2596,7 +2540,7 @@
 
               <span>Kayıt tarihi</span>
 
-              <button id="sortDateBtn" class="sortBtn" type="button" title="Tarihe göre sırala (dosya sonu)">
+              <button id="sortDateBtn" class="sortBtn" type="button" title="Kayıt tarihine göre sırala">
 
                 <svg id="sortDateIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"></svg>
 
@@ -2674,21 +2618,17 @@
 
           </div>
 
-          <div class="headIconCell">
+          <div class="headIconCell" title="PDF">
 
-            <button id="filterPdfBtn" class="filterBtn pdfIconBtn" title="PDF olanları filtrele" type="button" aria-pressed="false">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
 
-              <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#E53935" d="M6 2h8l4 4v16H6z"/>
 
-                <path fill="#E61B23" d="M6 2h8l4 4v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/>
+              <path fill="#fff" d="M14 2v4h4z"/>
 
-                <path fill="#fff" d="M14 2v4h4z"/>
+              <text x="12" y="17" text-anchor="middle" font-size="7" font-weight="700" fill="#fff">PDF</text>
 
-                <path fill="#fff" d="M7.1 16.8v-5.7h2.1c1.2 0 2 .7 2 1.8 0 1.1-.8 1.8-2 1.8H8.3v2.1H7.1zm1.2-3.1h.8c.5 0 .9-.3.9-.8s-.4-.8-.9-.8h-.8v1.6zm4.1 3.1v-5.7h1.8c1.8 0 2.9 1.1 2.9 2.8 0 1.7-1.1 2.9-2.9 2.9h-1.8zm1.2-1h.6c1.1 0 1.8-.7 1.8-1.8s-.7-1.8-1.8-1.8h-.6v3.6zm4-4.7h3.4v1h-2.2v1.3h1.9v1h-1.9v2.4h-1.2v-5.7z"/>
-
-              </svg>
-
-            </button>
+            </svg>
 
           </div>
 
@@ -2743,8 +2683,6 @@
           <div class="sbRow">
 
             <button id="sbFavBtn" class="sbBtn" type="button">Favoriler</button>
-
-            <button id="sbPdfBtn" class="sbBtn" type="button">PDF</button>
 
           </div>
 
@@ -3054,23 +2992,17 @@
 
         <div id="pdfBtns">
 
-          <button id="pdfDownloadBtn" class="pdfBtn" type="button">İndir</button>
+          <button id="pdfDownloadBtn" class="pdfActionBtn" type="button">İndir</button>
 
-          <button id="pdfCopyAllBtn" class="pdfBtn" type="button">Hepsini Kopyala</button>
+          <button id="pdfCopyBtn" class="pdfActionBtn" type="button">Hepsini kopyala</button>
 
-          <button id="pdfCloseBtn" class="pdfBtn" type="button">Kapat</button>
+          <button id="pdfCloseBtn" class="pdfActionBtn" type="button">Kapat</button>
 
         </div>
 
       </div>
 
-      <div id="pdfBody">
-
-        <iframe id="pdfFrame" title="PDF görüntüleyici"></iframe>
-
-        <div id="pdfStatus">PDF yükleniyor…</div>
-
-      </div>
+      <iframe id="pdfFrame" title="PDF görüntüleyici"></iframe>
 
     </div>
 
@@ -3080,7 +3012,9 @@
 
   <script>
 
-    const BUILD_VERSION = "v1.91";
+    const BUILD_VERSION = "v1.87";
+
+    const BUILD_UPDATED = "25.04.2026 · 00:00";
 
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
 
@@ -3094,8 +3028,6 @@
 
     const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
 
-    const PDF_INDEX_URL = "docs/pdf-index.json";
-
     const SRT_BASES = [
 
       "https://protokolfsp.github.io/FSPtranskript/transcripts/",
@@ -3106,7 +3038,9 @@
 
     ];
 
-    const TXT_BASES = [...SRT_BASES];
+    const TXT_BASES = SRT_BASES;
+
+    const PDF_INDEX_URL = "./docs/pdf-index.json";
 
     const CAPTION_MAX_LINES = 6;
 
@@ -3224,8 +3158,6 @@
 
     const filterFavBtn = document.getElementById("filterFav");
 
-    const filterPdfBtn = document.getElementById("filterPdfBtn");
-
     const resetBtn = document.getElementById("resetBtn");
 
     const sortDurBtn = document.getElementById("sortDurBtn");
@@ -3255,8 +3187,6 @@
     const sbZoomResetBtn = document.getElementById("sbZoomResetBtn");
 
     const sbFavBtn = document.getElementById("sbFavBtn");
-
-    const sbPdfBtn = document.getElementById("sbPdfBtn");
 
     const sbSortDateBtn = document.getElementById("sbSortDateBtn");
 
@@ -3302,17 +3232,13 @@
 
     const pdfOverlay = document.getElementById("pdfOverlay");
 
-    const pdfPanel = document.getElementById("pdfPanel");
+    const pdfFrame = document.getElementById("pdfFrame");
 
     const pdfTitleEl = document.getElementById("pdfTitle");
 
-    const pdfFrame = document.getElementById("pdfFrame");
-
-    const pdfStatusEl = document.getElementById("pdfStatus");
-
     const pdfDownloadBtn = document.getElementById("pdfDownloadBtn");
 
-    const pdfCopyAllBtn = document.getElementById("pdfCopyAllBtn");
+    const pdfCopyBtn = document.getElementById("pdfCopyBtn");
 
     const pdfCloseBtn = document.getElementById("pdfCloseBtn");
 
@@ -3324,23 +3250,7 @@
 
     });
 
-    function formatBuildDate(now = new Date()){
-
-      const dd = String(now.getDate()).padStart(2, "0");
-
-      const mm = String(now.getMonth() + 1).padStart(2, "0");
-
-      const yyyy = now.getFullYear();
-
-      const hh = String(now.getHours()).padStart(2, "0");
-
-      const mi = String(now.getMinutes()).padStart(2, "0");
-
-      return `${dd}.${mm}.${yyyy} · ${hh}:${mi}`;
-
-    }
-
-    if (buildMetaEl) buildMetaEl.textContent = `${BUILD_VERSION} · Güncelleme: ${formatBuildDate()}`;
+    if (buildMetaEl) buildMetaEl.textContent = `${BUILD_VERSION} · Güncelleme: ${BUILD_UPDATED}`;
 
     function gaEvent(name, params = {}) {
 
@@ -3418,38 +3328,6 @@
 
     }
 
-    function trackPdfOpen(it, pdfName){
-
-      gaEvent("pdf_open", {
-
-        audio_id: it?.id || "",
-
-        audio_title: it?.title || "",
-
-        pdf_name: pdfName || "",
-
-        src: it?.src || "S1"
-
-      });
-
-    }
-
-    function trackPdfDownload(it, pdfName){
-
-      gaEvent("pdf_download", {
-
-        audio_id: it?.id || "",
-
-        audio_title: it?.title || "",
-
-        pdf_name: pdfName || "",
-
-        src: it?.src || "S1"
-
-      });
-
-    }
-
     function escHtml(s){
 
       return (s ?? "").toString()
@@ -3479,6 +3357,28 @@
       s = s.replace(/\s+/g, " ").trim();
 
       return s;
+
+    }
+
+    function normalizeLoose(s){
+
+      return String(s || "")
+
+        .normalize("NFKD")
+
+        .replace(/[\u0300-\u036f]/g, "")
+
+        .replace(/[’'`"]/g, "")
+
+        .replace(/&/g, " ")
+
+        .replace(/[_./\\-]+/g, " ")
+
+        .replace(/\s+/g, " ")
+
+        .trim()
+
+        .toLowerCase();
 
     }
 
@@ -3544,6 +3444,52 @@
 
     }
 
+    function extractDateToken(s){
+
+      const raw = String(s || "");
+
+      const m = raw.match(/(\d{1,2})[.\-_/](\d{1,2})[.\-_/](\d{2}|\d{4})/);
+
+      if (!m) return "";
+
+      let yy = Number(m[3]);
+
+      if (yy < 100) yy = 2000 + yy;
+
+      return `${String(m[1]).padStart(2, "0")}.${String(m[2]).padStart(2, "0")}.${yy}`;
+
+    }
+
+    function tokenizeForSimilarity(s){
+
+      return normalizeLoose(s)
+
+        .replace(/\b(dr|doktor|mit|und|bei|von|der|die|das)\b/g, " ")
+
+        .split(/\s+/)
+
+        .filter(Boolean)
+
+        .filter((x) => x.length > 1);
+
+    }
+
+    function jaccardScore(aTokens, bTokens){
+
+      const a = new Set(aTokens);
+
+      const b = new Set(bTokens);
+
+      let inter = 0;
+
+      for (const x of a) if (b.has(x)) inter++;
+
+      const union = new Set([...a, ...b]).size;
+
+      return union ? (inter / union) : 0;
+
+    }
+
     const LS = {
 
       favs: "fsp1.favs.v1",
@@ -3570,6 +3516,12 @@
 
       mobileFiltersOpen: "fsp1.mobile.filters.open.v1",
 
+      itemsCache: "fsp1.items.cache.s1.v2",
+
+      itemsCacheAt: "fsp1.items.cache.s1.at.v1",
+
+      metaUpdated: "fsp1.items.meta.updated.s1.v1",
+
       uiState: "fsp1.ui.state.v1",
 
       txSize: "fsp1.tx.size.v1",
@@ -3578,9 +3530,7 @@
 
       skipSettings: "fsp1.skip.settings.map.v4",
 
-      skipDrawerOpen: "fsp1.skip.drawer.open.v1",
-
-      filterPdf: "fsp1.filter.pdf.v1"
+      skipDrawerOpen: "fsp1.skip.drawer.open.v1"
 
     };
 
@@ -3598,13 +3548,13 @@
 
     let filterFav = false;
 
-    let filterPdf = localStorage.getItem(LS.filterPdf) === "1";
-
     let items = [];
 
     let activeId = null;
 
     let selectedId = null;
+
+    const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
     let pendingScrollTop = null;
 
@@ -3617,8 +3567,6 @@
           q: searchEl.value || "",
 
           filterFav: !!filterFav,
-
-          filterPdf: !!filterPdf,
 
           activeId: activeId || null,
 
@@ -3641,8 +3589,6 @@
       if (typeof s.q === "string") searchEl.value = s.q;
 
       if (typeof s.filterFav === "boolean") filterFav = s.filterFav;
-
-      if (typeof s.filterPdf === "boolean") filterPdf = s.filterPdf;
 
       if (typeof s.activeId === "string") activeId = s.activeId;
 
@@ -3740,7 +3686,7 @@
 
       if (!items.length) return;
 
-      const ids = items.map((it) => it.id);
+      const ids = items.map(it => it.id);
 
       const parts = chunk(ids, 200);
 
@@ -3844,7 +3790,7 @@
 
       playGate.sent = true;
 
-      const it = items.find((x) => x.id === playGate.id) || { id: playGate.id, title: "", name: "" };
+      const it = items.find(x => x.id === playGate.id) || { id: playGate.id, title: "", name: "" };
 
       bumpLocalGlobalCount("play", it.id);
 
@@ -3928,7 +3874,7 @@
 
       if (Number.isFinite(saved)){
 
-        const i = SPEEDS.findIndex((x) => Math.abs(x - saved) < 0.001);
+        const i = SPEEDS.findIndex(x => Math.abs(x - saved) < 0.001);
 
         applySpeedByIndex(i === -1 ? SPEEDS.indexOf(1) : i);
 
@@ -3967,20 +3913,6 @@
       const isWebKit = /WebKit/.test(ua) && !/Edg|OPR/.test(ua);
 
       return isAppleTouch && isWebKit;
-
-    }
-
-    function isMobileViewport(){
-
-      try{
-
-        return window.matchMedia("(max-width: 680px)").matches;
-
-      }catch{
-
-        return window.innerWidth <= 680;
-
-      }
 
     }
 
@@ -4148,7 +4080,7 @@
 
       if (Number.isFinite(saved)){
 
-        const i = ZOOMS.findIndex((x) => Math.abs(x - saved) < 0.001);
+        const i = ZOOMS.findIndex(x => Math.abs(x - saved) < 0.001);
 
         applyZoomByIndex(i === -1 ? ZOOMS.indexOf(1) : i);
 
@@ -4198,23 +4130,7 @@
 
     attachDoubleTapReset(zoomInBtn);
 
-    function setTypingMode(on){
-
-      if (isMobileViewport()){
-
-        fp.classList.toggle("hiddenWhileTypingFull", !!on);
-
-        fp.classList.remove("hiddenWhileTyping");
-
-      } else {
-
-        fp.classList.toggle("hiddenWhileTyping", !!on);
-
-        fp.classList.remove("hiddenWhileTypingFull");
-
-      }
-
-    }
+    function setTypingMode(on){ fp.classList.toggle("hiddenWhileTyping", !!on); }
 
     function setMomentumScroll(el, on){
 
@@ -4226,9 +4142,9 @@
 
     searchEl.addEventListener("blur", () => { setTypingMode(false); setMomentumScroll(scrollArea, false); });
 
-    txSearchInput.addEventListener("focus", () => setMomentumScroll(txBodyEl, true));
+    txSearchInput.addEventListener("focus", () => { setTypingMode(true); setMomentumScroll(txBodyEl, true); });
 
-    txSearchInput.addEventListener("blur", () => setMomentumScroll(txBodyEl, false));
+    txSearchInput.addEventListener("blur", () => { setTypingMode(false); setMomentumScroll(txBodyEl, false); });
 
     function highlightDisease(title){
 
@@ -4374,7 +4290,7 @@
 
       for (const block of blocks){
 
-        const lines = block.split("\n").map((x) => x.trimEnd()).filter((x) => x.trim().length > 0);
+        const lines = block.split("\n").map(x => x.trimEnd()).filter(x => x.trim().length > 0);
 
         if (!lines.length) continue;
 
@@ -4436,7 +4352,7 @@
 
       const t = (text || "").toString().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
-      return t.split("\n").map((l) => l.trimEnd()).filter((l) => l.trim().length > 0);
+      return t.split("\n").map(l => l.trimEnd()).filter(l => l.trim().length > 0);
 
     }
 
@@ -4486,7 +4402,7 @@
 
         }
 
-        stack.reverse().forEach((x) => parts.push(x));
+        stack.reverse().forEach(x => parts.push(x));
 
       } else if (idx > 0){
 
@@ -4532,9 +4448,9 @@
 
       if (lines.length <= maxLines) return { lines, activeStart: -1, activeEnd: -1 };
 
-      let activeStart = lines.findIndex((l) => l.isActive);
+      let activeStart = lines.findIndex(l => l.isActive);
 
-      let activeEnd = lines.length - 1 - [...lines].reverse().findIndex((l) => l.isActive);
+      let activeEnd = lines.length - 1 - [...lines].reverse().findIndex(l => l.isActive);
 
       if (activeStart < 0) activeStart = activeEnd = Math.floor(lines.length / 2);
 
@@ -5180,17 +5096,7 @@
 
       if (sortMode === "download") sortDlCountBtn.classList.add("on");
 
-      filterFavBtn.classList.toggle("on", !!filterFav);
-
-      filterFavBtn.setAttribute("aria-pressed", String(!!filterFav));
-
-      filterPdfBtn.classList.toggle("on", !!filterPdf);
-
-      filterPdfBtn.setAttribute("aria-pressed", String(!!filterPdf));
-
       sbFavBtn.classList.toggle("on", !!filterFav);
-
-      sbPdfBtn.classList.toggle("on", !!filterPdf);
 
       sbSortDateBtn.classList.toggle("on", sortMode === "date");
 
@@ -5432,6 +5338,20 @@
 
     }
 
+    function isMobileFiltersMode(){
+
+      try{
+
+        return window.matchMedia("(max-width: 680px)").matches;
+
+      }catch{
+
+        return window.innerWidth <= 680;
+
+      }
+
+    }
+
     function readMobileFiltersOpen(){
 
       try{
@@ -5450,15 +5370,19 @@
 
     function saveMobileFiltersOpen(v){
 
-      try{ localStorage.setItem(LS.mobileFiltersOpen, v ? "1" : "0"); }catch{}
+      try{
+
+        localStorage.setItem(LS.mobileFiltersOpen, v ? "1" : "0");
+
+      }catch{}
 
     }
 
     function applyMobileFiltersState(forceOpen){
 
-      if (!mobileFiltersToggle) return;
+      if (!stickyBar || !mobileFiltersToggle) return;
 
-      const isMobile = isMobileViewport();
+      const isMobile = isMobileFiltersMode();
 
       const open = !!forceOpen;
 
@@ -5474,7 +5398,11 @@
 
         mobileFiltersToggle.textContent = "Filtreler";
 
-        setTimeout(() => { try{ updateSticky(true); }catch{} }, 0);
+        setTimeout(() => {
+
+          try{ updateSticky(true); }catch{}
+
+        }, 0);
 
         return;
 
@@ -5490,7 +5418,11 @@
 
       mobileFiltersToggle.textContent = open ? "Filtreleri Gizle" : "Filtreler";
 
-      setTimeout(() => { try{ updateSticky(true); }catch{} }, 0);
+      setTimeout(() => {
+
+        try{ updateSticky(true); }catch{}
+
+      }, 0);
 
     }
 
@@ -5502,7 +5434,7 @@
 
     function toggleMobileFilters(){
 
-      if (!isMobileViewport()) return;
+      if (!isMobileFiltersMode()) return;
 
       const nextOpen = document.body.classList.contains("mobileFiltersCollapsed");
 
@@ -5806,9 +5738,289 @@
 
     }
 
+    const pdfState = {
+
+      rows: [],
+
+      byItemId: new Map(),
+
+      loaded: false,
+
+      loading: false,
+
+      lastError: "",
+
+      current: null
+
+    };
+
+    function pdfAdobeSvg(){
+
+      return `
+
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+
+          <path fill="#E53935" d="M6 2h8l4 4v16H6z"/>
+
+          <path fill="#fff" d="M14 2v4h4z"/>
+
+          <text x="12" y="17" text-anchor="middle" font-size="7" font-weight="700" fill="#fff">PDF</text>
+
+        </svg>
+
+      `;
+
+    }
+
+    function fileNameOnly(name){
+
+      return decodeURIComponentSafe(String(name || "").split("/").pop() || "");
+
+    }
+
+    function removeAudioExt(name){
+
+      return String(name || "").replace(/\.(mp3|m4a|wav|aac|ogg|flac)$/i, "");
+
+    }
+
+    function removePdfExt(name){
+
+      return String(name || "").replace(/\.pdf$/i, "");
+
+    }
+
+    async function loadPdfIndex(){
+
+      if (pdfState.loaded || pdfState.loading) return;
+
+      pdfState.loading = true;
+
+      pdfState.lastError = "";
+
+      try{
+
+        const res = await fetch(PDF_INDEX_URL, { cache: FORCE_REFRESH ? "no-store" : "no-cache" });
+
+        if (!res.ok) throw new Error(`pdf-index.json okunamadı: ${res.status}`);
+
+        const j = await res.json();
+
+        const rows = Array.isArray(j?.items) ? j.items : (Array.isArray(j) ? j : []);
+
+        pdfState.rows = rows.map((row) => {
+
+          const pdfPath = String(row?.pdfPath || row?.path || row?.url || "").trim();
+
+          const pdfName = String(row?.pdfName || row?.name || fileNameOnly(pdfPath)).trim();
+
+          const audioId = String(row?.audioId || "").trim();
+
+          const audioName = String(row?.audioName || row?.sourceAudioName || "").trim();
+
+          const dateToken = extractDateToken(pdfName || pdfPath || audioName);
+
+          const baseNorm = normalizeLoose(removePdfExt(pdfName || fileNameOnly(pdfPath)));
+
+          const tokens = tokenizeForSimilarity(removePdfExt(pdfName || fileNameOnly(pdfPath)));
+
+          return { pdfPath, pdfName, audioId, audioName, dateToken, baseNorm, tokens };
+
+        }).filter((x) => x.pdfPath);
+
+        pdfState.loaded = true;
+
+      }catch(err){
+
+        pdfState.lastError = err?.message || "PDF index yüklenemedi";
+
+        console.error(err);
+
+      }finally{
+
+        pdfState.loading = false;
+
+      }
+
+    }
+
+    function getBestPdfForItem(it){
+
+      if (!pdfState.rows.length || !it) return null;
+
+      if (pdfState.byItemId.has(it.id)) return pdfState.byItemId.get(it.id);
+
+      const itemName = fileNameOnly(it.name || it.title || "");
+
+      const itemBase = removeAudioExt(itemName);
+
+      const itemNorm = normalizeLoose(itemBase);
+
+      const itemDate = extractDateToken(itemBase);
+
+      const itemTokens = tokenizeForSimilarity(itemBase);
+
+      let best = null;
+
+      let bestScore = -1;
+
+      for (const row of pdfState.rows){
+
+        if (row.audioId && row.audioId === it.id){
+
+          best = row;
+
+          bestScore = 9999;
+
+          break;
+
+        }
+
+        if (row.audioName){
+
+          const audioNorm = normalizeLoose(removeAudioExt(fileNameOnly(row.audioName)));
+
+          if (audioNorm && audioNorm === itemNorm){
+
+            best = row;
+
+            bestScore = 5000;
+
+            break;
+
+          }
+
+        }
+
+        let score = 0;
+
+        if (itemDate && row.dateToken && itemDate === row.dateToken) score += 100;
+
+        score += Math.round(jaccardScore(itemTokens, row.tokens) * 100);
+
+        if (itemNorm && row.baseNorm){
+
+          if (itemNorm === row.baseNorm) score += 80;
+
+          if (row.baseNorm.includes(itemNorm) || itemNorm.includes(row.baseNorm)) score += 25;
+
+        }
+
+        if (score > bestScore){
+
+          bestScore = score;
+
+          best = row;
+
+        }
+
+      }
+
+      const accepted = best && bestScore >= 120 ? best : null;
+
+      pdfState.byItemId.set(it.id, accepted);
+
+      return accepted;
+
+    }
+
+    function buildPdfAbsoluteUrl(path){
+
+      try{
+
+        return new URL(path, location.href).toString();
+
+      }catch{
+
+        return path;
+
+      }
+
+    }
+
+    function openPdfViewer(it, pdfMeta){
+
+      if (!pdfMeta) return;
+
+      const pdfUrl = buildPdfAbsoluteUrl(pdfMeta.pdfPath);
+
+      pdfState.current = { item: it, meta: pdfMeta, url: pdfUrl };
+
+      pdfTitleEl.textContent = pdfMeta.pdfName || it.title || "PDF";
+
+      pdfFrame.src = pdfUrl + "#toolbar=1&navpanes=1&scrollbar=1&view=FitH";
+
+      pdfOverlay.classList.add("open");
+
+      pdfOverlay.setAttribute("aria-hidden", "false");
+
+      document.body.style.overflow = "hidden";
+
+    }
+
+    function closePdfViewer(){
+
+      pdfOverlay.classList.remove("open");
+
+      pdfOverlay.setAttribute("aria-hidden", "true");
+
+      pdfFrame.src = "about:blank";
+
+      pdfState.current = null;
+
+      document.body.style.overflow = "";
+
+    }
+
+    pdfCloseBtn.addEventListener("click", closePdfViewer);
+
+    pdfOverlay.addEventListener("click", (e) => {
+
+      if (e.target === pdfOverlay) closePdfViewer();
+
+    });
+
+    pdfDownloadBtn.addEventListener("click", () => {
+
+      if (!pdfState.current?.url) return;
+
+      const filename = pdfState.current?.meta?.pdfName || "document.pdf";
+
+      clickDownload(pdfState.current.url, filename);
+
+    });
+
+    pdfCopyBtn.addEventListener("click", async () => {
+
+      if (!pdfState.current?.url) return;
+
+      const text = `${pdfState.current.meta.pdfName || ""}\n${pdfState.current.url}`;
+
+      try{
+
+        await navigator.clipboard.writeText(text);
+
+      }catch{}
+
+    });
+
+    document.addEventListener("keydown", (e) => {
+
+      if (e.key === "Escape" && pdfOverlay.classList.contains("open")){
+
+        e.preventDefault();
+
+        closePdfViewer();
+
+      }
+
+    });
+
     async function loadItems(){
 
       try{
+
+        statusEl.textContent = "Yükleniyor...";
 
         const res1 = await fetch(`https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}`, {
 
@@ -5884,6 +6096,8 @@
 
         items = finalItems;
 
+        await loadPdfIndex();
+
         statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
 
         setSortIcons();
@@ -5896,8 +6110,6 @@
 
         updateSticky(true);
 
-        warmPdfProbes();
-
       }catch(err){
 
         console.error(err);
@@ -5905,318 +6117,6 @@
         statusEl.textContent = "Liste yüklenemedi.";
 
       }
-
-    }
-
-    const pdfIndexState = {
-
-      loaded: false,
-
-      tried: false,
-
-      lookupByAudioName: new Map(),
-
-      matches: []
-
-    };
-
-    const pdfProbeCache = new Map();
-
-    const pdfProbeQueue = [];
-
-    const pdfProbeLoading = new Set();
-
-    let pdfProbeActive = 0;
-
-    const PDF_PROBE_CONCURRENCY = 4;
-
-    let pdfProbeRenderTimer = null;
-
-    let currentPdf = null;
-
-    let pdfJsLoadPromise = null;
-
-    function schedulePdfRender(){
-
-      if (pdfProbeRenderTimer) return;
-
-      pdfProbeRenderTimer = setTimeout(() => {
-
-        pdfProbeRenderTimer = null;
-
-        render();
-
-      }, 120);
-
-    }
-
-    function normalizeNameKey(s){
-
-      return decodeURIComponentSafe(String(s || "").split("/").pop() || "").trim().toLocaleLowerCase("tr");
-
-    }
-
-    async function loadPdfIndex(){
-
-      if (pdfIndexState.tried) return;
-
-      pdfIndexState.tried = true;
-
-      try{
-
-        const res = await fetch(PDF_INDEX_URL + (FORCE_REFRESH ? `?v=${Date.now()}` : ""), { cache: "no-cache" });
-
-        if (!res.ok) throw new Error("pdf index not found");
-
-        const j = await res.json();
-
-        pdfIndexState.lookupByAudioName.clear();
-
-        pdfIndexState.matches = Array.isArray(j?.matches) ? j.matches : [];
-
-        const rawLookup = j?.lookup_by_audio_name || {};
-
-        for (const [audioName, data] of Object.entries(rawLookup)){
-
-          pdfIndexState.lookupByAudioName.set(normalizeNameKey(audioName), data || {});
-
-        }
-
-        for (const m of pdfIndexState.matches){
-
-          if (!m || !m.audio_name) continue;
-
-          if (!pdfIndexState.lookupByAudioName.has(normalizeNameKey(m.audio_name))){
-
-            pdfIndexState.lookupByAudioName.set(normalizeNameKey(m.audio_name), {
-
-              pdf: m.pdf_name || "",
-
-              pdf_rel: m.pdf_rel || "",
-
-              score: m.score || 0,
-
-              strategy: m.strategy || ""
-
-            });
-
-          }
-
-        }
-
-        pdfIndexState.loaded = true;
-
-      }catch(err){
-
-        console.warn("pdf-index.json okunamadı:", err);
-
-      }
-
-    }
-
-    function exactPdfRelForItem(it){
-
-      const rawName = decodeURIComponentSafe((it?.name || "").split("/").pop() || "");
-
-      const pdfName = rawName.replace(/\.(m4a|mp3|wav|aac|ogg|flac)$/i, ".pdf");
-
-      return pdfName ? `docs/${pdfName}` : "";
-
-    }
-
-    function getPdfCandidatesForItem(it){
-
-      const out = [];
-
-      const key = normalizeNameKey((it?.name || "").split("/").pop() || "");
-
-      const byLookup = pdfIndexState.lookupByAudioName.get(key);
-
-      if (byLookup){
-
-        const rel = String(byLookup.pdf_rel || "").trim();
-
-        const pdf = String(byLookup.pdf || "").trim();
-
-        if (rel) out.push({ rel, name: pdf || rel.split("/").pop() || "" });
-
-        else if (pdf) out.push({ rel: `docs/${pdf}`, name: pdf });
-
-      }
-
-      if (Array.isArray(pdfIndexState.matches)){
-
-        for (const m of pdfIndexState.matches){
-
-          if (!m) continue;
-
-          if (normalizeNameKey(m.audio_name || "") !== key) continue;
-
-          const rel = String(m.pdf_rel || "").trim();
-
-          const pdf = String(m.pdf_name || "").trim();
-
-          if (rel) out.push({ rel, name: pdf || rel.split("/").pop() || "" });
-
-          else if (pdf) out.push({ rel: `docs/${pdf}`, name: pdf });
-
-        }
-
-      }
-
-      const exact = exactPdfRelForItem(it);
-
-      if (exact) out.push({ rel: exact, name: exact.split("/").pop() || "" });
-
-      const dedup = [];
-
-      const seen = new Set();
-
-      for (const c of out){
-
-        const rel = String(c.rel || "").trim();
-
-        if (!rel || seen.has(rel)) continue;
-
-        seen.add(rel);
-
-        dedup.push(c);
-
-      }
-
-      return dedup;
-
-    }
-
-    async function headOrRangeOk(url){
-
-      try{
-
-        const r = await fetch(url, { method: "HEAD", cache: "no-store" });
-
-        if (r.ok) return true;
-
-      }catch{}
-
-      try{
-
-        const r = await fetch(url, {
-
-          method: "GET",
-
-          cache: "no-store",
-
-          headers: { range: "bytes=0-1" }
-
-        });
-
-        return r.ok;
-
-      }catch{
-
-        return false;
-
-      }
-
-    }
-
-    async function probePdfForItem(it){
-
-      if (!it?.id) return;
-
-      if (pdfProbeCache.has(it.id)) return;
-
-      if (pdfProbeLoading.has(it.id)) return;
-
-      pdfProbeLoading.add(it.id);
-
-      pdfProbeQueue.push(it);
-
-      pumpPdfProbeQueue();
-
-    }
-
-    function pumpPdfProbeQueue(){
-
-      while (pdfProbeActive < PDF_PROBE_CONCURRENCY && pdfProbeQueue.length){
-
-        const it = pdfProbeQueue.shift();
-
-        pdfProbeActive++;
-
-        (async () => {
-
-          try{
-
-            await loadPdfIndex();
-
-            const candidates = getPdfCandidatesForItem(it);
-
-            let found = null;
-
-            for (const c of candidates){
-
-              const abs = new URL(c.rel, location.href).toString();
-
-              const ok = await headOrRangeOk(abs);
-
-              if (ok){
-
-                found = { exists: true, rel: c.rel, abs, name: c.name || c.rel.split("/").pop() || "" };
-
-                break;
-
-              }
-
-            }
-
-            if (found) pdfProbeCache.set(it.id, found);
-
-            else pdfProbeCache.set(it.id, { exists: false, rel: "", abs: "", name: "" });
-
-          }catch{
-
-            pdfProbeCache.set(it.id, { exists: false, rel: "", abs: "", name: "" });
-
-          }finally{
-
-            pdfProbeLoading.delete(it.id);
-
-            pdfProbeActive--;
-
-            schedulePdfRender();
-
-            pumpPdfProbeQueue();
-
-          }
-
-        })();
-
-      }
-
-    }
-
-    function warmPdfProbes(){
-
-      for (const it of items){
-
-        probePdfForItem(it);
-
-      }
-
-    }
-
-    function getPdfInfoForItem(it){
-
-      return pdfProbeCache.get(it.id) || null;
-
-    }
-
-    function itemHasPdf(it){
-
-      const info = getPdfInfoForItem(it);
-
-      return !!(info && info.exists);
 
     }
 
@@ -6229,8 +6129,6 @@
         if (q && !foldTR(it.title).includes(q)) return false;
 
         if (filterFav && !favs[it.id]) return false;
-
-        if (filterPdf && !itemHasPdf(it)) return false;
 
         return true;
 
@@ -6370,35 +6268,23 @@
 
     }
 
-    function createPdfRowButton(it){
+    function makePdfBtn(it){
 
-      const info = getPdfInfoForItem(it);
+      const pdfMeta = getBestPdfForItem(it);
 
-      const exists = !!(info && info.exists);
+      const hasPdf = !!pdfMeta;
 
       const btn = document.createElement("button");
 
       btn.type = "button";
 
-      btn.className = "iconBtn pdfIconBtn " + (exists ? "pdfOn" : "pdfOff");
+      btn.className = `iconBtn pdfBtn ${hasPdf ? "hasPdf" : "noPdf"}`;
 
-      btn.title = exists ? "PDF aç" : (pdfProbeLoading.has(it.id) ? "PDF aranıyor…" : "PDF yok");
+      btn.title = hasPdf ? "PDF aç" : "PDF yok";
 
       btn.dataset.kind = "pdf";
 
-      btn.disabled = !exists;
-
-      btn.innerHTML = `
-
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-
-          <path fill="#E61B23" d="M6 2h8l4 4v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/>
-
-          <path fill="#fff" d="M14 2v4h4z"/>
-
-          <path fill="#fff" d="M7.1 16.8v-5.7h2.1c1.2 0 2 .7 2 1.8 0 1.1-.8 1.8-2 1.8H8.3v2.1H7.1zm1.2-3.1h.8c.5 0 .9-.3.9-.8s-.4-.8-.9-.8h-.8v1.6zm4.1 3.1v-5.7h1.8c1.8 0 2.9 1.1 2.9 2.8 0 1.7-1.1 2.9-2.9 2.9h-1.8zm1.2-1h.6c1.1 0 1.8-.7 1.8-1.8s-.7-1.8-1.8-1.8h-.6v3.6zm4-4.7h3.4v1h-2.2v1.3h1.9v1h-1.9v2.4h-1.2v-5.7z"/>
-
-        </svg>`;
+      btn.innerHTML = pdfAdobeSvg();
 
       btn.addEventListener("pointerup", (e) => e.stopPropagation());
 
@@ -6408,9 +6294,9 @@
 
         e.stopPropagation();
 
-        if (!exists) return;
+        if (!hasPdf) return;
 
-        openPdfViewer(it, info);
+        openPdfViewer(it, pdfMeta);
 
       });
 
@@ -6424,6 +6310,10 @@
 
       metaEl.textContent = `Görünən: ${visible.length} / Toplam: ${items.length}`;
 
+      filterFavBtn.classList.toggle("on", filterFav);
+
+      filterFavBtn.setAttribute("aria-pressed", String(filterFav));
+
       setSortIcons();
 
       listEl.innerHTML = "";
@@ -6433,12 +6323,6 @@
       for (const it of toMeasure){
 
         if (!(durs[it.id] > 0)) requestDuration(it);
-
-      }
-
-      for (const it of items){
-
-        if (!pdfProbeCache.has(it.id) && !pdfProbeLoading.has(it.id)) probePdfForItem(it);
 
       }
 
@@ -6476,7 +6360,7 @@
 
         dlCount.textContent = String(Number(globalDownloadCounts[it.id]) || 0);
 
-        const pdfBtn = createPdfRowButton(it);
+        const pdfBtn = makePdfBtn(it);
 
         favBtn.addEventListener("click", (e) => {
 
@@ -6521,6 +6405,14 @@
           }, 0);
 
         });
+
+        for (const b of [favBtn, dlBtn]){
+
+          b.addEventListener("pointerup", (e) => e.stopPropagation());
+
+          b.addEventListener("pointerdown", (e) => e.stopPropagation());
+
+        }
 
         row.appendChild(title);
 
@@ -6722,16 +6614,6 @@
 
       if (e.key === "Escape"){
 
-        if (pdfOverlay.classList.contains("open")){
-
-          e.preventDefault();
-
-          closePdfViewer();
-
-          return;
-
-        }
-
         if (txPanel.classList.contains("open")){
 
           e.preventDefault();
@@ -6786,23 +6668,9 @@
 
     });
 
-    filterPdfBtn.addEventListener("click", () => {
-
-      filterPdf = !filterPdf;
-
-      localStorage.setItem(LS.filterPdf, filterPdf ? "1" : "0");
-
-      render();
-
-    });
-
     resetBtn.addEventListener("click", () => {
 
       filterFav = false;
-
-      filterPdf = false;
-
-      localStorage.setItem(LS.filterPdf, "0");
 
       searchEl.value = "";
 
@@ -6997,8 +6865,6 @@
     }
 
     function clampPlayerToViewport(){
-
-      if (fp.classList.contains("hiddenWhileTypingFull")) return;
 
       const { minX, maxX, minY, maxY } = getPlayerBoundsPx();
 
@@ -7288,16 +7154,6 @@
 
       try{
 
-        pdfIndexState.tried = false;
-
-        pdfIndexState.loaded = false;
-
-        pdfIndexState.lookupByAudioName.clear();
-
-        pdfIndexState.matches = [];
-
-        pdfProbeCache.clear();
-
         await loadItems();
 
       } finally {
@@ -7313,18 +7169,6 @@
     sbFavBtn.addEventListener("click", () => {
 
       filterFav = !filterFav;
-
-      setSortIcons();
-
-      render();
-
-    });
-
-    sbPdfBtn.addEventListener("click", () => {
-
-      filterPdf = !filterPdf;
-
-      localStorage.setItem(LS.filterPdf, filterPdf ? "1" : "0");
 
       setSortIcons();
 
@@ -9196,186 +9040,6 @@
 
     });
 
-    let pdfExtractTextCache = new Map();
-
-    function setPdfStatus(text){
-
-      pdfStatusEl.textContent = text || "";
-
-      pdfStatusEl.style.display = text ? "block" : "none";
-
-    }
-
-    function closePdfViewer(){
-
-      currentPdf = null;
-
-      pdfOverlay.classList.remove("open");
-
-      pdfOverlay.setAttribute("aria-hidden", "true");
-
-      pdfFrame.src = "about:blank";
-
-      setPdfStatus("");
-
-      pdfCopyAllBtn.disabled = false;
-
-    }
-
-    async function ensurePdfJs(){
-
-      if (window.pdfjsLib && window.pdfjsLib.getDocument) return;
-
-      if (pdfJsLoadPromise) return pdfJsLoadPromise;
-
-      pdfJsLoadPromise = new Promise((resolve, reject) => {
-
-        const s = document.createElement("script");
-
-        s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.js";
-
-        s.onload = () => {
-
-          try{
-
-            window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.js";
-
-            resolve();
-
-          }catch(err){
-
-            reject(err);
-
-          }
-
-        };
-
-        s.onerror = reject;
-
-        document.head.appendChild(s);
-
-      });
-
-      return pdfJsLoadPromise;
-
-    }
-
-    async function extractAllPdfText(url){
-
-      const cached = pdfExtractTextCache.get(url);
-
-      if (cached) return cached;
-
-      await ensurePdfJs();
-
-      const task = window.pdfjsLib.getDocument({ url, withCredentials: false });
-
-      const pdf = await task.promise;
-
-      const pages = [];
-
-      for (let i = 1; i <= pdf.numPages; i++){
-
-        const page = await pdf.getPage(i);
-
-        const text = await page.getTextContent();
-
-        const strs = (text.items || []).map((x) => x.str || "").join(" ");
-
-        pages.push(strs.trim());
-
-      }
-
-      const full = pages.join("\n\n").trim();
-
-      pdfExtractTextCache.set(url, full);
-
-      return full;
-
-    }
-
-    async function openPdfViewer(it, info){
-
-      if (!info?.exists || !info.abs) return;
-
-      currentPdf = { it, info };
-
-      pdfTitleEl.textContent = info.name || "PDF";
-
-      pdfOverlay.classList.add("open");
-
-      pdfOverlay.setAttribute("aria-hidden", "false");
-
-      setPdfStatus("PDF yükleniyor…");
-
-      pdfFrame.src = info.abs + "#toolbar=0&navpanes=0&scrollbar=1&view=FitH";
-
-      trackPdfOpen(it, info.name || "");
-
-    }
-
-    pdfFrame.addEventListener("load", () => {
-
-      setPdfStatus("");
-
-    });
-
-    pdfDownloadBtn.addEventListener("click", () => {
-
-      if (!currentPdf?.info?.abs) return;
-
-      clickDownload(currentPdf.info.abs, currentPdf.info.name || "document.pdf");
-
-      trackPdfDownload(currentPdf.it, currentPdf.info.name || "");
-
-    });
-
-    pdfCopyAllBtn.addEventListener("click", async () => {
-
-      if (!currentPdf?.info?.abs) return;
-
-      pdfCopyAllBtn.disabled = true;
-
-      setPdfStatus("PDF metni kopyalanıyor…");
-
-      try{
-
-        const text = await extractAllPdfText(currentPdf.info.abs);
-
-        const ok = await copyToClipboard(text || "");
-
-        setPdfStatus(ok ? "Tüm PDF metni kopyalandı." : "Kopyalama başarısız.");
-
-      }catch(err){
-
-        console.warn(err);
-
-        setPdfStatus("PDF metni okunamadı.");
-
-      }finally{
-
-        pdfCopyAllBtn.disabled = false;
-
-        setTimeout(() => {
-
-          if (pdfOverlay.classList.contains("open")) setPdfStatus("");
-
-        }, 1500);
-
-      }
-
-    });
-
-    pdfCloseBtn.addEventListener("click", closePdfViewer);
-
-    pdfOverlay.addEventListener("click", (e) => {
-
-      if (e.target === pdfOverlay) closePdfViewer();
-
-    });
-
-    pdfPanel.addEventListener("click", (e) => e.stopPropagation());
-
     setSortIcons();
 
     restoreUiState();
@@ -9503,8 +9167,6 @@
       statusEl.textContent = `SRT kontrol bitti: ${checked}/${maxN} (eksik: ${missing})`;
 
     }
-
-    loadPdfIndex().catch(() => {});
 
     loadItems();
 
