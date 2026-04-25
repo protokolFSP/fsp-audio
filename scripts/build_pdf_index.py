@@ -1,493 +1,353 @@
-# scripts/build_pdf_index.py
-
+# file: scripts/build_pdf_index.py
 #!/usr/bin/env python3
 
 from __future__ import annotations
 
 import json
-
+import math
 import os
-
 import re
-
 import sys
-
 import unicodedata
-
 from collections import defaultdict
-
 from dataclasses import dataclass, asdict
-
-from difflib import SequenceMatcher
-
+from datetime import datetime, timezone
 from pathlib import Path
-
 from typing import Iterable
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[1]
+DOCS_DIR = ROOT / "docs"
+OUTPUT_PATH = DOCS_DIR / "pdf-index.json"
 
-DOCS_DIR = REPO_ROOT / "docs"
-
-OUTPUT_JSON = DOCS_DIR / "pdf-index.json"
-
-AUDIO_EXTENSIONS = {".mp3", ".m4a", ".wav", ".aac", ".ogg", ".flac"}
-
-PDF_EXTENSIONS = {".pdf"}
+AUDIO_EXTS = {".mp3", ".m4a", ".wav", ".aac", ".ogg", ".flac"}
+PDF_EXTS = {".pdf"}
 
 STOPWORDS = {
-
-    "dr", "doktor", "frau", "herr", "mit", "und", "ve", "ile", "bei",
-
-    "der", "die", "das", "ein", "eine", "bir", "von", "zu", "im", "in",
-
-    "de", "den", "dem", "des", "fur", "für", "ohne", "not", "audio",
-
-    "fsp", "guncel", "güncel", "atelier"
-
+    "dr", "doktor", "doctor", "frau", "herr", "mit", "und", "ve", "ile",
+    "bei", "von", "der", "die", "das", "den", "dem", "ein", "eine",
+    "patient", "patientin", "olgu", "vaka", "case", "audio", "fsp",
+    "neu", "ab", "atelier", "guncel", "güncel", "kayit", "kayıt"
 }
 
 DATE_PATTERNS = [
-
     re.compile(r"(?<!\d)(\d{1,2})[.\-_/](\d{1,2})[.\-_/](\d{4})(?!\d)"),
-
     re.compile(r"(?<!\d)(\d{1,2})[.\-_/](\d{1,2})[.\-_/](\d{2})(?!\d)"),
-
 ]
 
-TOKEN_RE = re.compile(r"[a-z0-9]+", re.IGNORECASE)
+WORD_RE = re.compile(r"[a-z0-9]+", re.IGNORECASE)
 
-@dataclass
 
-class AudioCandidate:
-
-    id: str
-
-    src: str
-
-    title: str
-
-    name: str
-
-    normalized_name: str
-
-    normalized_title: str
-
+@dataclass(frozen=True)
+class FileEntry:
+    rel_path: str
+    filename: str
+    stem: str
+    ext: str
+    tokens: tuple[str, ...]
     date_key: str | None
 
+
 @dataclass
-
-class PdfEntry:
-
-    pdf_name: str
-
-    pdf_path: str
-
-    audio_id: str | None
-
-    audio_name: str | None
-
-    audio_src: str | None
-
+class MatchEntry:
+    audio_rel: str
+    audio_name: str
+    pdf_rel: str | None
+    pdf_name: str | None
     score: float
+    strategy: str
+    audio_date: str | None
+    pdf_date: str | None
 
-    date_key: str | None
 
-    reason: str
+def strip_diacritics(text: str) -> str:
+    text = unicodedata.normalize("NFKD", text)
+    return "".join(ch for ch in text if not unicodedata.combining(ch))
 
-def strip_ext(name: str) -> str:
 
-    return os.path.splitext(name)[0]
+def normalize_text(text: str) -> str:
+    text = strip_diacritics(text).lower()
+    text = text.replace("ß", "ss")
+    text = text.replace("ı", "i")
+    text = text.replace("’", "'")
+    text = re.sub(r"\b[a]\s+", "", text)
+    text = re.sub(r"[_\-]+", " ", text)
+    text = re.sub(r"[^\w.\s]", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
 
-def normalize_text(value: str) -> str:
 
-    value = unicodedata.normalize("NFKD", value)
-
-    value = "".join(ch for ch in value if not unicodedata.combining(ch))
-
-    value = value.lower()
-
-    value = value.replace("ı", "i").replace("ß", "ss")
-
-    value = re.sub(r"[\u2010-\u2015]", "-", value)
-
-    value = value.replace("_", " ")
-
-    value = value.replace("-", " ")
-
-    value = re.sub(r"\s+", " ", value).strip()
-
-    return value
-
-def tokenize(value: str) -> list[str]:
-
-    norm = normalize_text(value)
-
-    tokens = TOKEN_RE.findall(norm)
-
-    return [t for t in tokens if t not in STOPWORDS and len(t) > 1]
-
-def normalize_filename_for_match(name: str) -> str:
-
-    base = strip_ext(Path(name).name)
-
-    base = normalize_text(base)
-
-    base = re.sub(r"^a[\s_-]+", "", base).strip()
-
-    return base
-
-def extract_date_key(value: str) -> str | None:
-
-    text = Path(value).name
-
+def extract_date_key(text: str) -> str | None:
+    raw = normalize_text(text)
     for pattern in DATE_PATTERNS:
-
-        match = pattern.search(text)
-
+        match = pattern.search(raw)
         if not match:
-
             continue
-
         dd = int(match.group(1))
-
         mm = int(match.group(2))
-
         yy = int(match.group(3))
-
         if yy < 100:
-
             yy += 2000
-
-        if 1 <= dd <= 31 and 1 <= mm <= 12:
-
-            return f"{yy:04d}-{mm:02d}-{dd:02d}"
-
+        try:
+            dt = datetime(yy, mm, dd)
+        except ValueError:
+            continue
+        return dt.strftime("%Y-%m-%d")
     return None
 
-def similarity(a: str, b: str) -> float:
 
-    if not a or not b:
+def tokenize(text: str) -> tuple[str, ...]:
+    raw = normalize_text(text)
+    raw = re.sub(r"\b\d{1,2}[.\-_/]\d{1,2}[.\-_/]\d{2,4}\b", " ", raw)
+    tokens = []
+    for token in WORD_RE.findall(raw):
+        if token in STOPWORDS:
+            continue
+        if len(token) <= 1:
+            continue
+        tokens.append(token)
+    return tuple(tokens)
 
-        return 0.0
 
-    return SequenceMatcher(None, a, b).ratio()
+def rel_posix(path: Path) -> str:
+    return path.relative_to(ROOT).as_posix()
 
-def token_jaccard(a: Iterable[str], b: Iterable[str]) -> float:
 
-    sa = set(a)
+def walk_files(base: Path, allowed_exts: set[str]) -> list[Path]:
+    if not base.exists():
+        return []
+    out: list[Path] = []
+    for path in base.rglob("*"):
+        if not path.is_file():
+            continue
+        if path.suffix.lower() in allowed_exts:
+            out.append(path)
+    return sorted(out)
 
-    sb = set(b)
 
-    if not sa or not sb:
+def make_entry(path: Path) -> FileEntry:
+    rel = rel_posix(path)
+    filename = path.name
+    stem = path.stem
+    return FileEntry(
+        rel_path=rel,
+        filename=filename,
+        stem=stem,
+        ext=path.suffix.lower(),
+        tokens=tokenize(stem),
+        date_key=extract_date_key(stem),
+    )
 
-        return 0.0
 
-    inter = len(sa & sb)
-
-    union = len(sa | sb)
-
-    return inter / union if union else 0.0
-
-def combined_score(pdf_name: str, pdf_tokens: list[str], candidate: AudioCandidate) -> float:
-
-    s1 = similarity(pdf_name, candidate.normalized_name)
-
-    s2 = similarity(pdf_name, candidate.normalized_title)
-
-    s3 = token_jaccard(pdf_tokens, tokenize(candidate.normalized_name))
-
-    s4 = token_jaccard(pdf_tokens, tokenize(candidate.normalized_title))
-
-    return max(s1, s2) * 0.7 + max(s3, s4) * 0.3
-
-def build_audio_candidates() -> list[AudioCandidate]:
-
-    candidates: list[AudioCandidate] = []
-
-    s1_identifier = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25"
-
-    s2_identifier = "FSPneu"
-
-    def add_candidate(src: str, name: str, title: str) -> None:
-
-        local_id = name or title
-
-        audio_id = f"{src}|{local_id}"
-
-        candidates.append(
-
-            AudioCandidate(
-
-                id=audio_id,
-
-                src=src,
-
-                title=title,
-
-                name=name,
-
-                normalized_name=normalize_filename_for_match(name),
-
-                normalized_title=normalize_text(title),
-
-                date_key=extract_date_key(name or title),
-
-            )
-
-        )
-
-    static_candidates = [
-
-        (
-
-            "S1",
-
-            s1_identifier,
-
-            "Vorhofflimmern bei bekannter KHK Dr Ömer Dr Remzi 09.05.25.m4a",
-
-            "Vorhofflimmern bei bekannter KHK Dr Ömer Dr Remzi 09.05.25",
-
-        ),
-
+def find_audio_dirs() -> list[Path]:
+    candidates = [
+        ROOT / "audio",
+        ROOT / "audios",
+        ROOT / "files",
+        ROOT / "media",
+        ROOT / "downloads",
+        ROOT,
     ]
-
-    for src, _, file_name, title in static_candidates:
-
-        add_candidate(src, file_name, title)
-
-    for pdf_file in DOCS_DIR.glob("*.pdf"):
-
-        base = strip_ext(pdf_file.name)
-
-        date_key = extract_date_key(base)
-
-        if not date_key:
-
+    seen: set[Path] = set()
+    out: list[Path] = []
+    for candidate in candidates:
+        if candidate in seen:
             continue
+        seen.add(candidate)
+        if candidate.exists():
+            out.append(candidate)
+    return out
 
-        possible_audio_name = base + ".m4a"
 
-        add_candidate("S2", possible_audio_name, base)
+def load_audio_entries() -> list[FileEntry]:
+    paths: list[Path] = []
+    for base in find_audio_dirs():
+        paths.extend(walk_files(base, AUDIO_EXTS))
 
-    return dedupe_audio_candidates(candidates)
-
-def dedupe_audio_candidates(candidates: list[AudioCandidate]) -> list[AudioCandidate]:
-
-    best: dict[str, AudioCandidate] = {}
-
-    for item in candidates:
-
-        key = f"{item.src}|{item.normalized_name}|{item.date_key or ''}"
-
-        if key not in best:
-
-            best[key] = item
-
+    filtered: list[Path] = []
+    for path in paths:
+        rel = rel_posix(path)
+        if rel.startswith("docs/"):
             continue
+        if rel.startswith(".git/"):
+            continue
+        filtered.append(path)
 
-        old = best[key]
+    uniq = sorted({p.resolve(): p for p in filtered}.values(), key=lambda p: rel_posix(p))
+    return [make_entry(p) for p in uniq]
 
-        if len(item.title) > len(old.title):
 
-            best[key] = item
+def load_pdf_entries() -> list[FileEntry]:
+    pdf_paths = walk_files(DOCS_DIR, PDF_EXTS)
+    return [make_entry(p) for p in pdf_paths]
 
-    return list(best.values())
 
-def scan_pdfs() -> list[Path]:
+def token_counter(tokens: Iterable[str]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for tok in tokens:
+        counts[tok] = counts.get(tok, 0) + 1
+    return counts
 
-    if not DOCS_DIR.exists():
 
-        raise FileNotFoundError(f"docs klasörü bulunamadı: {DOCS_DIR}")
+def cosine_score(a_tokens: tuple[str, ...], b_tokens: tuple[str, ...]) -> float:
+    if not a_tokens or not b_tokens:
+        return 0.0
+    a = token_counter(a_tokens)
+    b = token_counter(b_tokens)
 
-    return sorted(
+    dot = 0.0
+    for tok, av in a.items():
+        dot += av * b.get(tok, 0)
 
-        [p for p in DOCS_DIR.iterdir() if p.is_file() and p.suffix.lower() in PDF_EXTENSIONS],
+    norm_a = math.sqrt(sum(v * v for v in a.values()))
+    norm_b = math.sqrt(sum(v * v for v in b.values()))
+    if norm_a <= 0 or norm_b <= 0:
+        return 0.0
+    return dot / (norm_a * norm_b)
 
-        key=lambda p: p.name.lower(),
 
-    )
+def overlap_score(a_tokens: tuple[str, ...], b_tokens: tuple[str, ...]) -> float:
+    if not a_tokens or not b_tokens:
+        return 0.0
+    a = set(a_tokens)
+    b = set(b_tokens)
+    inter = len(a & b)
+    if inter == 0:
+        return 0.0
+    return inter / max(1, len(a | b))
 
-def match_pdf_to_audio(pdf_path: Path, candidates: list[AudioCandidate]) -> PdfEntry:
 
-    pdf_name = pdf_path.name
+def prefix_bonus(audio_name: str, pdf_name: str) -> float:
+    a = normalize_text(Path(audio_name).stem)
+    b = normalize_text(Path(pdf_name).stem)
+    if not a or not b:
+        return 0.0
+    if a == b:
+        return 0.35
+    if a in b or b in a:
+        return 0.18
+    return 0.0
 
-    pdf_base = strip_ext(pdf_name)
 
-    pdf_norm = normalize_filename_for_match(pdf_name)
+def date_bonus(audio_date: str | None, pdf_date: str | None) -> float:
+    if not audio_date or not pdf_date:
+        return 0.0
+    return 0.30 if audio_date == pdf_date else -0.25
 
-    pdf_tokens = tokenize(pdf_base)
 
-    pdf_date = extract_date_key(pdf_name)
+def score_match(audio: FileEntry, pdf: FileEntry) -> float:
+    score = 0.0
+    score += cosine_score(audio.tokens, pdf.tokens) * 0.55
+    score += overlap_score(audio.tokens, pdf.tokens) * 0.35
+    score += prefix_bonus(audio.filename, pdf.filename)
+    score += date_bonus(audio.date_key, pdf.date_key)
+    return round(score, 6)
 
-    dated_candidates = [c for c in candidates if pdf_date and c.date_key == pdf_date]
 
-    pool = dated_candidates if dated_candidates else candidates
+def choose_best_pdf(audio: FileEntry, pdfs: list[FileEntry]) -> tuple[FileEntry | None, float, str]:
+    if not pdfs:
+        return None, 0.0, "none"
 
-    if not pool:
+    dated_candidates = [p for p in pdfs if audio.date_key and p.date_key == audio.date_key]
+    pool = dated_candidates if dated_candidates else pdfs
 
-        return PdfEntry(
+    scored = [(pdf, score_match(audio, pdf)) for pdf in pool]
+    scored.sort(key=lambda item: (item[1], item[0].filename.lower()), reverse=True)
 
-            pdf_name=pdf_name,
+    best_pdf, best_score = scored[0]
 
-            pdf_path=f"docs/{pdf_name}",
+    if len(pool) == 1 and dated_candidates:
+      strategy = "date_only"
+    elif dated_candidates:
+      strategy = "date_then_similarity"
+    else:
+      strategy = "similarity_only"
 
-            audio_id=None,
+    min_score = 0.12 if dated_candidates else 0.22
+    if best_score < min_score:
+        return None, best_score, f"{strategy}_below_threshold"
 
-            audio_name=None,
+    return best_pdf, best_score, strategy
 
-            audio_src=None,
 
-            score=0.0,
+def build_matches(audio_entries: list[FileEntry], pdf_entries: list[FileEntry]) -> list[MatchEntry]:
+    matches: list[MatchEntry] = []
 
-            date_key=pdf_date,
+    pdfs_by_date: dict[str, list[FileEntry]] = defaultdict(list)
+    for pdf in pdf_entries:
+        if pdf.date_key:
+            pdfs_by_date[pdf.date_key].append(pdf)
 
-            reason="no-candidate",
-
+    for audio in audio_entries:
+        pool = pdfs_by_date.get(audio.date_key, []) if audio.date_key else []
+        best_pdf, best_score, strategy = choose_best_pdf(audio, pool or pdf_entries)
+        matches.append(
+            MatchEntry(
+                audio_rel=audio.rel_path,
+                audio_name=audio.filename,
+                pdf_rel=best_pdf.rel_path if best_pdf else None,
+                pdf_name=best_pdf.filename if best_pdf else None,
+                score=best_score,
+                strategy=strategy,
+                audio_date=audio.date_key,
+                pdf_date=best_pdf.date_key if best_pdf else None,
+            )
         )
 
-    scored = []
+    matches.sort(key=lambda x: x.audio_rel.lower())
+    return matches
 
-    for cand in pool:
 
-        score = combined_score(pdf_norm, pdf_tokens, cand)
+def build_lookup(matches: list[MatchEntry]) -> dict[str, dict[str, object]]:
+    lookup: dict[str, dict[str, object]] = {}
+    for m in matches:
+        lookup[m.audio_name] = {
+            "pdf": m.pdf_name,
+            "pdf_rel": m.pdf_rel,
+            "score": m.score,
+            "strategy": m.strategy,
+            "audio_date": m.audio_date,
+            "pdf_date": m.pdf_date,
+        }
+    return lookup
 
-        if pdf_date and cand.date_key == pdf_date:
 
-            score += 0.20
+def write_output(audio_entries: list[FileEntry], pdf_entries: list[FileEntry], matches: list[MatchEntry]) -> None:
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-        scored.append((score, cand))
-
-    scored.sort(key=lambda x: x[0], reverse=True)
-
-    best_score, best = scored[0]
-
-    if best_score < 0.25:
-
-        return PdfEntry(
-
-            pdf_name=pdf_name,
-
-            pdf_path=f"docs/{pdf_name}",
-
-            audio_id=None,
-
-            audio_name=None,
-
-            audio_src=None,
-
-            score=round(best_score, 4),
-
-            date_key=pdf_date,
-
-            reason="low-score",
-
-        )
-
-    reason = "date+similarity" if pdf_date and best.date_key == pdf_date else "similarity-fallback"
-
-    return PdfEntry(
-
-        pdf_name=pdf_name,
-
-        pdf_path=f"docs/{pdf_name}",
-
-        audio_id=best.id,
-
-        audio_name=best.name,
-
-        audio_src=best.src,
-
-        score=round(best_score, 4),
-
-        date_key=pdf_date,
-
-        reason=reason,
-
-    )
-
-def build_index() -> dict:
-
-    pdf_files = scan_pdfs()
-
-    audio_candidates = build_audio_candidates()
-
-    matches = [match_pdf_to_audio(pdf, audio_candidates) for pdf in pdf_files]
-
-    by_audio_id: dict[str, dict] = {}
-
-    pdfs = []
-
-    for match in matches:
-
-        pdfs.append(asdict(match))
-
-        if match.audio_id:
-
-            by_audio_id[match.audio_id] = {
-
-                "pdf_name": match.pdf_name,
-
-                "pdf_path": match.pdf_path,
-
-                "score": match.score,
-
-                "reason": match.reason,
-
-                "date_key": match.date_key,
-
-            }
-
-    unmatched = [asdict(m) for m in matches if not m.audio_id]
-
-    return {
-
-        "version": 1,
-
-        "generated_at_utc": __import__("datetime").datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
-
-        "docs_dir": "docs",
-
-        "pdf_count": len(pdf_files),
-
-        "matched_count": len(matches) - len(unmatched),
-
-        "unmatched_count": len(unmatched),
-
-        "by_audio_id": by_audio_id,
-
-        "pdfs": pdfs,
-
-        "unmatched": unmatched,
-
+    payload = {
+        "generated_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "audio_count": len(audio_entries),
+        "pdf_count": len(pdf_entries),
+        "matched_count": sum(1 for m in matches if m.pdf_rel),
+        "unmatched_count": sum(1 for m in matches if not m.pdf_rel),
+        "lookup_by_audio_name": build_lookup(matches),
+        "matches": [asdict(m) for m in matches],
     }
 
+    OUTPUT_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
 def main() -> int:
+    audio_entries = load_audio_entries()
+    pdf_entries = load_pdf_entries()
 
-    try:
+    if not pdf_entries:
+        print("No PDFs found under docs/", file=sys.stderr)
 
-        index = build_index()
+    if not audio_entries:
+        print("No audio files found in repository.", file=sys.stderr)
 
-        DOCS_DIR.mkdir(parents=True, exist_ok=True)
+    matches = build_matches(audio_entries, pdf_entries)
+    write_output(audio_entries, pdf_entries, matches)
 
-        OUTPUT_JSON.write_text(json.dumps(index, ensure_ascii=False, indent=2), encoding="utf-8")
+    matched = sum(1 for m in matches if m.pdf_rel)
+    unmatched = sum(1 for m in matches if not m.pdf_rel)
 
-        print(f"OK: {OUTPUT_JSON}")
+    print(f"Wrote: {OUTPUT_PATH.as_posix()}")
+    print(f"Audio: {len(audio_entries)} | PDF: {len(pdf_entries)} | Matched: {matched} | Unmatched: {unmatched}")
+    return 0
 
-        print(f"pdf_count={index['pdf_count']}")
-
-        print(f"matched_count={index['matched_count']}")
-
-        print(f"unmatched_count={index['unmatched_count']}")
-
-        return 0
-
-    except Exception as exc:
-
-        print(f"HATA: {exc}", file=sys.stderr)
-
-        return 1
 
 if __name__ == "__main__":
-
     raise SystemExit(main())
+
