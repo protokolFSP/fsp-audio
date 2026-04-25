@@ -1,0 +1,96 @@
+{
+  "generatedAt": "25.04.2026 23:48",
+  "count": 10,
+  "items": [
+    {
+      "audioId": "S2|Sinusitis Dr Ömer mit Dr Hatip 03.04.2026.m4a",
+      "audioName": "Sinusitis Dr Ömer mit Dr Hatip 03.04.2026.m4a",
+      "audioTitle": "Sinusitis Dr Ömer mit Dr Hatip 03.04.2026.m4a",
+      "audioDate": "03.04.2020",
+      "pdfName": "Sinusitis Dr Ömer Mit Dr Hatip 03.04.2026.pdf",
+      "pdfPath": "./docs/Sinusitis Dr Ömer Mit Dr Hatip 03.04.2026.pdf",
+      "score": 350
+    },
+    {
+      "audioId": "S2|Sinusitis Ömer abi mit Dr Hatip 03.04.2026.m4a",
+      "audioName": "Sinusitis Ömer abi mit Dr Hatip 03.04.2026.m4a",
+      "audioTitle": "Sinusitis Ömer abi mit Dr Hatip 03.04.2026.m4a",
+      "audioDate": "03.04.2020",
+      "pdfName": "Sinusitis Dr Ömer Mit Dr Hatip 03.04.2026.pdf",
+      "pdfPath": "./docs/Sinusitis Dr Ömer Mit Dr Hatip 03.04.2026.pdf",
+      "score": 200
+    },
+    {
+      "audioId": "S2|Hypothyreose Fr Gerhild mit Dr Hatip 07.04.2026.m4a",
+      "audioName": "Hypothyreose Fr Gerhild mit Dr Hatip 07.04.2026.m4a",
+      "audioTitle": "Hypothyreose Fr Gerhild mit Dr Hatip 07.04.2026.m4a",
+      "audioDate": "07.04.2020",
+      "pdfName": "arterielle Hypertonie Dr. Rüveyda mit Dr Çetin 07.04.2026.pdf",
+      "pdfPath": "./docs/arterielle Hypertonie Dr. Rüveyda mit Dr Çetin 07.04.2026.pdf",
+      "score": 127
+    },
+    {
+      "audioId": "S2|arterielle Hypertonie Dr Rüveyda mit Dr Çetin 07.04.2026.m4a",
+      "audioName": "arterielle Hypertonie Dr Rüveyda mit Dr Çetin 07.04.2026.m4a",
+      "audioTitle": "arterielle Hypertonie Dr Rüveyda mit Dr Çetin 07.04.2026.m4a",
+      "audioDate": "07.04.2020",
+      "pdfName": "arterielle Hypertonie Dr. Rüveyda mit Dr Çetin 07.04.2026.pdf",
+      "pdfPath": "./docs/arterielle Hypertonie Dr. Rüveyda mit Dr Çetin 07.04.2026.pdf",
+      "score": 350
+    },
+    {
+      "audioId": "S1|Ureterolithiasis_Ureterkolik Dr Heiko mit Dr Mutlu12.02.2026.m4a",
+      "audioName": "Ureterolithiasis_Ureterkolik Dr Heiko mit Dr Mutlu12.02.2026.m4a",
+      "audioTitle": "Ureterolithiasis_Ureterkolik Dr Heiko mit Dr Mutlu12.02.2026.m4a",
+      "audioDate": "12.02.2020",
+      "pdfName": "Ureterolithiasis_Ureterkolik Dr Heiko mit Dr Mutlu 12.02.2026.pdf",
+      "pdfPath": "./docs/Ureterolithiasis_Ureterkolik Dr Heiko mit Dr Mutlu 12.02.2026.pdf",
+      "score": 162
+    },
+    {
+      "audioId": "S2|HWS Syndrome Fr Gerhild mit Dr Ekrem 12.03.2026.m4a",
+      "audioName": "HWS Syndrome Fr Gerhild mit Dr Ekrem 12.03.2026.m4a",
+      "audioTitle": "HWS Syndrome Fr Gerhild mit Dr Ekrem 12.03.2026.m4a",
+      "audioDate": "12.03.2020",
+      "pdfName": "HWS-Syndrom Fr Gerhild mit Dr Ekrem 12.03.2026.pdf",
+      "pdfPath": "./docs/HWS-Syndrom Fr Gerhild mit Dr Ekrem 12.03.2026.pdf",
+      "score": 178
+    },
+    {
+      "audioId": "S2|HerzinsuffiZienZ Dr Heiko mit Dr Zehra Betül 12.03.2026.m4a",
+      "audioName": "HerzinsuffiZienZ Dr Heiko mit Dr Zehra Betül 12.03.2026.m4a",
+      "audioTitle": "HerzinsuffiZienZ Dr Heiko mit Dr Zehra Betül 12.03.2026.m4a",
+      "audioDate": "12.03.2020",
+      "pdfName": "Dekompensierte Herzinsuffizienz Dr Heiko mit Dr Zehra Betül 12.03.2026 .pdf",
+      "pdfPath": "./docs/Dekompensierte Herzinsuffizienz Dr Heiko mit Dr Zehra Betül 12.03.2026 .pdf",
+      "score": 218
+    },
+    {
+      "audioId": "S2|TVT mit Lungenembolie Dr Ömer mit Dr Hülya 24.04.2026.m4a",
+      "audioName": "TVT mit Lungenembolie Dr Ömer mit Dr Hülya 24.04.2026.m4a",
+      "audioTitle": "TVT mit Lungenembolie Dr Ömer mit Dr Hülya 24.04.2026.m4a",
+      "audioDate": "24.04.2020",
+      "pdfName": "TVT mit Lungenembolie Dr Ömer mit Dr Hülya 24.04.2026.pdf",
+      "pdfPath": "./docs/TVT mit Lungenembolie Dr Ömer mit Dr Hülya 24.04.2026.pdf",
+      "score": 350
+    },
+    {
+      "audioId": "S2|Akute AppendiZitis Dr Heiko mit Dr Zehra Betul 26.03.2026.m4a",
+      "audioName": "Akute AppendiZitis Dr Heiko mit Dr Zehra Betul 26.03.2026.m4a",
+      "audioTitle": "Akute AppendiZitis Dr Heiko mit Dr Zehra Betul 26.03.2026.m4a",
+      "audioDate": "26.03.2020",
+      "pdfName": "akute Appendizitis Dr Heiko mit Dr Zehra Betul 26.03.2026 .pdf",
+      "pdfPath": "./docs/akute Appendizitis Dr Heiko mit Dr Zehra Betul 26.03.2026 .pdf",
+      "score": 350
+    },
+    {
+      "audioId": "S2|Akute Cholezystitis Fr Gerhild mit Dr. Sevilay 31.03.2026.m4a",
+      "audioName": "Akute Cholezystitis Fr Gerhild mit Dr. Sevilay 31.03.2026.m4a",
+      "audioTitle": "Akute Cholezystitis Fr Gerhild mit Dr. Sevilay 31.03.2026.m4a",
+      "audioDate": "31.03.2020",
+      "pdfName": "Akute Cholezystitis Fr Gerhild mit Dr Sevilay 31.03.2026.pdf",
+      "pdfPath": "./docs/Akute Cholezystitis Fr Gerhild mit Dr Sevilay 31.03.2026.pdf",
+      "score": 350
+    }
+  ]
+}
