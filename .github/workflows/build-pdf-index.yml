@@ -1,50 +1,72 @@
+
 # .github/workflows/build-pdf-index.yml
+
 name: Build PDF Index
 
 on:
+
   workflow_dispatch:
-  schedule:
-    - cron: "17 */6 * * *"
+
   push:
+
     branches:
+
       - main
+
     paths:
-      - "docs/**/*.pdf"
+
+      - "docs/**"
+
       - "scripts/build_pdf_index.py"
+
       - ".github/workflows/build-pdf-index.yml"
 
 permissions:
+
   contents: write
 
 jobs:
+
   build-pdf-index:
+
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout
+
         uses: actions/checkout@v4
 
       - name: Setup Python
+
         uses: actions/setup-python@v5
+
         with:
+
           python-version: "3.11"
 
-      - name: Build PDF index
+      - name: Build PDF Index
+
         run: python scripts/build_pdf_index.py
 
-      - name: Show diff
-        run: |
-          git status --short
-          test -f docs/pdf-index.json && head -n 40 docs/pdf-index.json || true
+      - name: Commit generated pdf-index.json
 
-      - name: Commit changes
         run: |
+
           if git diff --quiet -- docs/pdf-index.json; then
+
             echo "No changes"
+
             exit 0
+
           fi
+
           git config user.name "github-actions[bot]"
+
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git add docs/pdf-index.json
-          git commit -m "chore: rebuild pdf index"
+
+          git commit -m "chore: update pdf-index.json"
+
           git push
