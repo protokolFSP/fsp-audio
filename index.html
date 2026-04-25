@@ -2994,7 +2994,7 @@
 
           <button id="pdfDownloadBtn" class="pdfActionBtn" type="button">İndir</button>
 
-          <button id="pdfCopyBtn" class="pdfActionBtn" type="button">Hepsini kopyala</button>
+          <button id="pdfCopyBtn" class="pdfActionBtn" type="button">Bağlantıyı kopyala</button>
 
           <button id="pdfCloseBtn" class="pdfActionBtn" type="button">Kapat</button>
 
@@ -3040,7 +3040,11 @@
 
     const TXT_BASES = SRT_BASES;
 
+    const PDF_DIR = "./docs/";
+
     const PDF_INDEX_URL = "./docs/pdf-index.json";
+
+    const PDF_VIEWER_URL = "./docs/viewer.html";
 
     const CAPTION_MAX_LINES = 6;
 
@@ -3487,6 +3491,86 @@
       const union = new Set([...a, ...b]).size;
 
       return union ? (inter / union) : 0;
+
+    }
+
+    function cacheBustUrl(url){
+
+      try{
+
+        const u = new URL(url, location.href);
+
+        u.searchParams.set("_ts", String(Date.now()));
+
+        return u.toString();
+
+      }catch{
+
+        const sep = String(url).includes("?") ? "&" : "?";
+
+        return `${url}${sep}_ts=${Date.now()}`;
+
+      }
+
+    }
+
+    function ensureDocsRelativePath(path){
+
+      let p = String(path || "").trim();
+
+      if (!p) return "";
+
+      p = p.replace(/\\/g, "/");
+
+      p = p.replace(/^https?:\/\/[^/]+/i, "");
+
+      p = p.replace(/^\/+/, "");
+
+      p = p.replace(/^\.\//, "");
+
+      if (/^docs\//i.test(p)) return p;
+
+      if (/^viewer\.html$/i.test(p)) return `docs/${p}`;
+
+      if (/^pdf-index\.json$/i.test(p)) return `docs/${p}`;
+
+      if (/\.pdf($|\?)/i.test(p)) return `docs/${p}`;
+
+      return p;
+
+    }
+
+    function buildPdfAbsoluteUrl(path){
+
+      const normalized = ensureDocsRelativePath(path);
+
+      if (!normalized) return "";
+
+      try{
+
+        return new URL(normalized, location.href).toString();
+
+      }catch{
+
+        return normalized;
+
+      }
+
+    }
+
+    function buildViewerAbsoluteUrl(pdfPath){
+
+      const viewerAbs = buildPdfAbsoluteUrl(PDF_VIEWER_URL);
+
+      const pdfAbs = buildPdfAbsoluteUrl(pdfPath);
+
+      const viewerUrl = new URL(viewerAbs, location.href);
+
+      viewerUrl.searchParams.set("file", pdfAbs);
+
+      viewerUrl.hash = "";
+
+      return { viewerUrl: viewerUrl.toString(), pdfUrl: pdfAbs };
 
     }
 
@@ -5790,7 +5874,19 @@
 
     }
 
-    async function loadPdfIndex(){
+    async function loadPdfIndex(force = false){
+
+      if (force){
+
+        pdfState.rows = [];
+
+        pdfState.byItemId.clear();
+
+        pdfState.loaded = false;
+
+        pdfState.lastError = "";
+
+      }
 
       if (pdfState.loaded || pdfState.loading) return;
 
@@ -5800,7 +5896,13 @@
 
       try{
 
-        const res = await fetch(PDF_INDEX_URL, { cache: FORCE_REFRESH ? "no-store" : "no-cache" });
+        const targetUrl = (force || FORCE_REFRESH) ? cacheBustUrl(PDF_INDEX_URL) : PDF_INDEX_URL;
+
+        const res = await fetch(targetUrl, {
+
+          cache: (force || FORCE_REFRESH) ? "no-store" : "no-cache"
+
+        });
 
         if (!res.ok) throw new Error(`pdf-index.json okunamadı: ${res.status}`);
 
@@ -5810,13 +5912,15 @@
 
         pdfState.rows = rows.map((row) => {
 
-          const pdfPath = String(row?.pdfPath || row?.path || row?.url || "").trim();
+          const rawPdfPath = String(row?.pdfPath || row?.path || row?.url || row?.pdf || "").trim();
+
+          const pdfPath = ensureDocsRelativePath(rawPdfPath);
 
           const pdfName = String(row?.pdfName || row?.name || fileNameOnly(pdfPath)).trim();
 
           const audioId = String(row?.audioId || "").trim();
 
-          const audioName = String(row?.audioName || row?.sourceAudioName || "").trim();
+          const audioName = String(row?.audioName || row?.sourceAudioName || row?.audio || "").trim();
 
           const dateToken = extractDateToken(pdfName || pdfPath || audioName);
 
@@ -5826,7 +5930,7 @@
 
           return { pdfPath, pdfName, audioId, audioName, dateToken, baseNorm, tokens };
 
-        }).filter((x) => x.pdfPath);
+        }).filter((x) => x.pdfPath && /\.pdf($|\?)/i.test(x.pdfPath));
 
         pdfState.loaded = true;
 
@@ -5876,33 +5980,35 @@
 
         }
 
+        let score = 0;
+
         if (row.audioName){
 
           const audioNorm = normalizeLoose(removeAudioExt(fileNameOnly(row.audioName)));
 
           if (audioNorm && audioNorm === itemNorm){
 
-            best = row;
+            score += 500;
 
-            bestScore = 5000;
+          } else if (audioNorm && (audioNorm.includes(itemNorm) || itemNorm.includes(audioNorm))){
 
-            break;
+            score += 120;
 
           }
 
         }
 
-        let score = 0;
+        if (itemDate && row.dateToken && itemDate === row.dateToken) score += 130;
 
-        if (itemDate && row.dateToken && itemDate === row.dateToken) score += 100;
+        const jac = jaccardScore(itemTokens, row.tokens);
 
-        score += Math.round(jaccardScore(itemTokens, row.tokens) * 100);
+        score += Math.round(jac * 100);
 
         if (itemNorm && row.baseNorm){
 
-          if (itemNorm === row.baseNorm) score += 80;
+          if (itemNorm === row.baseNorm) score += 220;
 
-          if (row.baseNorm.includes(itemNorm) || itemNorm.includes(row.baseNorm)) score += 25;
+          else if (row.baseNorm.includes(itemNorm) || itemNorm.includes(row.baseNorm)) score += 80;
 
         }
 
@@ -5916,7 +6022,7 @@
 
       }
 
-      const accepted = best && bestScore >= 120 ? best : null;
+      const accepted = best && bestScore >= 70 ? best : null;
 
       pdfState.byItemId.set(it.id, accepted);
 
@@ -5924,31 +6030,35 @@
 
     }
 
-    function buildPdfAbsoluteUrl(path){
+    function openPdfViewer(it, pdfMeta){
 
-      try{
+      if (!pdfMeta?.pdfPath) return;
 
-        return new URL(path, location.href).toString();
+      const built = buildViewerAbsoluteUrl(pdfMeta.pdfPath);
 
-      }catch{
+      if (!built.viewerUrl || !built.pdfUrl){
 
-        return path;
+        statusEl.textContent = "PDF yolu çözülemedi.";
+
+        return;
 
       }
 
-    }
+      pdfState.current = {
 
-    function openPdfViewer(it, pdfMeta){
+        item: it,
 
-      if (!pdfMeta) return;
+        meta: pdfMeta,
 
-      const pdfUrl = buildPdfAbsoluteUrl(pdfMeta.pdfPath);
+        viewerUrl: built.viewerUrl,
 
-      pdfState.current = { item: it, meta: pdfMeta, url: pdfUrl };
+        pdfUrl: built.pdfUrl
+
+      };
 
       pdfTitleEl.textContent = pdfMeta.pdfName || it.title || "PDF";
 
-      pdfFrame.src = pdfUrl + "#toolbar=1&navpanes=1&scrollbar=1&view=FitH";
+      pdfFrame.src = built.viewerUrl;
 
       pdfOverlay.classList.add("open");
 
@@ -5982,25 +6092,37 @@
 
     pdfDownloadBtn.addEventListener("click", () => {
 
-      if (!pdfState.current?.url) return;
+      if (!pdfState.current?.pdfUrl) return;
 
       const filename = pdfState.current?.meta?.pdfName || "document.pdf";
 
-      clickDownload(pdfState.current.url, filename);
+      clickDownload(pdfState.current.pdfUrl, filename);
 
     });
 
     pdfCopyBtn.addEventListener("click", async () => {
 
-      if (!pdfState.current?.url) return;
+      if (!pdfState.current?.pdfUrl) return;
 
-      const text = `${pdfState.current.meta.pdfName || ""}\n${pdfState.current.url}`;
+      const original = pdfCopyBtn.textContent;
 
       try{
 
-        await navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(pdfState.current.pdfUrl);
 
-      }catch{}
+        pdfCopyBtn.textContent = "Kopyalandı";
+
+      }catch{
+
+        pdfCopyBtn.textContent = "Kopyalanamadı";
+
+      }
+
+      setTimeout(() => {
+
+        pdfCopyBtn.textContent = original;
+
+      }, 1200);
 
     });
 
@@ -6016,17 +6138,23 @@
 
     });
 
-    async function loadItems(){
+    async function loadItems(forceFresh = false){
 
       try{
 
         statusEl.textContent = "Yükleniyor...";
 
-        const res1 = await fetch(`https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}`, {
+        const useNoStore = !!(forceFresh || FORCE_REFRESH);
 
-          cache: FORCE_REFRESH ? "no-store" : "no-cache"
+        const fetchOpts = { cache: useNoStore ? "no-store" : "no-cache" };
 
-        });
+        const s1Url = useNoStore
+
+          ? cacheBustUrl(`https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}`)
+
+          : `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_1)}`;
+
+        const res1 = await fetch(s1Url, fetchOpts);
 
         if (!res1.ok) throw new Error("S1 metadata okunamadı");
 
@@ -6074,11 +6202,13 @@
 
         try{
 
-          const res2 = await fetch(`https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_2)}`, {
+          const s2Url = useNoStore
 
-            cache: FORCE_REFRESH ? "no-store" : "no-cache"
+            ? cacheBustUrl(`https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_2)}`)
 
-          });
+            : `https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_2)}`;
+
+          const res2 = await fetch(s2Url, fetchOpts);
 
           if (!res2.ok) throw new Error("S2 metadata okunamadı");
 
@@ -6096,7 +6226,15 @@
 
         items = finalItems;
 
-        await loadPdfIndex();
+        if (forceFresh){
+
+          globalPlayCounts = {};
+
+          globalDownloadCounts = {};
+
+        }
+
+        await loadPdfIndex(forceFresh);
 
         statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
 
@@ -6280,7 +6418,7 @@
 
       btn.className = `iconBtn pdfBtn ${hasPdf ? "hasPdf" : "noPdf"}`;
 
-      btn.title = hasPdf ? "PDF aç" : "PDF yok";
+      btn.title = hasPdf ? "PDF aç" : (pdfState.loaded ? "PDF yok" : "PDF index yükleniyor");
 
       btn.dataset.kind = "pdf";
 
@@ -7154,7 +7292,7 @@
 
       try{
 
-        await loadItems();
+        await loadItems(true);
 
       } finally {
 
