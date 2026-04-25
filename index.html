@@ -78,13 +78,9 @@
 
       --orangeGlow: 0 0 0 4px rgba(245,158,11,.20), 0 10px 22px rgba(245,158,11,.10);
 
-      --pdfRed:#e53935;
+      --pdfRed:#ef1c25;
 
-      --pdfRedDark:#b71c1c;
-
-      --pdfRedBg:rgba(229,57,53,.10);
-
-      --pdfRedBgStrong:rgba(229,57,53,.16);
+      --pdfRedDark:#c8102e;
 
     }
 
@@ -180,6 +176,18 @@
 
     }
 
+    .pageTitleActions{
+
+      display:flex;
+
+      align-items:center;
+
+      gap:8px;
+
+      flex:0 0 auto;
+
+    }
+
     .buildMeta{
 
       font-size: .82rem;
@@ -201,6 +209,50 @@
       align-self: flex-start;
 
       white-space: nowrap;
+
+    }
+
+    #mobileFiltersToggle{
+
+      display:none;
+
+      height: 40px;
+
+      padding: 0 14px;
+
+      border-radius: 14px;
+
+      border: 1px solid #d8d8d8;
+
+      background: white;
+
+      cursor: pointer;
+
+      user-select:none;
+
+      font-size: .96rem;
+
+      font-weight: 650;
+
+      align-items:center;
+
+      justify-content:center;
+
+      line-height: 1;
+
+      -webkit-tap-highlight-color: transparent;
+
+    }
+
+    #mobileFiltersToggle:hover{ background: var(--hover); }
+
+    #mobileFiltersToggle.on{
+
+      border-color:var(--blue);
+
+      background: rgba(43,124,255,.10);
+
+      box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
 
     }
 
@@ -526,14 +578,6 @@
 
     }
 
-    body.toolsHidden .headerRow,
-
-    body.toolsHidden .itemRow{
-
-      grid-template-columns: minmax(0, 1fr) 8ch 36px !important;
-
-    }
-
     .headerRow{
 
       padding: 6px 8px;
@@ -577,26 +621,6 @@
       justify-content:center;
 
       user-select:none;
-
-    }
-
-    body.toolsHidden .headerRow > :nth-child(3),
-
-    body.toolsHidden .headerRow > :nth-child(4),
-
-    body.toolsHidden .headerRow > :nth-child(5),
-
-    body.toolsHidden .headerRow > :nth-child(6),
-
-    body.toolsHidden .itemRow > :nth-child(3),
-
-    body.toolsHidden .itemRow > :nth-child(4),
-
-    body.toolsHidden .itemRow > :nth-child(5),
-
-    body.toolsHidden .itemRow > :nth-child(6){
-
-      display:none !important;
 
     }
 
@@ -674,52 +698,6 @@
 
     }
 
-    .pdfHeadBtn{
-
-      width: 30px;
-
-      height: 30px;
-
-      border-radius: 999px;
-
-      border: 1px solid #d8d8d8;
-
-      background: white;
-
-      display:flex;
-
-      align-items:center;
-
-      justify-content:center;
-
-      cursor:pointer;
-
-      transition: border-color .15s ease, background .15s ease, box-shadow .15s ease, opacity .15s ease;
-
-    }
-
-    .pdfHeadBtn:hover{ background: var(--hover); }
-
-    .pdfHeadBtn.on{
-
-      border-color: var(--pdfRed);
-
-      background: var(--pdfRedBgStrong);
-
-      box-shadow: 0 0 0 3px rgba(229,57,53,.14) inset;
-
-    }
-
-    .pdfHeadBtn svg{
-
-      width: 15px;
-
-      height: 15px;
-
-      display:block;
-
-    }
-
     .iconOrange{ fill: var(--orange); }
 
     .iconBlue{ fill: var(--blue); }
@@ -736,27 +714,11 @@
 
       background: #f7f7f7;
 
-      transition: opacity .15s ease, filter .15s ease, background .15s ease;
-
     }
 
     #list .itemRow:nth-child(even){ background: #eeeeee; }
 
     .itemRow:hover{ background: var(--hover); }
-
-    .itemRow.pdfMissing{
-
-      opacity: .52;
-
-      filter: saturate(.78);
-
-    }
-
-    .itemRow.pdfMissing.active{
-
-      opacity: .9;
-
-    }
 
     .itemRow.active{
 
@@ -844,13 +806,9 @@
 
       #scrollArea{ padding: 14px; }
 
-      .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 46px 34px 34px 46px 34px; }
+      .headerRow, .itemRow{
 
-      body.toolsHidden .headerRow,
-
-      body.toolsHidden .itemRow{
-
-        grid-template-columns: minmax(0, 1fr) 8ch 34px !important;
+        grid-template-columns: minmax(0, 1fr) 8ch 46px 34px 34px 46px 34px;
 
       }
 
@@ -868,7 +826,37 @@
 
       .zoomWrap{ margin-left: 0; }
 
-      .buildMeta{ font-size: .78rem; }
+      #mobileFiltersToggle{ display:inline-flex; }
+
+      body.mobileFiltersCollapsed #stickyBar .headerRow{
+
+        grid-template-columns: minmax(0, 1fr) !important;
+
+      }
+
+      body.mobileFiltersCollapsed #stickyBar .headerRow > :not(:first-child){
+
+        display:none !important;
+
+      }
+
+      body.mobileFiltersCollapsed .itemRow{
+
+        grid-template-columns: minmax(0, 1fr) !important;
+
+      }
+
+      body.mobileFiltersCollapsed .itemRow > :not(:first-child){
+
+        display:none !important;
+
+      }
+
+      body.mobileFiltersCollapsed #meta{
+
+        margin: 0 0 8px 2px;
+
+      }
 
     }
 
@@ -920,48 +908,6 @@
 
     .iconBtn svg{ width: 14px; height: 14px; opacity: .9; }
 
-    .pdfIconBtn{
-
-      border-color: rgba(229,57,53,.26);
-
-      background: white;
-
-    }
-
-    .pdfIconBtn:hover{
-
-      background: rgba(229,57,53,.06);
-
-    }
-
-    .pdfIconBtn.on{
-
-      border-color: var(--pdfRed);
-
-      background: var(--pdfRedBg);
-
-      box-shadow: 0 0 0 3px rgba(229,57,53,.12) inset;
-
-    }
-
-    .pdfIconBtn.off{
-
-      opacity: .42;
-
-      filter: grayscale(.2);
-
-    }
-
-    .pdfIconBtn svg{
-
-      width: 15px;
-
-      height: 15px;
-
-      opacity: 1;
-
-    }
-
     .filterBtn{
 
       width: 30px;
@@ -984,6 +930,8 @@
 
       color:#111;
 
+      transition: box-shadow .15s ease, border-color .15s ease, background .15s ease, opacity .15s ease;
+
     }
 
     .filterBtn:hover{ background: var(--hover); }
@@ -997,6 +945,42 @@
     }
 
     .filterBtn svg{ width:14px; height:14px; }
+
+    .pdfBtn svg,
+
+    .pdfFilterBtn svg{
+
+      width: 16px;
+
+      height: 16px;
+
+      opacity: 1;
+
+    }
+
+    .pdfBtn.missing{
+
+      opacity: .32;
+
+    }
+
+    .pdfBtn.exists{
+
+      border-color: rgba(239,28,37,.35);
+
+      background: rgba(239,28,37,.05);
+
+    }
+
+    .pdfFilterBtn.on{
+
+      border-color: rgba(239,28,37,.65);
+
+      background: rgba(239,28,37,.08);
+
+      box-shadow: 0 0 0 3px rgba(239,28,37,.12) inset;
+
+    }
 
     #floatingPlayer{
 
@@ -1072,7 +1056,11 @@
 
       position: relative;
 
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.85), inset 0 -1px 0 rgba(0,0,0,.04);
+      box-shadow:
+
+        inset 0 1px 0 rgba(255,255,255,.85),
+
+        inset 0 -1px 0 rgba(0,0,0,.04);
 
     }
 
@@ -1296,6 +1284,8 @@
 
       #search{ font-size: 16px; }
 
+      .buildMeta{ font-size: .78rem; }
+
     }
 
     .diseaseName{
@@ -1342,7 +1332,7 @@
 
       width: min(360px, calc(100vw - 24px));
 
-      height: min(86vh, 760px);
+      height: min(86vh, 720px);
 
       background: #fff;
 
@@ -1904,7 +1894,11 @@
 
       border-top-right-radius: 18px;
 
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.90), 0 6px 16px rgba(0,0,0,.10);
+      box-shadow:
+
+        inset 0 1px 0 rgba(255,255,255,.90),
+
+        0 6px 16px rgba(0,0,0,.10);
 
     }
 
@@ -2296,7 +2290,7 @@
 
       background: rgba(0,0,0,.30);
 
-      z-index: 10100;
+      z-index: 10150;
 
       display:none;
 
@@ -2312,27 +2306,33 @@
 
       background:#fff;
 
-      border-radius: 18px;
-
       border: 1.5px solid #d6d6d6;
 
       border-right-color: #bdbdbd;
 
       border-bottom-color:#b3b3b3;
 
-      box-shadow: 10px 34px 86px rgba(0,0,0,.20), 4px 14px 30px rgba(0,0,0,.10), 0px 2px 6px rgba(0,0,0,.06);
+      border-radius: 18px;
+
+      box-shadow:
+
+        10px 34px 86px rgba(0,0,0,.20),
+
+        4px 14px 30px rgba(0,0,0,.10),
+
+        0px 2px 6px rgba(0,0,0,.06);
+
+      overflow:hidden;
 
       display:flex;
 
       flex-direction:column;
 
-      overflow:hidden;
-
     }
 
     #pdfHeader{
 
-      padding:10px 12px;
+      padding: 10px 12px;
 
       background:#fbfbfb;
 
@@ -2350,17 +2350,19 @@
 
     #pdfTitle{
 
-      font-weight:700;
+      font-weight:750;
+
+      font-size:1rem;
+
+      flex:1 1 auto;
+
+      min-width:0;
 
       white-space:nowrap;
 
       overflow:hidden;
 
       text-overflow:ellipsis;
-
-      min-width:0;
-
-      flex:1 1 auto;
 
     }
 
@@ -2370,15 +2372,15 @@
 
       gap:8px;
 
-      flex-wrap:wrap;
+      flex:0 0 auto;
 
     }
 
-    .pdfBtn{
+    .pdfPanelBtn{
 
-      height:38px;
+      height:40px;
 
-      padding:0 12px;
+      padding:0 14px;
 
       border-radius:12px;
 
@@ -2388,29 +2390,35 @@
 
       cursor:pointer;
 
-      font-weight:700;
-
       display:inline-flex;
 
       align-items:center;
 
       justify-content:center;
 
+      gap:8px;
+
+      font-weight:700;
+
     }
 
-    .pdfBtn:hover{ background: var(--hover); }
+    .pdfPanelBtn:hover{ background: var(--hover); }
 
     #pdfFrame{
 
-      width:100%;
+      flex:1 1 auto;
 
-      height:100%;
+      width:100%;
 
       border:0;
 
-      background:#fff;
+      background:#f7f7f7;
 
-      flex:1 1 auto;
+    }
+
+    .pdfDocIcon{
+
+      display:block;
 
     }
 
@@ -2430,19 +2438,25 @@
 
           <span>FSP Audio — Güncel</span>
 
-          <div id="buildMeta" class="buildMeta">v1.89 · Güncelleme: 25.04.2026 · 10:29</div>
+          <div id="buildMeta" class="buildMeta">v1.87 · Güncelleme: 25.04.2026 · 11:42</div>
 
         </div>
 
-        <button id="sidebarOpenBtn" type="button" aria-label="Menü" title="Menü">
+        <div class="pageTitleActions">
 
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <button id="mobileFiltersToggle" type="button" aria-label="Filtreleri göster" aria-expanded="false" title="Filtreler">Filtreler</button>
 
-            <path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>
+          <button id="sidebarOpenBtn" type="button" aria-label="Menü" title="Menü">
 
-          </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 
-        </button>
+              <path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>
+
+            </svg>
+
+          </button>
+
+        </div>
 
       </div>
 
@@ -2602,17 +2616,17 @@
 
           <div class="headIconCell">
 
-            <button id="filterPdfBtn" class="pdfHeadBtn" type="button" title="PDF olanları filtrele" aria-pressed="false">
+            <button id="filterPdfBtn" class="filterBtn pdfFilterBtn" title="PDF olanları filtrele" type="button" aria-pressed="false">
 
-              <svg viewBox="0 0 24 24" aria-hidden="true">
+              <svg class="pdfDocIcon" viewBox="0 0 24 24" aria-hidden="true">
 
-                <path d="M6 2h8l4 4v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="var(--pdfRed)"/>
+                <path fill="var(--pdfRed)" d="M6.5 1.5h7.8l4.7 4.7V20a2.5 2.5 0 0 1-2.5 2.5h-10A2.5 2.5 0 0 1 4 20V4A2.5 2.5 0 0 1 6.5 1.5z"/>
 
-                <path d="M14 2v4h4" fill="#fff" opacity=".9"/>
+                <path fill="#fff" opacity=".95" d="M14.3 1.5v3.7a1 1 0 0 0 1 1H19"/>
 
-                <path d="M7.1 16.8v-5.2h2.15c1.28 0 2.06.67 2.06 1.75 0 1.12-.8 1.83-2.09 1.83H8.5v1.66zM8.5 14.05h.62c.56 0 .9-.27.9-.71 0-.43-.31-.66-.89-.66H8.5z" fill="#fff"/>
+                <path fill="#fff" d="M7.2 15.9h1.1c1.3 0 2-.6 2-1.7 0-1.1-.7-1.7-2-1.7H7.2v3.4zm1-2.6h.2c.6 0 1 .3 1 .9s-.4.9-1 .9h-.2v-1.8zm3.3 2.6h1c1.4 0 2.3-.7 2.3-1.8 0-1.1-.9-1.8-2.3-1.8h-1v3.6zm1-2.8h.2c.8 0 1.3.4 1.3 1s-.5 1-1.3 1h-.2v-2zm3 2.8h1v-1.4h1.4v-.8h-1.4v-.7h1.5v-.8h-2.5v3.7z"/>
 
-                <path d="M12.05 16.8v-5.2h1.97c1.62 0 2.68 1.02 2.68 2.58 0 1.58-1.05 2.62-2.68 2.62zM13.43 15.66h.45c.88 0 1.42-.56 1.42-1.48s-.55-1.44-1.42-1.44h-.45z" fill="#fff"/>
+                <path fill="#fff" opacity=".95" d="M11.7 6.6c.6-.9 1.1-2.1 1.4-3 .1-.2.3-.2.4 0 .2.6.4 1.2.6 1.8.2.7.5 1.2.8 1.8.7.1 1.3.3 1.8.5.5.2.6.8.1 1a6 6 0 0 1-2 .3c-.4.5-.8 1-1.3 1.4-.7.6-1.4 1.2-2.2 1.7-.5.3-1 .5-1.4.4-.4-.1-.5-.5-.2-.9.4-.5 1.1-.9 1.8-1.3.4-.2.9-.4 1.3-.6.2-.4.4-.9.6-1.3-.1-.2-.2-.5-.3-.8-.8.1-1.5.1-2.1 0-.6-.1-.8-.8-.3-1 .7-.3 1.6-.3 2.8 0zm1.7 1.9c-.1.2-.2.5-.3.7.3-.2.6-.4.8-.7h-.5zm-1.7.9c-.4.2-.8.4-1.2.7.3-.1.7-.4 1.2-.7zm.5-4.2c-.1.4-.2.8-.4 1.2h.8c-.1-.4-.3-.8-.4-1.2zm-1 2h-.5c.2 0 .3 0 .5 0z"/>
 
               </svg>
 
@@ -2672,7 +2686,7 @@
 
             <button id="sbFavBtn" class="sbBtn" type="button">Favoriler</button>
 
-            <button id="sbPdfBtn" class="sbBtn" type="button">Sadece PDF</button>
+            <button id="sbPdfBtn" class="sbBtn" type="button">PDF</button>
 
           </div>
 
@@ -2689,20 +2703,6 @@
           </div>
 
           <div class="sbHint">Aynı sıralama moduna tekrar basınca yön değişir.</div>
-
-        </div>
-
-        <div class="sbSection">
-
-          <h3>Görünüm</h3>
-
-          <div class="sbRow">
-
-            <button id="sbToolsToggleBtn" class="sbBtn" type="button">Tools Gizle</button>
-
-          </div>
-
-          <div class="sbHint">Play / favori / indir / download count kolonlarını gizler. PDF kolonu kalır.</div>
 
         </div>
 
@@ -2740,35 +2740,15 @@
 
       <div id="fpHeaderRight">
 
-        <button id="ccSmallBtn" class="miniBtn ccModeBtn" type="button" title="Altyazı (cc)" aria-pressed="false" aria-label="Altyazı (cc)">
+        <button id="ccSmallBtn" class="miniBtn ccModeBtn" type="button" title="Altyazı (cc)" aria-pressed="false" aria-label="Altyazı (cc)"><span class="btnMark">cc</span></button>
 
-          <span class="btnMark">cc</span>
+        <button id="ccMedBtn" class="miniBtn ccModeBtn" type="button" title="Altyazı (CC)" aria-pressed="false" aria-label="Altyazı (CC)"><span class="btnMark">CC</span></button>
 
-        </button>
+        <button id="ccXBtn" class="miniBtn ccModeBtn" type="button" title="Altyazı (CCx)" aria-pressed="false" aria-label="Altyazı (CCx)"><span class="btnMark">CCx</span></button>
 
-        <button id="ccMedBtn" class="miniBtn ccModeBtn" type="button" title="Altyazı (CC)" aria-pressed="false" aria-label="Altyazı (CC)">
+        <button id="fpTxtBtn" class="miniBtn" type="button" title="Transkript (TXT)" aria-label="Transkript (TXT)"><span class="btnMark">TXT</span></button>
 
-          <span class="btnMark">CC</span>
-
-        </button>
-
-        <button id="ccXBtn" class="miniBtn ccModeBtn" type="button" title="Altyazı (CCx)" aria-pressed="false" aria-label="Altyazı (CCx)">
-
-          <span class="btnMark">CCx</span>
-
-        </button>
-
-        <button id="fpTxtBtn" class="miniBtn" type="button" title="Transkript (TXT)" aria-label="Transkript (TXT)">
-
-          <span class="btnMark">TXT</span>
-
-        </button>
-
-        <button id="skipDrawerBtn" class="miniBtn" type="button" title="Sessiz atlama ayarları" aria-expanded="false" aria-controls="skipDrawer">
-
-          <span class="btnMark">SKIP</span>
-
-        </button>
+        <button id="skipDrawerBtn" class="miniBtn" type="button" title="Sessiz atlama ayarları" aria-expanded="false" aria-controls="skipDrawer"><span class="btnMark">SKIP</span></button>
 
         <div id="speedWrap" class="speedWrap" aria-label="Hız">
 
@@ -2928,9 +2908,7 @@
 
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 
-            <circle cx="11" cy="11" r="6"></circle>
-
-            <path d="M20 20l-3.5-3.5"></path>
+            <circle cx="11" cy="11" r="6"></circle><path d="M20 20l-3.5-3.5"></path>
 
           </svg>
 
@@ -2996,15 +2974,15 @@
 
         <div id="pdfBtns">
 
-          <button id="pdfDownloadBtn" class="pdfBtn" type="button">İndir</button>
+          <button id="pdfDownloadBtn" class="pdfPanelBtn" type="button">İndir</button>
 
-          <button id="pdfCloseBtn" class="pdfBtn" type="button">Kapat</button>
+          <button id="pdfCloseBtn" class="pdfPanelBtn" type="button">Kapat</button>
 
         </div>
 
       </div>
 
-      <iframe id="pdfFrame" title="PDF"></iframe>
+      <iframe id="pdfFrame" title="PDF viewer" loading="lazy"></iframe>
 
     </div>
 
@@ -3014,9 +2992,9 @@
 
   <script>
 
-    const BUILD_VERSION = "v1.89";
+    const BUILD_VERSION = "v1.87";
 
-    const BUILD_UPDATED = "25.04.2026 · 10:29";
+    const BUILD_UPDATED = "25.04.2026 · 11:42";
 
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
 
@@ -3030,6 +3008,8 @@
 
     const COUNTER_API = "https://fspdlcounter.protokolfsp.workers.dev";
 
+    const PDF_DOCS_BASE = "https://protokolfsp.github.io/fsp-audio/docs/";
+
     const SRT_BASES = [
 
       "https://protokolfsp.github.io/FSPtranskript/transcripts/",
@@ -3040,7 +3020,7 @@
 
     ];
 
-    const TXT_BASES = [...SRT_BASES];
+    const TXT_BASES = SRT_BASES;
 
     const CAPTION_MAX_LINES = 6;
 
@@ -3091,6 +3071,8 @@
     const zoomInBtn = document.getElementById("zoomInBtn");
 
     const buildMetaEl = document.getElementById("buildMeta");
+
+    const mobileFiltersToggle = document.getElementById("mobileFiltersToggle");
 
     const fp = document.getElementById("floatingPlayer");
 
@@ -3156,6 +3138,8 @@
 
     const filterFavBtn = document.getElementById("filterFav");
 
+    const filterPdfBtn = document.getElementById("filterPdfBtn");
+
     const resetBtn = document.getElementById("resetBtn");
 
     const sortDurBtn = document.getElementById("sortDurBtn");
@@ -3173,8 +3157,6 @@
     const sortDlCountBtn = document.getElementById("sortDlCountBtn");
 
     const sortDlCountIcon = document.getElementById("sortDlCountIcon");
-
-    const filterPdfBtn = document.getElementById("filterPdfBtn");
 
     const sidebarOpenBtn = document.getElementById("sidebarOpenBtn");
 
@@ -3199,8 +3181,6 @@
     const sbSortDlBtn = document.getElementById("sbSortDlBtn");
 
     const sbClearTxCacheBtn = document.getElementById("sbClearTxCacheBtn");
-
-    const sbToolsToggleBtn = document.getElementById("sbToolsToggleBtn");
 
     const txPanel = document.getElementById("txPanel");
 
@@ -3236,9 +3216,9 @@
 
     const pdfOverlay = document.getElementById("pdfOverlay");
 
-    const pdfFrame = document.getElementById("pdfFrame");
-
     const pdfTitleEl = document.getElementById("pdfTitle");
+
+    const pdfFrame = document.getElementById("pdfFrame");
 
     const pdfDownloadBtn = document.getElementById("pdfDownloadBtn");
 
@@ -3253,110 +3233,6 @@
     });
 
     if (buildMetaEl) buildMetaEl.textContent = `${BUILD_VERSION} · Güncelleme: ${BUILD_UPDATED}`;
-
-    const LS = {
-
-      favs: "fsp1.favs.v1",
-
-      pos: "fsp1.fp.pos.v1",
-
-      durs: "fsp1.durs.v1",
-
-      sortMode: "fsp1.sort.mode.v2",
-
-      sortDirDur: "fsp1.sort.dur.dir.v1",
-
-      sortDirDate: "fsp1.sort.date.dir.v1",
-
-      sortDirPlay: "fsp1.sort.play.dir.v1",
-
-      sortDirDl: "fsp1.sort.dl.dir.v1",
-
-      speed: "fsp1.speed.v1",
-
-      zoom: "fsp1.ui.zoom.v1",
-
-      captionsMode: "fsp1.captions.mode.v1",
-
-      itemsCache: "fsp1.items.cache.s1.v2",
-
-      itemsCacheAt: "fsp1.items.cache.s1.at.v1",
-
-      metaUpdated: "fsp1.items.meta.updated.s1.v1",
-
-      uiState: "fsp1.ui.state.v1",
-
-      txSize: "fsp1.tx.size.v1",
-
-      txPos: "fsp1.tx.pos.v1",
-
-      skipSettings: "fsp1.skip.settings.map.v4",
-
-      skipDrawerOpen: "fsp1.skip.drawer.open.v1",
-
-      toolsHidden: "fsp1.tools.hidden.v1",
-
-      pdfOnlyFilter: "fsp1.pdf.only.filter.v1"
-
-    };
-
-    const loadMap = (k) => { try { return JSON.parse(localStorage.getItem(k) || "{}"); } catch { return {}; } };
-
-    const saveMap = (k, v) => localStorage.setItem(k, JSON.stringify(v));
-
-    const loadAny = (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } };
-
-    const saveAny = (k, v) => localStorage.setItem(k, JSON.stringify(v));
-
-    let favs = loadMap(LS.favs);
-
-    let durs = loadMap(LS.durs);
-
-    let filterFav = false;
-
-    let items = [];
-
-    let activeId = null;
-
-    let selectedId = null;
-
-    let globalPlayCounts = {};
-
-    let globalDownloadCounts = {};
-
-    let toolsHidden = localStorage.getItem(LS.toolsHidden) === "1";
-
-    let pdfOnlyFilter = localStorage.getItem(LS.pdfOnlyFilter) === "1";
-
-    const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-
-    let pendingScrollTop = null;
-
-    const pdfState = new Map();
-
-    const pdfProbeQueue = [];
-
-    const pdfProbeRunning = new Set();
-
-    let pdfProbeActive = 0;
-
-    const PDF_PROBE_CONCURRENCY = 3;
-
-    let pdfRerenderTimer = null;
-
-    function schedulePdfRerender(){
-
-      if (pdfRerenderTimer) return;
-
-      pdfRerenderTimer = setTimeout(() => {
-
-        pdfRerenderTimer = null;
-
-        render();
-
-      }, 120);
-
-    }
 
     function gaEvent(name, params = {}) {
 
@@ -3434,6 +3310,38 @@
 
     }
 
+    function trackPdfOpen(it, filename){
+
+      gaEvent("pdf_open", {
+
+        audio_id: it.id,
+
+        audio_title: it.title,
+
+        file_name: filename || "",
+
+        src: it.src || "S1"
+
+      });
+
+    }
+
+    function trackPdfDownload(it, filename){
+
+      gaEvent("pdf_download", {
+
+        audio_id: it.id,
+
+        audio_title: it.title,
+
+        file_name: filename || "",
+
+        src: it.src || "S1"
+
+      });
+
+    }
+
     function escHtml(s){
 
       return (s ?? "").toString()
@@ -3498,7 +3406,9 @@
 
       const ss = String(s).padStart(2, "0");
 
-      return h > 0 ? `${h}:${mm}:${ss}` : `${m}:${ss}`;
+      if (h > 0) return `${h}:${mm}:${ss}`;
+
+      return `${m}:${ss}`;
 
     }
 
@@ -3526,15 +3436,79 @@
 
     }
 
-    function chunk(arr, size){
+    const LS = {
 
-      const out = [];
+      favs: "fsp1.favs.v1",
 
-      for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+      pos: "fsp1.fp.pos.v1",
 
-      return out;
+      durs: "fsp1.durs.v1",
 
-    }
+      sortMode: "fsp1.sort.mode.v2",
+
+      sortDirDur: "fsp1.sort.dur.dir.v1",
+
+      sortDirDate: "fsp1.sort.date.dir.v1",
+
+      sortDirPlay: "fsp1.sort.play.dir.v1",
+
+      sortDirDl: "fsp1.sort.dl.dir.v1",
+
+      speed: "fsp1.speed.v1",
+
+      zoom: "fsp1.ui.zoom.v1",
+
+      captionsMode: "fsp1.captions.mode.v1",
+
+      itemsCache: "fsp1.items.cache.s1.v2",
+
+      itemsCacheAt: "fsp1.items.cache.s1.at.v1",
+
+      metaUpdated: "fsp1.items.meta.updated.s1.v1",
+
+      uiState: "fsp1.ui.state.v1",
+
+      txSize: "fsp1.tx.size.v1",
+
+      txPos: "fsp1.tx.pos.v1",
+
+      skipSettings: "fsp1.skip.settings.map.v4",
+
+      skipDrawerOpen: "fsp1.skip.drawer.open.v1",
+
+      pdfFilter: "fsp1.pdf.filter.v1",
+
+      pdfCache: "fsp1.pdf.cache.v1",
+
+      mobileFiltersOpen: "fsp1.mobile.filters.open.v1"
+
+    };
+
+    const loadMap = (k) => { try { return JSON.parse(localStorage.getItem(k) || "{}"); } catch { return {}; } };
+
+    const saveMap = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+    const loadAny = (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } };
+
+    const saveAny = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+    let favs = loadMap(LS.favs);
+
+    let durs = loadMap(LS.durs);
+
+    let filterFav = false;
+
+    let filterPdf = localStorage.getItem(LS.pdfFilter) === "1";
+
+    let items = [];
+
+    let activeId = null;
+
+    let selectedId = null;
+
+    const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+    let pendingScrollTop = null;
 
     function saveUiState(){
 
@@ -3545,6 +3519,8 @@
           q: searchEl.value || "",
 
           filterFav: !!filterFav,
+
+          filterPdf: !!filterPdf,
 
           activeId: activeId || null,
 
@@ -3567,6 +3543,8 @@
       if (typeof s.q === "string") searchEl.value = s.q;
 
       if (typeof s.filterFav === "boolean") filterFav = s.filterFav;
+
+      if (typeof s.filterPdf === "boolean") filterPdf = s.filterPdf;
 
       if (typeof s.activeId === "string") activeId = s.activeId;
 
@@ -3598,6 +3576,20 @@
 
     });
 
+    let globalPlayCounts = {};
+
+    let globalDownloadCounts = {};
+
+    function chunk(arr, size){
+
+      const out = [];
+
+      for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+
+      return out;
+
+    }
+
     async function fetchCounts(type, ids){
 
       if (!ids.length) return {};
@@ -3612,7 +3604,11 @@
 
           cache: "no-store",
 
-          headers: { "content-type": IS_SAFARI ? "text/plain;charset=utf-8" : "application/json" },
+          headers: {
+
+            "content-type": IS_SAFARI ? "text/plain;charset=utf-8" : "application/json"
+
+          },
 
           body: JSON.stringify({ type, ids })
 
@@ -3710,7 +3706,11 @@
 
           keepalive: true,
 
-          headers: { "content-type": IS_SAFARI ? "text/plain;charset=utf-8" : "application/json" },
+          headers: {
+
+            "content-type": IS_SAFARI ? "text/plain;charset=utf-8" : "application/json"
+
+          },
 
           body: data
 
@@ -4026,7 +4026,21 @@
 
       setZoomUI(v);
 
-      setTimeout(runViewportRefresh, 0);
+      setTimeout(() => {
+
+        clampPlayerToViewport();
+
+        updateSticky(true);
+
+      }, 0);
+
+      updateOverlayScale();
+
+      updateSearchNoZoomFontSizes();
+
+      clampTxSizeToViewport();
+
+      clampTxPosToViewport();
 
     }
 
@@ -4088,11 +4102,7 @@
 
     function setTypingMode(on){ fp.classList.toggle("hiddenWhileTyping", !!on); }
 
-    function setMomentumScroll(el, on){
-
-      try { if (el) el.style.webkitOverflowScrolling = on ? "auto" : "touch"; } catch {}
-
-    }
+    function setMomentumScroll(el, on){ try { if (el) el.style.webkitOverflowScrolling = on ? "auto" : "touch"; } catch {} }
 
     searchEl.addEventListener("focus", () => { setTypingMode(true); setMomentumScroll(scrollArea, true); });
 
@@ -4210,11 +4220,7 @@
 
     }
 
-    function stripSrtTags(s){
-
-      return (s || "").toString().replace(/<[^>]+>/g, "");
-
-    }
+    function stripSrtTags(s){ return (s || "").toString().replace(/<[^>]+>/g, ""); }
 
     function srtTimeToSec(raw){
 
@@ -4312,11 +4318,7 @@
 
     }
 
-    function countLinesText(text){
-
-      return splitCaptionLines(text).length;
-
-    }
+    function countLinesText(text){ return splitCaptionLines(text).length; }
 
     function composeCaptionParts(cues, idx){
 
@@ -4442,11 +4444,7 @@
 
           const target = Number.isFinite(resumeTime) ? resumeTime : (t + 0.01);
 
-          const safeTarget = Number.isFinite(dur) && dur > 0
-
-            ? Math.min(Math.max(0, target), Math.max(0, dur - 0.05))
-
-            : Math.max(0, target);
+          const safeTarget = Number.isFinite(dur) && dur > 0 ? Math.min(Math.max(0, target), Math.max(0, dur - 0.05)) : Math.max(0, target);
 
           playerEl.currentTime = safeTarget;
 
@@ -4526,13 +4524,7 @@
 
     function renderCaptionLines(lines){
 
-      if (!isCaptionsOn()) {
-
-        captionsEl.innerHTML = "";
-
-        return;
-
-      }
+      if (!isCaptionsOn()) { captionsEl.innerHTML = ""; return; }
 
       const maxLines = getCaptionMaxLines();
 
@@ -4584,13 +4576,7 @@
 
     function renderCaptionInfo(text){
 
-      if (!isCaptionsOn()) {
-
-        captionsEl.innerHTML = "";
-
-        return;
-
-      }
+      if (!isCaptionsOn()) { captionsEl.innerHTML = ""; return; }
 
       captionsEl.textContent = text || "…";
 
@@ -4674,9 +4660,7 @@
 
       const names = [
 
-        baseDecoded,
-
-        baseRaw,
+        baseDecoded, baseRaw,
 
         hasA ? baseDecoded : ("A " + baseDecoded),
 
@@ -4690,9 +4674,7 @@
 
         hasA ? baseRaw : ("A-" + baseRaw),
 
-        decoded + ".srt",
-
-        rawName + ".srt"
+        decoded + ".srt", rawName + ".srt"
 
       ];
 
@@ -4714,9 +4696,7 @@
 
       const names = [
 
-        baseDecoded,
-
-        baseRaw,
+        baseDecoded, baseRaw,
 
         hasA ? baseDecoded : ("A " + baseDecoded),
 
@@ -4730,9 +4710,7 @@
 
         hasA ? baseRaw : ("A-" + baseRaw),
 
-        decoded + ".txt",
-
-        rawName + ".txt"
+        decoded + ".txt", rawName + ".txt"
 
       ];
 
@@ -4856,13 +4834,7 @@
 
           const parsed = parseSrtToCues(body);
 
-          if (parsed && parsed.length){
-
-            cues = parsed;
-
-            break;
-
-          }
+          if (parsed && parsed.length){ cues = parsed; break; }
 
         }
 
@@ -4880,15 +4852,9 @@
 
         if (err && err.name === "AbortError") return;
 
-        if (SRT_DEBUG){
+        if (SRT_DEBUG) renderCaptionInfo("SRT yok. Denenen isimler: " + (triedNames.join(" | ") || "-") + "\nSon URL: " + lastUrl);
 
-          renderCaptionInfo("SRT yok. Denenen isimler: " + (triedNames.join(" | ") || "-") + "\nSon URL: " + lastUrl);
-
-        } else {
-
-          renderCaptionInfo("Bu kayıtta altyazı yok.");
-
-        }
+        else renderCaptionInfo("Bu kayıtta altyazı yok.");
 
       }
 
@@ -5004,58 +4970,6 @@
 
     }
 
-    function applyToolsHiddenUi(){
-
-      document.body.classList.toggle("toolsHidden", !!toolsHidden);
-
-      if (sbToolsToggleBtn){
-
-        sbToolsToggleBtn.classList.toggle("on", !!toolsHidden);
-
-        sbToolsToggleBtn.textContent = toolsHidden ? "Tools Göster" : "Tools Gizle";
-
-      }
-
-      setTimeout(() => updateSticky(true), 0);
-
-    }
-
-    function applyPdfFilterUi(){
-
-      filterPdfBtn.classList.toggle("on", !!pdfOnlyFilter);
-
-      filterPdfBtn.setAttribute("aria-pressed", String(!!pdfOnlyFilter));
-
-      sbPdfBtn.classList.toggle("on", !!pdfOnlyFilter);
-
-      sbPdfBtn.textContent = pdfOnlyFilter ? "PDF Filtresi Açık" : "Sadece PDF";
-
-    }
-
-    function toggleToolsHidden(){
-
-      toolsHidden = !toolsHidden;
-
-      localStorage.setItem(LS.toolsHidden, toolsHidden ? "1" : "0");
-
-      applyToolsHiddenUi();
-
-      render();
-
-    }
-
-    function togglePdfOnlyFilter(){
-
-      pdfOnlyFilter = !pdfOnlyFilter;
-
-      localStorage.setItem(LS.pdfOnlyFilter, pdfOnlyFilter ? "1" : "0");
-
-      applyPdfFilterUi();
-
-      render();
-
-    }
-
     function setSortIcons(){
 
       sortDurBtn.classList.remove("on");
@@ -5082,7 +4996,17 @@
 
       if (sortMode === "download") sortDlCountBtn.classList.add("on");
 
+      filterFavBtn.classList.toggle("on", !!filterFav);
+
+      filterFavBtn.setAttribute("aria-pressed", String(!!filterFav));
+
+      filterPdfBtn.classList.toggle("on", !!filterPdf);
+
+      filterPdfBtn.setAttribute("aria-pressed", String(!!filterPdf));
+
       sbFavBtn.classList.toggle("on", !!filterFav);
+
+      sbPdfBtn.classList.toggle("on", !!filterPdf);
 
       sbSortDateBtn.classList.toggle("on", sortMode === "date");
 
@@ -5092,79 +5016,79 @@
 
       sbSortDlBtn.classList.toggle("on", sortMode === "download");
 
-      applyPdfFilterUi();
-
     }
 
-    function clickSort(kind){
+    sortDurBtn.addEventListener("click", (e) => {
 
-      if (kind === "date"){
+      e.stopPropagation();
 
-        if (sortMode !== "date") sortMode = "date";
+      if (sortMode !== "dur") sortMode = "dur";
 
-        else dateSortDir = (dateSortDir === "asc") ? "desc" : "asc";
+      else durSortDir = (durSortDir === "asc") ? "desc" : "asc";
 
-        localStorage.setItem(LS.sortMode, sortMode);
+      localStorage.setItem(LS.sortMode, sortMode);
 
-        localStorage.setItem(LS.sortDirDate, dateSortDir);
-
-      } else if (kind === "dur"){
-
-        if (sortMode !== "dur") sortMode = "dur";
-
-        else durSortDir = (durSortDir === "asc") ? "desc" : "asc";
-
-        localStorage.setItem(LS.sortMode, sortMode);
-
-        localStorage.setItem(LS.sortDirDur, durSortDir);
-
-      } else if (kind === "play"){
-
-        if (sortMode !== "play") sortMode = "play";
-
-        else playSortDir = (playSortDir === "asc") ? "desc" : "asc";
-
-        localStorage.setItem(LS.sortMode, sortMode);
-
-        localStorage.setItem(LS.sortDirPlay, playSortDir);
-
-      } else if (kind === "download"){
-
-        if (sortMode !== "download") sortMode = "download";
-
-        else dlSortDir = (dlSortDir === "asc") ? "desc" : "asc";
-
-        localStorage.setItem(LS.sortMode, sortMode);
-
-        localStorage.setItem(LS.sortDirDl, dlSortDir);
-
-      }
+      localStorage.setItem(LS.sortDirDur, durSortDir);
 
       setSortIcons();
 
       render();
 
-    }
+    });
 
-    sortDurBtn.addEventListener("click", (e) => { e.stopPropagation(); clickSort("dur"); });
+    sortDateBtn.addEventListener("click", (e) => {
 
-    sortDateBtn.addEventListener("click", (e) => { e.stopPropagation(); clickSort("date"); });
+      e.stopPropagation();
 
-    sortPlayBtn.addEventListener("click", (e) => { e.stopPropagation(); clickSort("play"); });
+      if (sortMode !== "date") sortMode = "date";
 
-    sortDlCountBtn.addEventListener("click", (e) => { e.stopPropagation(); clickSort("download"); });
+      else dateSortDir = (dateSortDir === "asc") ? "desc" : "asc";
 
-    filterPdfBtn.addEventListener("click", (e) => { e.stopPropagation(); togglePdfOnlyFilter(); });
+      localStorage.setItem(LS.sortMode, sortMode);
 
-    sbSortDateBtn.addEventListener("click", () => clickSort("date"));
+      localStorage.setItem(LS.sortDirDate, dateSortDir);
 
-    sbSortDurBtn.addEventListener("click", () => clickSort("dur"));
+      setSortIcons();
 
-    sbSortPlayBtn.addEventListener("click", () => clickSort("play"));
+      render();
 
-    sbSortDlBtn.addEventListener("click", () => clickSort("download"));
+    });
 
-    sbPdfBtn.addEventListener("click", () => togglePdfOnlyFilter());
+    sortPlayBtn.addEventListener("click", (e) => {
+
+      e.stopPropagation();
+
+      if (sortMode !== "play") sortMode = "play";
+
+      else playSortDir = (playSortDir === "asc") ? "desc" : "asc";
+
+      localStorage.setItem(LS.sortMode, sortMode);
+
+      localStorage.setItem(LS.sortDirPlay, playSortDir);
+
+      setSortIcons();
+
+      render();
+
+    });
+
+    sortDlCountBtn.addEventListener("click", (e) => {
+
+      e.stopPropagation();
+
+      if (sortMode !== "download") sortMode = "download";
+
+      else dlSortDir = (dlSortDir === "asc") ? "desc" : "asc";
+
+      localStorage.setItem(LS.sortMode, sortMode);
+
+      localStorage.setItem(LS.sortDirDl, dlSortDir);
+
+      setSortIcons();
+
+      render();
+
+    });
 
     let stickyStartTop = null;
 
@@ -5324,6 +5248,102 @@
 
     }
 
+    function isMobileFiltersMode(){
+
+      try{ return window.matchMedia("(max-width: 680px)").matches; }
+
+      catch{ return window.innerWidth <= 680; }
+
+    }
+
+    function readMobileFiltersOpen(){
+
+      try{
+
+        const raw = localStorage.getItem(LS.mobileFiltersOpen);
+
+        if (raw === "1") return true;
+
+        if (raw === "0") return false;
+
+      }catch{}
+
+      return false;
+
+    }
+
+    function saveMobileFiltersOpen(v){
+
+      try{ localStorage.setItem(LS.mobileFiltersOpen, v ? "1" : "0"); } catch {}
+
+    }
+
+    function applyMobileFiltersState(forceOpen){
+
+      if (!stickyBar || !mobileFiltersToggle) return;
+
+      const isMobile = isMobileFiltersMode();
+
+      const open = !!forceOpen;
+
+      if (!isMobile){
+
+        document.body.classList.remove("mobileFiltersCollapsed");
+
+        mobileFiltersToggle.classList.remove("on");
+
+        mobileFiltersToggle.setAttribute("aria-expanded", "true");
+
+        mobileFiltersToggle.setAttribute("aria-label", "Filtreler");
+
+        mobileFiltersToggle.textContent = "Filtreler";
+
+        setTimeout(() => { try{ updateSticky(true); }catch{} }, 0);
+
+        return;
+
+      }
+
+      document.body.classList.toggle("mobileFiltersCollapsed", !open);
+
+      mobileFiltersToggle.classList.toggle("on", open);
+
+      mobileFiltersToggle.setAttribute("aria-expanded", String(open));
+
+      mobileFiltersToggle.setAttribute("aria-label", open ? "Filtreleri gizle" : "Filtreleri göster");
+
+      mobileFiltersToggle.textContent = open ? "Filtreleri Gizle" : "Filtreler";
+
+      setTimeout(() => { try{ updateSticky(true); }catch{} }, 0);
+
+    }
+
+    function restoreMobileFiltersState(){ applyMobileFiltersState(readMobileFiltersOpen()); }
+
+    function toggleMobileFilters(){
+
+      if (!isMobileFiltersMode()) return;
+
+      const nextOpen = document.body.classList.contains("mobileFiltersCollapsed");
+
+      saveMobileFiltersOpen(nextOpen);
+
+      applyMobileFiltersState(nextOpen);
+
+    }
+
+    if (mobileFiltersToggle){
+
+      mobileFiltersToggle.addEventListener("click", (e) => {
+
+        e.stopPropagation();
+
+        toggleMobileFilters();
+
+      });
+
+    }
+
     scrollArea.addEventListener("scroll", () => updateSticky(false), { passive: true });
 
     const durQueue = [];
@@ -5446,11 +5466,7 @@
 
         a.addEventListener("error", onErr, { once: true });
 
-        setTimeout(() => {
-
-          if (!done) finish(false, new Error("timeout"));
-
-        }, 12000);
+        setTimeout(() => { if (!done) finish(false, new Error("timeout")); }, 12000);
 
       });
 
@@ -5464,7 +5480,7 @@
 
     }
 
-    function clickDownload(href, filename){
+    function clickDownload(href, filename, selfTarget = false){
 
       const a = document.createElement("a");
 
@@ -5472,7 +5488,7 @@
 
       a.rel = "noopener";
 
-      a.target = "_blank";
+      a.target = selfTarget ? "_self" : "_blank";
 
       if (filename) a.download = filename;
 
@@ -5526,11 +5542,7 @@
 
     }
 
-    function replaceExtToTxt(name){
-
-      return String(name || "").replace(/\.(m4a|mp3)$/i, ".txt");
-
-    }
+    function replaceExtToTxt(name){ return String(name || "").replace(/\.(m4a|mp3)$/i, ".txt"); }
 
     function __ia2IsBlockedByPrefix(fileName){
 
@@ -5710,67 +5722,149 @@
 
     }
 
-    function itemBaseFilename(it){
+    const PDF_CACHE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
-      return decodeURIComponentSafe((it?.name || "").split("/").pop() || "");
+    const pdfCacheStore = loadMap(LS.pdfCache);
 
-    }
+    const pdfProbeQueue = [];
 
-    function pdfUrlForItem(it){
+    const pdfProbeInFlight = new Set();
 
-      const base = itemBaseFilename(it);
+    const pdfProbePending = new Set();
 
-      if (!base) return "";
+    const PDF_PROBE_CONCURRENCY = 4;
 
-      const pdfName = base.replace(/\.(m4a|mp3)$/i, ".pdf");
+    let pdfProbeActive = 0;
 
-      return `docs/${encodeURIComponent(pdfName)}`;
+    function pdfIconSvg(){
 
-    }
+      return `
 
-    function pdfStateOf(it){
+        <svg class="pdfDocIcon" viewBox="0 0 24 24" aria-hidden="true">
 
-      return pdfState.get(it.id) || "unknown";
+          <path fill="var(--pdfRed)" d="M6.5 1.5h7.8l4.7 4.7V20a2.5 2.5 0 0 1-2.5 2.5h-10A2.5 2.5 0 0 1 4 20V4A2.5 2.5 0 0 1 6.5 1.5z"/>
 
-    }
+          <path fill="#fff" opacity=".95" d="M14.3 1.5v3.7a1 1 0 0 0 1 1H19"/>
 
-    function itemHasPdfKnown(it){
+          <path fill="#fff" d="M7.2 15.9h1.1c1.3 0 2-.6 2-1.7 0-1.1-.7-1.7-2-1.7H7.2v3.4zm1-2.6h.2c.6 0 1 .3 1 .9s-.4.9-1 .9h-.2v-1.8zm3.3 2.6h1c1.4 0 2.3-.7 2.3-1.8 0-1.1-.9-1.8-2.3-1.8h-1v3.6zm1-2.8h.2c.8 0 1.3.4 1.3 1s-.5 1-1.3 1h-.2v-2zm3 2.8h1v-1.4h1.4v-.8h-1.4v-.7h1.5v-.8h-2.5v3.7z"/>
 
-      return pdfStateOf(it) === "yes";
+          <path fill="#fff" opacity=".95" d="M11.7 6.6c.6-.9 1.1-2.1 1.4-3 .1-.2.3-.2.4 0 .2.6.4 1.2.6 1.8.2.7.5 1.2.8 1.8.7.1 1.3.3 1.8.5.5.2.6.8.1 1a6 6 0 0 1-2 .3c-.4.5-.8 1-1.3 1.4-.7.6-1.4 1.2-2.2 1.7-.5.3-1 .5-1.4.4-.4-.1-.5-.5-.2-.9.4-.5 1.1-.9 1.8-1.3.4-.2.9-.4 1.3-.6.2-.4.4-.9.6-1.3-.1-.2-.2-.5-.3-.8-.8.1-1.5.1-2.1 0-.6-.1-.8-.8-.3-1 .7-.3 1.6-.3 2.8 0zm1.7 1.9c-.1.2-.2.5-.3.7.3-.2.6-.4.8-.7h-.5zm-1.7.9c-.4.2-.8.4-1.2.7.3-.1.7-.4 1.2-.7zm.5-4.2c-.1.4-.2.8-.4 1.2h.8c-.1-.4-.3-.8-.4-1.2zm-1 2h-.5c.2 0 .3 0 .5 0z"/>
 
-    }
+        </svg>
 
-    function itemPdfMissingKnown(it){
-
-      return pdfStateOf(it) === "no";
+      `;
 
     }
 
-    async function probePdfUrl(url){
+    function getPdfBaseName(it){
+
+      const raw = decodeURIComponentSafe((it?.name || "").split("/").pop() || "");
+
+      return raw.replace(/\.(m4a|mp3)$/i, ".pdf");
+
+    }
+
+    function getPdfUrlForItem(it){
+
+      return PDF_DOCS_BASE + encodeURIComponent(getPdfBaseName(it));
+
+    }
+
+    function getPdfCacheKey(it){
+
+      return `${it?.src || "S1"}|${getPdfBaseName(it)}`;
+
+    }
+
+    function getPdfCacheEntry(it){
+
+      const key = getPdfCacheKey(it);
+
+      const v = pdfCacheStore[key];
+
+      if (!v) return null;
+
+      const fresh = Number(v.at) && (Date.now() - Number(v.at) < PDF_CACHE_TTL_MS);
+
+      if (!fresh) return null;
+
+      return v;
+
+    }
+
+    function setPdfCacheEntry(it, exists){
+
+      const key = getPdfCacheKey(it);
+
+      pdfCacheStore[key] = {
+
+        exists: !!exists,
+
+        at: Date.now(),
+
+        url: getPdfUrlForItem(it),
+
+        filename: getPdfBaseName(it)
+
+      };
+
+      saveMap(LS.pdfCache, pdfCacheStore);
+
+    }
+
+    function hasKnownPdf(it){
+
+      const c = getPdfCacheEntry(it);
+
+      return !!(c && c.exists);
+
+    }
+
+    function isKnownNoPdf(it){
+
+      const c = getPdfCacheEntry(it);
+
+      return !!(c && !c.exists);
+
+    }
+
+    function pdfStateForItem(it){
+
+      const c = getPdfCacheEntry(it);
+
+      if (c && c.exists) return "exists";
+
+      if (c && !c.exists) return "missing";
+
+      return "unknown";
+
+    }
+
+    async function probePdfExists(it){
+
+      const url = getPdfUrlForItem(it);
 
       try{
 
-        const res = await fetch(url, { method: "HEAD", cache: "no-store" });
+        const r = await fetch(url, { method: "HEAD", cache: "no-store" });
 
-        if (res.ok) return true;
+        if (r.ok) return true;
 
       }catch{}
 
       try{
 
-        const res = await fetch(url, {
+        const r = await fetch(url, {
 
           method: "GET",
 
           cache: "no-store",
 
-          headers: { range: "bytes=0-15" }
+          headers: { range: "bytes=0-1" }
 
         });
 
-        if (!res.ok) return false;
-
-        return true;
+        return r.ok;
 
       }catch{
 
@@ -5780,15 +5874,21 @@
 
     }
 
-    function requestPdfState(it){
+    function requestPdfProbe(it, urgent = false){
 
       if (!it?.id) return;
 
-      if (pdfState.has(it.id)) return;
+      const state = pdfStateForItem(it);
 
-      if (pdfProbeRunning.has(it.id)) return;
+      if (state !== "unknown") return;
 
-      pdfProbeQueue.push(it);
+      if (pdfProbeInFlight.has(it.id) || pdfProbePending.has(it.id)) return;
+
+      pdfProbePending.add(it.id);
+
+      if (urgent) pdfProbeQueue.unshift(it);
+
+      else pdfProbeQueue.push(it);
 
       pumpPdfProbeQueue();
 
@@ -5800,47 +5900,111 @@
 
         const it = pdfProbeQueue.shift();
 
-        if (!it?.id) continue;
+        pdfProbePending.delete(it.id);
 
-        if (pdfState.has(it.id)) continue;
-
-        if (pdfProbeRunning.has(it.id)) continue;
-
-        pdfProbeRunning.add(it.id);
+        pdfProbeInFlight.add(it.id);
 
         pdfProbeActive++;
 
-        (async () => {
+        probePdfExists(it)
 
-          const ok = await probePdfUrl(pdfUrlForItem(it));
+          .then((ok) => setPdfCacheEntry(it, ok))
 
-          pdfState.set(it.id, ok ? "yes" : "no");
+          .catch(() => setPdfCacheEntry(it, false))
 
-          schedulePdfRerender();
+          .finally(() => {
 
-        })()
+            pdfProbeInFlight.delete(it.id);
 
-        .catch(() => {
+            pdfProbeActive--;
 
-          pdfState.set(it.id, "no");
+            scheduleRerender();
 
-          schedulePdfRerender();
+            pumpPdfProbeQueue();
 
-        })
-
-        .finally(() => {
-
-          pdfProbeRunning.delete(it.id);
-
-          pdfProbeActive--;
-
-          pumpPdfProbeQueue();
-
-        });
+          });
 
       }
 
     }
+
+    function requestVisiblePdfProbes(arr){
+
+      const probeList = filterPdf ? items : arr;
+
+      for (const it of probeList) requestPdfProbe(it, !!filterPdf);
+
+    }
+
+    function openPdfForItem(it){
+
+      const entry = getPdfCacheEntry(it);
+
+      const url = entry?.url || getPdfUrlForItem(it);
+
+      const filename = entry?.filename || getPdfBaseName(it);
+
+      const viewUrl = `${url}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`;
+
+      pdfTitleEl.textContent = `${it.title} · PDF`;
+
+      pdfFrame.src = viewUrl;
+
+      pdfDownloadBtn.dataset.url = url;
+
+      pdfDownloadBtn.dataset.filename = filename;
+
+      pdfOverlay.classList.add("open");
+
+      pdfOverlay.setAttribute("aria-hidden", "false");
+
+      document.body.style.overflow = "hidden";
+
+      trackPdfOpen(it, filename);
+
+    }
+
+    function closePdf(){
+
+      pdfOverlay.classList.remove("open");
+
+      pdfOverlay.setAttribute("aria-hidden", "true");
+
+      pdfFrame.src = "about:blank";
+
+      pdfDownloadBtn.dataset.url = "";
+
+      pdfDownloadBtn.dataset.filename = "";
+
+      document.body.style.overflow = "";
+
+    }
+
+    pdfCloseBtn.addEventListener("click", closePdf);
+
+    pdfOverlay.addEventListener("click", (e) => {
+
+      if (e.target === pdfOverlay) closePdf();
+
+    });
+
+    document.getElementById("pdfPanel").addEventListener("click", (e) => e.stopPropagation());
+
+    pdfDownloadBtn.addEventListener("click", () => {
+
+      const url = pdfDownloadBtn.dataset.url || "";
+
+      const filename = pdfDownloadBtn.dataset.filename || "document.pdf";
+
+      if (!url) return;
+
+      clickDownload(url, filename, true);
+
+      const it = items.find((x) => getPdfBaseName(x) === filename) || null;
+
+      if (it) trackPdfDownload(it, filename);
+
+    });
 
     function getVisibleItems(){
 
@@ -5852,7 +6016,7 @@
 
         if (filterFav && !favs[it.id]) return false;
 
-        if (pdfOnlyFilter && !itemHasPdfKnown(it)) return false;
+        if (filterPdf && !hasKnownPdf(it)) return false;
 
         return true;
 
@@ -5948,49 +6112,13 @@
 
     }
 
-    function openPdfForItem(it){
-
-      const url = pdfUrlForItem(it);
-
-      if (!url) return;
-
-      pdfTitleEl.textContent = (it?.title || "PDF");
-
-      pdfFrame.src = url;
-
-      pdfDownloadBtn.onclick = () => clickDownload(url, itemBaseFilename(it).replace(/\.(m4a|mp3)$/i, ".pdf"));
-
-      pdfOverlay.classList.add("open");
-
-      pdfOverlay.setAttribute("aria-hidden", "false");
-
-    }
-
-    function closePdfOverlay(){
-
-      pdfOverlay.classList.remove("open");
-
-      pdfOverlay.setAttribute("aria-hidden", "true");
-
-      pdfFrame.src = "about:blank";
-
-    }
-
-    pdfCloseBtn.addEventListener("click", closePdfOverlay);
-
-    pdfOverlay.addEventListener("click", (e) => {
-
-      if (e.target === pdfOverlay) closePdfOverlay();
-
-    });
-
-    function iconButton(kind, on, title){
+    function iconButton(kind, on, title, extraClass = ""){
 
       const btn = document.createElement("button");
 
       btn.type = "button";
 
-      btn.className = "iconBtn" + (on ? " on" : "");
+      btn.className = ("iconBtn" + (on ? " on" : "") + (extraClass ? " " + extraClass : "")).trim();
 
       btn.title = title;
 
@@ -6024,23 +6152,41 @@
 
       } else if (kind === "pdf"){
 
-        btn.classList.add("pdfIconBtn");
-
-        btn.innerHTML = `
-
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-
-            <path d="M6 2h8l4 4v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="var(--pdfRed)"/>
-
-            <path d="M14 2v4h4" fill="#fff" opacity=".92"/>
-
-            <path d="M7.1 16.8v-5.2h2.15c1.28 0 2.06.67 2.06 1.75 0 1.12-.8 1.83-2.09 1.83H8.5v1.66zM8.5 14.05h.62c.56 0 .9-.27.9-.71 0-.43-.31-.66-.89-.66H8.5z" fill="#fff"/>
-
-            <path d="M12.05 16.8v-5.2h1.97c1.62 0 2.68 1.02 2.68 2.58 0 1.58-1.05 2.62-2.68 2.62zM13.43 15.66h.45c.88 0 1.42-.56 1.42-1.48s-.55-1.44-1.42-1.44h-.45z" fill="#fff"/>
-
-          </svg>`;
+        btn.innerHTML = pdfIconSvg();
 
       }
+
+      return btn;
+
+    }
+
+    function makePdfRowButton(it){
+
+      const state = pdfStateForItem(it);
+
+      const hasPdf = state === "exists";
+
+      const btn = iconButton("pdf", false, hasPdf ? "PDF aç" : "PDF yok", "pdfBtn " + state);
+
+      btn.disabled = !hasPdf;
+
+      if (hasPdf) btn.classList.add("exists");
+
+      else btn.classList.add("missing");
+
+      btn.addEventListener("click", (e) => {
+
+        e.stopPropagation();
+
+        if (!hasKnownPdf(it)) return;
+
+        openPdfForItem(it);
+
+      });
+
+      btn.addEventListener("pointerup", (e) => e.stopPropagation());
+
+      btn.addEventListener("pointerdown", (e) => e.stopPropagation());
 
       return btn;
 
@@ -6052,15 +6198,7 @@
 
       metaEl.textContent = `Görünən: ${visible.length} / Toplam: ${items.length}`;
 
-      filterFavBtn.classList.toggle("on", filterFav);
-
-      filterFavBtn.setAttribute("aria-pressed", String(filterFav));
-
       setSortIcons();
-
-      applyToolsHiddenUi();
-
-      applyPdfFilterUi();
 
       listEl.innerHTML = "";
 
@@ -6072,15 +6210,13 @@
 
       }
 
-      for (const it of visible) requestPdfState(it);
+      requestVisiblePdfProbes(visible);
 
       for (const it of visible){
 
         const row = document.createElement("div");
 
         row.className = "itemRow" + (it.id === selectedId ? " active" : "");
-
-        if (itemPdfMissingKnown(it)) row.classList.add("pdfMissing");
 
         const title = document.createElement("div");
 
@@ -6104,29 +6240,13 @@
 
         const dlBtn = iconButton("download", false, "İndir");
 
-        const pdfBtn = iconButton("pdf", itemHasPdfKnown(it), itemHasPdfKnown(it) ? "PDF aç" : "PDF yok");
+        const pdfBtn = makePdfRowButton(it);
 
         const dlCount = document.createElement("div");
 
         dlCount.className = "countCell";
 
         dlCount.textContent = String(Number(globalDownloadCounts[it.id]) || 0);
-
-        if (itemPdfMissingKnown(it)){
-
-          pdfBtn.disabled = true;
-
-          pdfBtn.classList.add("off");
-
-        } else if (!itemHasPdfKnown(it)){
-
-          pdfBtn.disabled = true;
-
-          pdfBtn.classList.add("off");
-
-          pdfBtn.title = "PDF kontrol ediliyor...";
-
-        }
 
         favBtn.addEventListener("click", (e) => {
 
@@ -6172,21 +6292,7 @@
 
         });
 
-        pdfBtn.addEventListener("click", (e) => {
-
-          e.stopPropagation();
-
-          if (!itemHasPdfKnown(it)) return;
-
-          selectedId = it.id;
-
-          openPdfForItem(it);
-
-          render();
-
-        });
-
-        for (const b of [favBtn, dlBtn, pdfBtn]){
+        for (const b of [favBtn, dlBtn]){
 
           b.addEventListener("pointerup", (e) => e.stopPropagation());
 
@@ -6398,7 +6504,7 @@
 
           e.preventDefault();
 
-          closePdfOverlay();
+          closePdf();
 
           return;
 
@@ -6458,11 +6564,27 @@
 
     });
 
+    filterPdfBtn.addEventListener("click", () => {
+
+      filterPdf = !filterPdf;
+
+      localStorage.setItem(LS.pdfFilter, filterPdf ? "1" : "0");
+
+      if (filterPdf){
+
+        for (const it of items) requestPdfProbe(it, true);
+
+      }
+
+      render();
+
+    });
+
     resetBtn.addEventListener("click", () => {
 
       filterFav = false;
 
-      pdfOnlyFilter = false;
+      filterPdf = false;
 
       searchEl.value = "";
 
@@ -6474,7 +6596,7 @@
 
       localStorage.setItem(LS.sortDirDate, dateSortDir);
 
-      localStorage.setItem(LS.pdfOnlyFilter, "0");
+      localStorage.setItem(LS.pdfFilter, "0");
 
       setSortIcons();
 
@@ -6594,11 +6716,7 @@
 
     }
 
-    function getPlayerRect(){
-
-      return fp.getBoundingClientRect();
-
-    }
+    function getPlayerRect(){ return fp.getBoundingClientRect(); }
 
     function getPlayerPosPx(){
 
@@ -6628,11 +6746,7 @@
 
       const keepY = Math.max(56, Math.min(h - 16, 120));
 
-      const capH = (isCaptionsOn() && captionsEl && !captionsEl.classList.contains("hidden"))
-
-        ? captionsEl.getBoundingClientRect().height
-
-        : 0;
+      const capH = (isCaptionsOn() && captionsEl && !captionsEl.classList.contains("hidden")) ? captionsEl.getBoundingClientRect().height : 0;
 
       const drawerH = (!skipDrawer.hidden) ? skipDrawer.getBoundingClientRect().height : 0;
 
@@ -6800,7 +6914,7 @@
 
     }, true);
 
-    function runViewportRefresh(){
+    window.addEventListener("resize", () => {
 
       clampPlayerToViewport();
 
@@ -6814,13 +6928,49 @@
 
       updateSticky(true);
 
+      restoreMobileFiltersState();
+
+    });
+
+    window.addEventListener("orientationchange", () => setTimeout(() => {
+
+      clampPlayerToViewport();
+
+      updateOverlayScale();
+
+      updateSearchNoZoomFontSizes();
+
+      clampTxSizeToViewport();
+
+      clampTxPosToViewport();
+
+      updateSticky(true);
+
+      restoreMobileFiltersState();
+
+    }, 150));
+
+    if (window.visualViewport){
+
+      window.visualViewport.addEventListener("resize", () => {
+
+        clampPlayerToViewport();
+
+        updateOverlayScale();
+
+        updateSearchNoZoomFontSizes();
+
+        clampTxSizeToViewport();
+
+        clampTxPosToViewport();
+
+        updateSticky(true);
+
+        restoreMobileFiltersState();
+
+      });
+
     }
-
-    window.addEventListener("resize", runViewportRefresh);
-
-    window.addEventListener("orientationchange", () => setTimeout(runViewportRefresh, 150));
-
-    if (window.visualViewport) window.visualViewport.addEventListener("resize", runViewportRefresh);
 
     (function disablePullToRefresh(){
 
@@ -6874,10 +7024,6 @@
 
       setSortIcons();
 
-      applyToolsHiddenUi();
-
-      applyPdfFilterUi();
-
     }
 
     function closeSidebar(){
@@ -6898,37 +7044,101 @@
 
     sbRefreshBtn.addEventListener("click", async () => {
 
-      try{
+      localStorage.setItem(LS.itemsCacheAt, "0");
 
-        await loadItems();
+      try{ await loadItems(); }
 
-      } finally {
-
-        statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
-
-      }
+      finally { statusEl.textContent = items.length ? "" : "Kayıt bulunamadı."; }
 
     });
 
     sbZoomResetBtn.addEventListener("click", () => resetZoom100());
 
-    sbFavBtn.addEventListener("click", () => { filterFav = !filterFav; setSortIcons(); render(); });
+    sbFavBtn.addEventListener("click", () => {
 
-    sbClearTxCacheBtn.addEventListener("click", () => {
+      filterFav = !filterFav;
 
-      txCache.clear();
+      setSortIcons();
 
-      txInfoEl.textContent = "TXT Cache temizlendi.";
-
-      setTimeout(() => {
-
-        if (txCurrent) updateTxInfo(txCurrent);
-
-      }, 1200);
+      render();
 
     });
 
-    sbToolsToggleBtn.addEventListener("click", toggleToolsHidden);
+    sbPdfBtn.addEventListener("click", () => {
+
+      filterPdf = !filterPdf;
+
+      localStorage.setItem(LS.pdfFilter, filterPdf ? "1" : "0");
+
+      if (filterPdf){
+
+        for (const it of items) requestPdfProbe(it, true);
+
+      }
+
+      setSortIcons();
+
+      render();
+
+    });
+
+    function clickSort(kind){
+
+      if (kind === "date"){
+
+        if (sortMode !== "date") sortMode = "date";
+
+        else dateSortDir = (dateSortDir === "asc") ? "desc" : "asc";
+
+        localStorage.setItem(LS.sortMode, sortMode);
+
+        localStorage.setItem(LS.sortDirDate, dateSortDir);
+
+      } else if (kind === "dur"){
+
+        if (sortMode !== "dur") sortMode = "dur";
+
+        else durSortDir = (durSortDir === "asc") ? "desc" : "asc";
+
+        localStorage.setItem(LS.sortMode, sortMode);
+
+        localStorage.setItem(LS.sortDirDur, durSortDir);
+
+      } else if (kind === "play"){
+
+        if (sortMode !== "play") sortMode = "play";
+
+        else playSortDir = (playSortDir === "asc") ? "desc" : "asc";
+
+        localStorage.setItem(LS.sortMode, sortMode);
+
+        localStorage.setItem(LS.sortDirPlay, playSortDir);
+
+      } else if (kind === "download"){
+
+        if (sortMode !== "download") sortMode = "download";
+
+        else dlSortDir = (dlSortDir === "asc") ? "desc" : "asc";
+
+        localStorage.setItem(LS.sortMode, sortMode);
+
+        localStorage.setItem(LS.sortDirDl, dlSortDir);
+
+      }
+
+      setSortIcons();
+
+      render();
+
+    }
+
+    sbSortDateBtn.addEventListener("click", () => clickSort("date"));
+
+    sbSortDurBtn.addEventListener("click", () => clickSort("dur"));
+
+    sbSortPlayBtn.addEventListener("click", () => clickSort("play"));
+
+    sbSortDlBtn.addEventListener("click", () => clickSort("download"));
 
     let txOpen = false;
 
@@ -7022,13 +7232,7 @@
 
       const right = parseFloat(txPanel.style.right || cs.right || "0");
 
-      return {
-
-        top: Number.isFinite(top) ? top : 0,
-
-        right: Number.isFinite(right) ? right : 0
-
-      };
+      return { top: Number.isFinite(top) ? top : 0, right: Number.isFinite(right) ? right : 0 };
 
     }
 
@@ -7044,11 +7248,7 @@
 
     }
 
-    function saveTxPos(top, right){
-
-      saveAny(LS.txPos, { top, right });
-
-    }
+    function saveTxPos(top, right){ saveAny(LS.txPos, { top, right }); }
 
     function restoreTxPos(){
 
@@ -7056,11 +7256,7 @@
 
       if (!saved) return;
 
-      if (typeof saved.top === "number" && typeof saved.right === "number"){
-
-        setTxPosPx(saved.top, saved.right);
-
-      }
+      if (typeof saved.top === "number" && typeof saved.right === "number") setTxPosPx(saved.top, saved.right);
 
     }
 
@@ -7154,11 +7350,7 @@
 
     txCloseBtn.addEventListener("click", () => closeTranscript());
 
-    function escapeForRegex(s){
-
-      return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-    }
+    function escapeForRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 
     function buildHighlightedHtml(text, ranges, activeIdx){
 
@@ -7224,13 +7416,7 @@
 
       const q = (txSearchInput.value || "").trim();
 
-      if (!q){
-
-        clearTxSearchUI();
-
-        return;
-
-      }
+      if (!q){ clearTxSearchUI(); return; }
 
       txMatches = computeMatches(txPlainText, q);
 
@@ -7254,15 +7440,9 @@
 
       if (!el) return;
 
-      try{
+      try{ el.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" }); }
 
-        el.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
-
-      }catch{
-
-        el.scrollIntoView();
-
-      }
+      catch{ el.scrollIntoView(); }
 
     }
 
@@ -7324,13 +7504,7 @@
 
         e.preventDefault();
 
-        if (!txMatches.length){
-
-          applyTxSearch();
-
-          return;
-
-        }
+        if (!txMatches.length){ applyTxSearch(); return; }
 
         if (e.shiftKey) setActiveMatch(txActiveMatch - 1);
 
@@ -7386,11 +7560,7 @@
 
         return !!ok;
 
-      }catch{
-
-        return false;
-
-      }
+      }catch{ return false; }
 
     }
 
@@ -7400,11 +7570,7 @@
 
       txInfoEl.textContent = ok ? "Kopiert." : "Kopieren fehlgeschlagen.";
 
-      setTimeout(() => {
-
-        if (txCurrent) updateTxInfo(txCurrent);
-
-      }, 1200);
+      setTimeout(() => { if (txCurrent) updateTxInfo(txCurrent); }, 1200);
 
     });
 
@@ -7480,11 +7646,7 @@
 
           return text;
 
-        }catch(err){
-
-          lastErr = err;
-
-        }
+        }catch(err){ lastErr = err; }
 
       }
 
@@ -7542,13 +7704,7 @@
 
     function toggleTranscriptFromPlayer(){
 
-      if (txOpen){
-
-        closeTranscript();
-
-        return;
-
-      }
+      if (txOpen){ closeTranscript(); return; }
 
       const it = items.find((x) => x.id === activeId) || items.find((x) => x.id === selectedId) || null;
 
@@ -7584,15 +7740,21 @@
 
     });
 
+    sbClearTxCacheBtn.addEventListener("click", () => {
+
+      txCache.clear();
+
+      txInfoEl.textContent = "TXT Cache temizlendi.";
+
+      setTimeout(() => { if (txCurrent) updateTxInfo(txCurrent); }, 1200);
+
+    });
+
     txPanel.addEventListener("click", (e) => e.stopPropagation());
 
     const TX_DRAG_IGNORE_SELECTOR = "button, a, input, textarea, select, option";
 
-    function shouldStartTxDrag(target){
-
-      return !(target && target.closest && target.closest(TX_DRAG_IGNORE_SELECTOR));
-
-    }
+    function shouldStartTxDrag(target){ return !(target && target.closest && target.closest(TX_DRAG_IGNORE_SELECTOR)); }
 
     let txDragging = false;
 
@@ -7674,11 +7836,7 @@
 
     let txResizeStartH = 0;
 
-    function saveTxSize(w, h){
-
-      saveAny(LS.txSize, { w, h });
-
-    }
+    function saveTxSize(w, h){ saveAny(LS.txSize, { w, h }); }
 
     function clampTxSize(w, h){
 
@@ -7698,13 +7856,7 @@
 
       const minH = Math.min(maxH, TX_MIN_SIZE.h);
 
-      return {
-
-        w: Math.min(maxW, Math.max(minW, w)),
-
-        h: Math.min(maxH, Math.max(minH, h))
-
-      };
+      return { w: Math.min(maxW, Math.max(minW, w)), h: Math.min(maxH, Math.max(minH, h)) };
 
     }
 
@@ -7792,15 +7944,9 @@
 
     let skipSettings = (() => {
 
-      try{
+      try{ return { ...DEFAULT_SKIP_SETTINGS, ...(JSON.parse(localStorage.getItem(LS.skipSettings) || "{}")) }; }
 
-        return { ...DEFAULT_SKIP_SETTINGS, ...(JSON.parse(localStorage.getItem(LS.skipSettings) || "{}")) };
-
-      }catch{
-
-        return { ...DEFAULT_SKIP_SETTINGS };
-
-      }
+      catch{ return { ...DEFAULT_SKIP_SETTINGS }; }
 
     })();
 
@@ -7846,11 +7992,7 @@
 
     };
 
-    function saveSkipSettings(){
-
-      localStorage.setItem(LS.skipSettings, JSON.stringify(skipSettings));
-
-    }
+    function saveSkipSettings(){ localStorage.setItem(LS.skipSettings, JSON.stringify(skipSettings)); }
 
     function setSkipStatus(text){
 
@@ -7870,11 +8012,7 @@
 
     }
 
-    function sourceFolderForItem(item){
-
-      return item?.src === IA2_SRC ? "S2" : "S1";
-
-    }
+    function sourceFolderForItem(item){ return item?.src === IA2_SRC ? "S2" : "S1"; }
 
     function buildMapCandidateUrls(item, metaPath = ""){
 
@@ -7890,11 +8028,9 @@
 
       if (p){
 
-        if (/^https?:\/\//i.test(p)){
+        if (/^https?:\/\//i.test(p)) out.push(p);
 
-          out.push(p);
-
-        } else {
+        else {
 
           const clean = p.replace(/^\.?\//, "").replace(/^silence-maps\//, "");
 
@@ -7904,11 +8040,7 @@
 
       }
 
-      for (const base of STUMMSKIP_BASES){
-
-        out.push(`${base}/${folder}/${encodeURIComponent(jsonName)}`);
-
-      }
+      for (const base of STUMMSKIP_BASES) out.push(`${base}/${folder}/${encodeURIComponent(jsonName)}`);
 
       return [...new Set(out)];
 
@@ -7964,11 +8096,7 @@
 
           return { json, url };
 
-        }catch(err){
-
-          lastErr = err;
-
-        }
+        }catch(err){ lastErr = err; }
 
       }
 
@@ -7992,15 +8120,9 @@
 
       })();
 
-      try{
+      try{ return await skipState.indexPromise; }
 
-        return await skipState.indexPromise;
-
-      } finally {
-
-        skipState.indexPromise = null;
-
-      }
+      finally{ skipState.indexPromise = null; }
 
     }
 
@@ -8060,15 +8182,9 @@
 
       skipState.mapPromiseById.set(item.id, p);
 
-      try{
+      try{ return await p; }
 
-        return await p;
-
-      } finally {
-
-        skipState.mapPromiseById.delete(item.id);
-
-      }
+      finally{ skipState.mapPromiseById.delete(item.id); }
 
     }
 
@@ -8316,11 +8432,7 @@
 
       target = Math.min(target, seg.start + maxAutoSeekSec);
 
-      if (duration > 0){
-
-        target = Math.min(target, Math.max(0, duration - 0.05));
-
-      }
+      if (duration > 0) target = Math.min(target, Math.max(0, duration - 0.05));
 
       if (!(target > current + 0.03)) return false;
 
@@ -8332,11 +8444,7 @@
 
       try{
 
-        if (fadeMs > 0){
-
-          await fadePlayerVolume(originalVol, Math.max(0, originalVol * 0.08), Math.floor(fadeMs / 2));
-
-        }
+        if (fadeMs > 0) await fadePlayerVolume(originalVol, Math.max(0, originalVol * 0.08), Math.floor(fadeMs / 2));
 
         const before = Number(playerEl.currentTime) || 0;
 
@@ -8354,11 +8462,7 @@
 
         skipState.manualSuppressUntil = performance.now() + Math.max(35, fadeMs + 25);
 
-        if (fadeMs > 0){
-
-          await fadePlayerVolume(Math.max(0, originalVol * 0.08), originalVol, Math.ceil(fadeMs / 2));
-
-        }
+        if (fadeMs > 0) await fadePlayerVolume(Math.max(0, originalVol * 0.08), originalVol, Math.ceil(fadeMs / 2));
 
         skipState.lastSkipAt = performance.now();
 
@@ -8382,13 +8486,7 @@
 
       skipState.rafId = 0;
 
-      if (!skipSettings.enabled){
-
-        stopSkipLoop();
-
-        return;
-
-      }
+      if (!skipSettings.enabled){ stopSkipLoop(); return; }
 
       const nowMs = performance.now();
 
@@ -8438,25 +8536,13 @@
 
       skipFadeValue.textContent = `${Math.round(skipSettings.fadeMs)}ms`;
 
-      skipEngineLabel.textContent = (skipState.currentMap?.segments?.length || 0)
-
-        ? `MAP ${skipState.currentMap.segments.length}`
-
-        : "MAP";
+      skipEngineLabel.textContent = (skipState.currentMap?.segments?.length || 0) ? `MAP ${skipState.currentMap.segments.length}` : "MAP";
 
       updateSkipGainUi();
 
       if (!skipState.status){
 
-        setSkipStatus(
-
-          (skipState.currentMap?.segments?.length || 0)
-
-            ? `Silence map hazır · ${skipState.currentMap.segments.length} segment`
-
-            : "Silence map bekleniyor…"
-
-        );
+        setSkipStatus((skipState.currentMap?.segments?.length || 0) ? `Silence map hazır · ${skipState.currentMap.segments.length} segment` : "Silence map bekleniyor…");
 
       }
 
@@ -8498,103 +8584,23 @@
 
       if (mode === "light"){
 
-        Object.assign(skipSettings, {
-
-          mode: "light",
-
-          fadeMs: 35,
-
-          tailKeepMs: 0,
-
-          resumeOffsetMs: 80,
-
-          minSegmentMs: 350,
-
-          cooldownMs: 90,
-
-          maxAutoSeekMs: 30000
-
-        });
+        Object.assign(skipSettings, { mode: "light", fadeMs: 35, tailKeepMs: 0, resumeOffsetMs: 80, minSegmentMs: 350, cooldownMs: 90, maxAutoSeekMs: 30000 });
 
       } else if (mode === "balanced"){
 
-        Object.assign(skipSettings, {
-
-          mode: "balanced",
-
-          fadeMs: 8,
-
-          tailKeepMs: 0,
-
-          resumeOffsetMs: 140,
-
-          minSegmentMs: 140,
-
-          cooldownMs: 30,
-
-          maxAutoSeekMs: 60000
-
-        });
+        Object.assign(skipSettings, { mode: "balanced", fadeMs: 8, tailKeepMs: 0, resumeOffsetMs: 140, minSegmentMs: 140, cooldownMs: 30, maxAutoSeekMs: 60000 });
 
       } else if (mode === "aggressive"){
 
-        Object.assign(skipSettings, {
-
-          mode: "aggressive",
-
-          fadeMs: 0,
-
-          tailKeepMs: 0,
-
-          resumeOffsetMs: 240,
-
-          minSegmentMs: 60,
-
-          cooldownMs: 8,
-
-          maxAutoSeekMs: 120000
-
-        });
+        Object.assign(skipSettings, { mode: "aggressive", fadeMs: 0, tailKeepMs: 0, resumeOffsetMs: 240, minSegmentMs: 60, cooldownMs: 8, maxAutoSeekMs: 120000 });
 
       } else if (mode === "ultra"){
 
-        Object.assign(skipSettings, {
-
-          mode: "ultra",
-
-          fadeMs: 0,
-
-          tailKeepMs: 0,
-
-          resumeOffsetMs: 320,
-
-          minSegmentMs: 30,
-
-          cooldownMs: 3,
-
-          maxAutoSeekMs: 180000
-
-        });
+        Object.assign(skipSettings, { mode: "ultra", fadeMs: 0, tailKeepMs: 0, resumeOffsetMs: 320, minSegmentMs: 30, cooldownMs: 3, maxAutoSeekMs: 180000 });
 
       } else if (mode === "max"){
 
-        Object.assign(skipSettings, {
-
-          mode: "max",
-
-          fadeMs: 0,
-
-          tailKeepMs: 0,
-
-          resumeOffsetMs: 420,
-
-          minSegmentMs: 15,
-
-          cooldownMs: 0,
-
-          maxAutoSeekMs: 240000
-
-        });
+        Object.assign(skipSettings, { mode: "max", fadeMs: 0, tailKeepMs: 0, resumeOffsetMs: 420, minSegmentMs: 15, cooldownMs: 0, maxAutoSeekMs: 240000 });
 
       }
 
@@ -8634,17 +8640,9 @@
 
       const it = items.find((x) => x.id === activeId) || null;
 
-      if (it && (!skipState.currentMap || skipState.currentMapItemId !== it.id)){
+      if (it && (!skipState.currentMap || skipState.currentMapItemId !== it.id)) await primeSilenceMapForItem(it);
 
-        await primeSilenceMapForItem(it);
-
-      }
-
-      if (skipState.currentMap?.segments?.length && !playerEl.paused){
-
-        startSkipLoop();
-
-      }
+      if (skipState.currentMap?.segments?.length && !playerEl.paused) startSkipLoop();
 
     });
 
@@ -8680,11 +8678,7 @@
 
     });
 
-    playerEl.addEventListener("play", () => {
-
-      if (skipSettings.enabled) startSkipLoop();
-
-    });
+    playerEl.addEventListener("play", () => { if (skipSettings.enabled) startSkipLoop(); });
 
     playerEl.addEventListener("pause", () => stopSkipLoop());
 
@@ -8704,8 +8698,6 @@
 
     });
 
-    function isPdfOpen(){ return pdfOverlay.classList.contains("open"); }
-
     setSortIcons();
 
     restoreUiState();
@@ -8722,13 +8714,11 @@
 
     setTxtBtnUi();
 
+    restoreMobileFiltersState();
+
     skipDrawer.hidden = localStorage.getItem(LS.skipDrawerOpen) !== "1";
 
     syncSkipUi();
-
-    applyToolsHiddenUi();
-
-    applyPdfFilterUi();
 
     requestAnimationFrame(() => {
 
@@ -8737,14 +8727,6 @@
       updateSticky(true);
 
     });
-
-    function runInitialPdfProbe(){
-
-      const topItems = items.slice(0, Math.min(items.length, 60));
-
-      for (const it of topItems) requestPdfState(it);
-
-    }
 
     async function checkSrtAvailability(){
 
@@ -8774,15 +8756,7 @@
 
         try{
 
-          const r = await fetch(url, {
-
-            method: "GET",
-
-            cache: "no-store",
-
-            headers: { range: "bytes=0-1" }
-
-          });
+          const r = await fetch(url, { method: "GET", cache: "no-store", headers: { range: "bytes=0-1" } });
 
           return r.ok;
 
@@ -8808,13 +8782,7 @@
 
           for (const u of urls){
 
-            if (await headOk(u)){
-
-              ok = true;
-
-              break;
-
-            }
+            if (await headOk(u)){ ok = true; break; }
 
           }
 
@@ -8844,11 +8812,15 @@
 
     }
 
-    loadItems().then(() => {
+    loadItems();
 
-      runInitialPdfProbe();
+    setTimeout(() => {
 
-    });
+      restoreMobileFiltersState();
+
+      try{ updateSticky(true); }catch{}
+
+    }, 0);
 
     setTimeout(() => checkSrtAvailability().catch(() => {}), 1200);
 
