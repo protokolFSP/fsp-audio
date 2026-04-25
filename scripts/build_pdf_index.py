@@ -1,313 +1,338 @@
-# file: scripts/build_pdf_index.py
+# scripts/build_pdf_index.py
 from __future__ import annotations
 
 import json
+import os
 import re
+import sys
 import unicodedata
-from collections import Counter
-from datetime import datetime, timezone
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Iterable
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-DOCS_DIR = REPO_ROOT / "docs"
-OUTPUT_FILE = DOCS_DIR / "pdf-index.json"
+IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25"
+IA_IDENTIFIER_2 = "FSPneu"
+OUTPUT_JSON = "docs/pdf-index.json"
+DOCS_DIR = "docs"
+USER_AGENT = "fsp-audio-pdf-index/1.0"
+REQUEST_TIMEOUT = 30
 
-AUDIO_EXTENSIONS = {".mp3", ".m4a", ".wav", ".aac", ".ogg", ".flac"}
-PDF_EXTENSION = ".pdf"
-
-DATE_PATTERNS = [
-    re.compile(r"(?<!\d)(\d{2})[.\-_](\d{2})[.\-_](\d{4})(?!\d)"),
-    re.compile(r"(?<!\d)(\d{2})[.\-_](\d{2})[.\-_](\d{2})(?!\d)"),
-]
+BLOCK_PREFIXES = (
+    "dusseldorf",
+    "düsseldorf",
+    "stuttgart",
+    "rheutlingen",
+    "reutlingen",
+    "sachsen",
+    "hessen",
+    "karlsruhe",
+)
 
 STOPWORDS = {
     "dr",
     "doktor",
-    "frau",
-    "herr",
+    "doctor",
     "mit",
-    "und",
     "ve",
     "ile",
+    "und",
     "bei",
-    "von",
+    "audio",
+    "fsp",
+    "a",
+    "the",
     "der",
     "die",
     "das",
-    "ein",
-    "eine",
-    "audio",
-    "fsp",
-    "aufnahme",
-    "kayit",
-    "kaydı",
-    "kaydi",
+    "fr",
+    "frau",
+    "herr",
 }
 
 
-def normalize_text(value: str) -> str:
-    value = unicodedata.normalize("NFKD", value)
+@dataclass(frozen=True)
+class AudioItem:
+    id: str
+    src: str
+    title: str
+    name: str
+
+
+@dataclass(frozen=True)
+class PdfItem:
+    path: str
+    name: str
+    stem: str
+    norm: str
+    date_token: str
+
+
+def log(msg: str) -> None:
+    print(msg, flush=True)
+
+
+def repo_root() -> Path:
+    return Path(__file__).resolve().parents[1]
+
+
+def json_get(url: str) -> dict:
+    req = Request(url, headers={"User-Agent": USER_AGENT})
+    with urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
+        raw = resp.read().decode("utf-8")
+    return json.loads(raw)
+
+
+def fold_tr(text: str) -> str:
+    value = (text or "").strip().lower()
+    value = value.replace("ı", "i")
+    value = unicodedata.normalize("NFD", value)
     value = "".join(ch for ch in value if not unicodedata.combining(ch))
-    value = value.casefold()
-    value = value.replace("ß", "ss")
-    value = re.sub(r"\.(mp3|m4a|wav|aac|ogg|flac|pdf)$", "", value, flags=re.I)
-    value = re.sub(r"[_\-]+", " ", value)
-    value = re.sub(r"[^\w\s.]", " ", value)
     value = re.sub(r"\s+", " ", value).strip()
     return value
 
 
-def extract_date_parts(value: str) -> str | None:
-    for pattern in DATE_PATTERNS:
-        match = pattern.search(value)
-        if not match:
+def normalize_base_name(text: str) -> str:
+    value = text or ""
+    value = re.sub(r"\.(mp3|m4a|wav|aac|ogg|flac|pdf|txt|srt)$", "", value, flags=re.I)
+    value = value.replace("_", " ").replace("-", " ")
+    value = value.replace("’", "").replace("'", "").replace('"', "")
+    value = re.sub(r"[(){}\[\],;:!?]", " ", value)
+    value = fold_tr(value)
+    value = unicodedata.normalize("NFKC", value)
+    value = re.sub(r"\s+", " ", value).strip()
+    return value
+
+
+def extract_date_token(text: str) -> str:
+    match = re.search(r"(\d{1,2})[.\-_](\d{1,2})[.\-_](\d{2}|\d{4})", text or "")
+    if not match:
+        return ""
+    dd = f"{int(match.group(1)):02d}"
+    mm = f"{int(match.group(2)):02d}"
+    yy = match.group(3)
+    if len(yy) == 2:
+        yy = f"20{yy}"
+    return f"{dd}.{mm}.{yy}"
+
+
+def tokenize_for_similarity(text: str) -> list[str]:
+    value = normalize_base_name(text)
+    value = re.sub(r"\d{1,2}[.\-_]\d{1,2}[.\-_]\d{2,4}", " ", value)
+    parts = re.split(r"\s+", value)
+    return [p for p in parts if p and len(p) >= 2 and p not in STOPWORDS]
+
+
+def token_similarity(a: str, b: str) -> float:
+    sa = set(tokenize_for_similarity(a))
+    sb = set(tokenize_for_similarity(b))
+    if not sa or not sb:
+        return 0.0
+    common = len(sa & sb)
+    return common / max(len(sa), len(sb))
+
+
+def is_blocked_ia2_name(name: str) -> bool:
+    base = Path(name).name
+    base = re.sub(r"\.(m4a|mp3)$", "", base, flags=re.I).strip()
+    base = re.sub(r"^A[\s_-]+", "", base, flags=re.I).strip()
+    folded = fold_tr(base)
+    for prefix in BLOCK_PREFIXES:
+      candidate = fold_tr(prefix)
+      if folded.startswith(candidate):
+          next_char = folded[len(candidate):len(candidate) + 1]
+          if not next_char or re.match(r"[\s\-_0-9.:]", next_char):
+              return True
+    return False
+
+
+def fetch_archive_audio(identifier: str, src: str) -> list[AudioItem]:
+    url = f"https://archive.org/metadata/{identifier}"
+    data = json_get(url)
+    files = data.get("files") or []
+    out: list[AudioItem] = []
+
+    for idx, file_obj in enumerate(files):
+        name = str(file_obj.get("name") or "")
+        if not name:
             continue
-        dd, mm, yy = match.groups()
-        if len(yy) == 2:
-            yy = f"20{yy}"
-        return f"{dd}.{mm}.{yy}"
-    return None
+        if not re.search(r"\.(m4a|mp3)$", name, flags=re.I):
+            continue
+        if "source" in file_obj and str(file_obj.get("source") or "").lower() != "original":
+            continue
+        if src == "S2" and is_blocked_ia2_name(name):
+            continue
+
+        title = str(file_obj.get("title") or "").strip() or Path(name).name
+        local_id = name or f"{title}#{idx}"
+        out.append(
+            AudioItem(
+                id=f"{src}|{local_id}",
+                src=src,
+                title=title,
+                name=name,
+            )
+        )
+    return out
 
 
-def tokenize_for_similarity(value: str) -> list[str]:
-    normalized = normalize_text(value)
-    normalized = re.sub(r"(?<!\d)(\d{2})[.\-_](\d{2})[.\-_](\d{2,4})(?!\d)", " ", normalized)
-    tokens = re.findall(r"[a-zA-Z0-9]+", normalized)
-    return [t for t in tokens if len(t) >= 2 and t not in STOPWORDS]
+def scan_pdfs(root: Path) -> list[PdfItem]:
+    docs_root = root / DOCS_DIR
+    pdf_paths = sorted(docs_root.rglob("*.pdf"))
+    out: list[PdfItem] = []
+
+    for path in pdf_paths:
+        rel = path.relative_to(root).as_posix()
+        name = path.name
+        out.append(
+            PdfItem(
+                path=rel,
+                name=name,
+                stem=path.stem,
+                norm=normalize_base_name(name),
+                date_token=extract_date_token(name),
+            )
+        )
+    return out
 
 
-def similarity_score(audio_name: str, pdf_name: str) -> float:
-    a_tokens = tokenize_for_similarity(audio_name)
-    p_tokens = tokenize_for_similarity(pdf_name)
-
-    if not a_tokens or not p_tokens:
-      return 0.0
-
-    a_count = Counter(a_tokens)
-    p_count = Counter(p_tokens)
-
-    common = sum((a_count & p_count).values())
-    total = max(len(a_tokens), len(p_tokens))
-    base = common / total if total else 0.0
-
-    a_set = set(a_tokens)
-    p_set = set(p_tokens)
-    overlap = len(a_set & p_set)
-    bonus = min(0.25, overlap * 0.05)
-
-    return round(base + bonus, 6)
+def expected_pdf_name(audio_name: str) -> str:
+    return re.sub(r"\.(mp3|m4a|wav|aac|ogg|flac)$", ".pdf", Path(audio_name).name, flags=re.I)
 
 
-def collect_files(root: Path, extensions: set[str]) -> list[Path]:
-    if not root.exists():
-        return []
-    return sorted(
-        [
-            path
-            for path in root.rglob("*")
-            if path.is_file() and path.suffix.lower() in extensions
-        ],
-        key=lambda p: str(p.relative_to(root)).casefold(),
-    )
+def match_pdf(audio: AudioItem, pdfs: list[PdfItem]) -> tuple[PdfItem | None, str, float]:
+    target_pdf_name = expected_pdf_name(audio.name)
+    target_norm = normalize_base_name(target_pdf_name)
+    audio_name = Path(audio.name).name
+    audio_date = extract_date_token(audio_name)
 
+    for pdf in pdfs:
+        if pdf.name == target_pdf_name:
+            return pdf, "exact_name", 1.0
 
-def to_repo_rel(path: Path) -> str:
-    return path.relative_to(REPO_ROOT).as_posix()
+    for pdf in pdfs:
+        if pdf.norm == target_norm:
+            return pdf, "exact_normalized", 0.99
 
-
-def build_index() -> dict[str, Any]:
-    pdf_files = collect_files(DOCS_DIR, {PDF_EXTENSION})
-    audio_files = collect_files(REPO_ROOT, AUDIO_EXTENSIONS)
-
-    pdf_by_date: dict[str, list[Path]] = {}
-    pdf_meta: dict[str, dict[str, Any]] = {}
-
-    for pdf in pdf_files:
-        rel = to_repo_rel(pdf)
-        name = pdf.name
-        date_key = extract_date_parts(name)
-        if date_key:
-            pdf_by_date.setdefault(date_key, []).append(pdf)
-        pdf_meta[rel] = {
-            "path": rel,
-            "name": name,
-            "date": date_key,
-        }
-
-    matches: list[dict[str, Any]] = []
-    unmatched_audio: list[dict[str, Any]] = []
-
-    used_pdf_paths: set[str] = set()
-
-    for audio in audio_files:
-        rel_audio = to_repo_rel(audio)
-        audio_name = audio.name
-        date_key = extract_date_parts(audio_name)
-
-        candidates = pdf_by_date.get(date_key, []) if date_key else []
-        picked: Path | None = None
-        picked_score = 0.0
-
-        if len(candidates) == 1:
-            picked = candidates[0]
-            picked_score = 1.0
-        elif len(candidates) > 1:
+    if audio_date:
+        same_date = [pdf for pdf in pdfs if pdf.date_token == audio_date]
+        if len(same_date) == 1:
+            return same_date[0], "date_only", 0.80
+        if len(same_date) > 1:
             ranked = sorted(
-                (
-                    (similarity_score(audio_name, candidate.name), candidate)
-                    for candidate in candidates
-                ),
-                key=lambda item: (item[0], item[1].name.casefold()),
+                ((pdf, token_similarity(audio_name, pdf.name)) for pdf in same_date),
+                key=lambda x: x[1],
                 reverse=True,
             )
-            best_score, best_candidate = ranked[0]
+            best_pdf, best_score = ranked[0]
             if best_score > 0:
-                picked = best_candidate
-                picked_score = best_score
+                return best_pdf, "date_similarity", best_score
 
-        if picked is None:
+    ranked_all = sorted(
+        ((pdf, token_similarity(audio_name, pdf.name)) for pdf in pdfs),
+        key=lambda x: x[1],
+        reverse=True,
+    )
+    if ranked_all and ranked_all[0][1] >= 0.35:
+        return ranked_all[0][0], "global_similarity", ranked_all[0][1]
+
+    return None, "", 0.0
+
+
+def build_index(audio_items: list[AudioItem], pdf_items: list[PdfItem]) -> dict:
+    matches = []
+    unmatched_audio = []
+    matched_pdf_paths = set()
+
+    for audio in audio_items:
+        pdf, method, score = match_pdf(audio, pdf_items)
+        audio_name = Path(audio.name).name
+        if pdf is None:
             unmatched_audio.append(
                 {
-                    "audio_path": rel_audio,
+                    "audio_id": audio.id,
+                    "audio_src": audio.src,
                     "audio_name": audio_name,
-                    "date": date_key,
+                    "audio_title": audio.title,
+                    "audio_date": extract_date_token(audio_name),
                 }
             )
             continue
 
-        rel_pdf = to_repo_rel(picked)
-        used_pdf_paths.add(rel_pdf)
+        matched_pdf_paths.add(pdf.path)
         matches.append(
             {
-                "audio_path": rel_audio,
+                "audio_id": audio.id,
+                "audio_src": audio.src,
                 "audio_name": audio_name,
-                "audio_date": date_key,
-                "pdf_path": rel_pdf,
-                "pdf_name": picked.name,
-                "score": picked_score,
+                "audio_title": audio.title,
+                "audio_path": audio.name,
+                "audio_date": extract_date_token(audio_name),
+                "pdf_name": pdf.name,
+                "pdf_path": pdf.path,
+                "match_method": method,
+                "match_score": round(score, 4),
             }
         )
 
     unmatched_pdfs = [
-        meta
-        for rel, meta in sorted(pdf_meta.items(), key=lambda item: item[0].casefold())
-        if rel not in used_pdf_paths
+        {"pdf_name": pdf.name, "pdf_path": pdf.path, "pdf_date": pdf.date_token}
+        for pdf in pdf_items
+        if pdf.path not in matched_pdf_paths
     ]
 
     return {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "docs_dir": "docs",
-        "match_strategy": {
-            "primary": "same date",
-            "secondary": "token similarity when multiple pdf files share the same date",
-        },
-        "counts": {
-            "pdf_files": len(pdf_files),
-            "audio_files": len(audio_files),
-            "matches": len(matches),
-            "unmatched_audio": len(unmatched_audio),
-            "unmatched_pdfs": len(unmatched_pdfs),
-        },
-        "matches": sorted(matches, key=lambda x: x["audio_path"].casefold()),
+        "version": 1,
+        "generated_by": "scripts/build_pdf_index.py",
+        "matches_count": len(matches),
+        "audio_count": len(audio_items),
+        "pdf_count": len(pdf_items),
+        "matches": matches,
         "unmatched_audio": unmatched_audio,
         "unmatched_pdfs": unmatched_pdfs,
+        "pdf_files": [{"pdf_name": pdf.name, "pdf_path": pdf.path} for pdf in pdf_items],
     }
 
 
-def main() -> None:
-    DOCS_DIR.mkdir(parents=True, exist_ok=True)
-    data = build_index()
-    OUTPUT_FILE.write_text(
-        json.dumps(data, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-    print(f"Written: {OUTPUT_FILE}")
+def write_json(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def main() -> int:
+    root = repo_root()
+    out_path = root / OUTPUT_JSON
+
+    try:
+        pdf_items = scan_pdfs(root)
+        log(f"PDF bulundu: {len(pdf_items)}")
+
+        s1 = fetch_archive_audio(IA_IDENTIFIER_1, "S1")
+        s2 = fetch_archive_audio(IA_IDENTIFIER_2, "S2")
+        audio_items = s1 + s2
+        log(f"Audio bulundu: {len(audio_items)}")
+
+        payload = build_index(audio_items, pdf_items)
+        write_json(out_path, payload)
+
+        log(f"Yazıldı: {out_path.relative_to(root).as_posix()}")
+        log(f"Eşleşen: {payload['matches_count']}")
+        log(f"Eşleşmeyen audio: {len(payload['unmatched_audio'])}")
+        log(f"Eşleşmeyen pdf: {len(payload['unmatched_pdfs'])}")
+        return 0
+
+    except HTTPError as exc:
+        log(f"HTTP error: {exc.code} {exc.reason}")
+        return 1
+    except URLError as exc:
+        log(f"URL error: {exc.reason}")
+        return 1
+    except Exception as exc:
+        log(f"Hata: {exc}")
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
 
-
-# file: .github/workflows/build-pdf-index.yml
-# this file is YAML, not Python
-# save it separately under .github/workflows/build-pdf-index.yml
-
-YAML_WORKFLOW = r"""
-name: Build PDF Index
-
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: "17 */6 * * *"
-
-permissions:
-  contents: write
-
-concurrency:
-  group: build-pdf-index
-  cancel-in-progress: false
-
-jobs:
-  build-pdf-index:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Show Python version
-        run: python --version
-
-      - name: Ensure script exists
-        shell: bash
-        run: test -f scripts/build_pdf_index.py
-
-      - name: Build pdf index
-        run: python scripts/build_pdf_index.py
-
-      - name: Verify output
-        shell: bash
-        run: |
-          test -f docs/pdf-index.json
-          python - <<'PY'
-          import json
-          from pathlib import Path
-
-          p = Path("docs/pdf-index.json")
-          data = json.loads(p.read_text(encoding="utf-8"))
-
-          if not isinstance(data, dict):
-              raise SystemExit("pdf-index.json root must be an object")
-          if "generated_at" not in data:
-              raise SystemExit("missing generated_at")
-          if "matches" not in data:
-              raise SystemExit("missing matches")
-          if not isinstance(data["matches"], list):
-              raise SystemExit("matches must be a list")
-
-          print(f"OK: matches={len(data['matches'])}")
-          PY
-
-      - name: Commit and push if changed
-        shell: bash
-        run: |
-          if git diff --quiet -- docs/pdf-index.json; then
-            echo "No changes"
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add docs/pdf-index.json
-          git commit -m "chore: update pdf-index.json"
-          git push
-"""
