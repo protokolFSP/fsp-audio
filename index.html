@@ -2438,7 +2438,7 @@
 
           <span>FSP Audio — Güncel</span>
 
-          <div id="buildMeta" class="buildMeta">v1.87 · Güncelleme: 25.04.2026 · 00:00</div>
+          <div id="buildMeta" class="buildMeta">v1.88 · Güncelleme: 25.04.2026 · 00:00</div>
 
         </div>
 
@@ -3012,7 +3012,7 @@
 
   <script>
 
-    const BUILD_VERSION = "v1.87";
+    const BUILD_VERSION = "v1.88";
 
     const BUILD_UPDATED = "25.04.2026 · 00:00";
 
@@ -3039,8 +3039,6 @@
     ];
 
     const TXT_BASES = SRT_BASES;
-
-    const PDF_INDEX_URL = "./docs/pdf-index.json";
 
     const CAPTION_MAX_LINES = 6;
 
@@ -3296,7 +3294,7 @@
 
     }
 
-    function trackTranscriptOpen(it){
+    function trackTranscriptOpen(it) {
 
       gaEvent("transcript_open", {
 
@@ -3312,7 +3310,7 @@
 
     }
 
-    function trackTranscriptDownload(it, filename){
+    function trackTranscriptDownload(it, filename) {
 
       gaEvent("transcript_download", {
 
@@ -3328,23 +3326,23 @@
 
     }
 
-    function escHtml(s){
+    function escHtml(s) {
 
       return (s ?? "").toString()
 
-        .replace(/&/g,"&amp;")
+        .replace(/&/g, "&amp;")
 
-        .replace(/</g,"&lt;")
+        .replace(/</g, "&lt;")
 
-        .replace(/>/g,"&gt;")
+        .replace(/>/g, "&gt;")
 
-        .replace(/"/g,"&quot;")
+        .replace(/"/g, "&quot;")
 
-        .replace(/'/g,"&#39;");
+        .replace(/'/g, "&#39;");
 
     }
 
-    function foldTR(s){
+    function foldTR(s) {
 
       s = (s || "").toString();
 
@@ -3360,7 +3358,7 @@
 
     }
 
-    function normalizeLoose(s){
+    function normalizeLoose(s) {
 
       return String(s || "")
 
@@ -3382,9 +3380,9 @@
 
     }
 
-    function guessMime(url){
+    function guessMime(url) {
 
-      try{
+      try {
 
         const p = new URL(url).pathname.toLowerCase();
 
@@ -3392,13 +3390,13 @@
 
         if (p.endsWith(".m4a")) return "audio/mp4";
 
-      }catch{}
+      } catch {}
 
       return "audio/*";
 
     }
 
-    function fmtDur(sec){
+    function fmtDur(sec) {
 
       if (!Number.isFinite(sec) || sec <= 0) return "—";
 
@@ -3420,7 +3418,7 @@
 
     }
 
-    function fmtMsHuman(ms){
+    function fmtMsHuman(ms) {
 
       const totalSec = Math.max(0, Math.round((Number(ms) || 0) / 1000));
 
@@ -3438,13 +3436,21 @@
 
     }
 
-    function decodeURIComponentSafe(s){
+    function decodeURIComponentSafe(s) {
 
-      try { return decodeURIComponent(s); } catch { return s; }
+      try {
+
+        return decodeURIComponent(s);
+
+      } catch {
+
+        return s;
+
+      }
 
     }
 
-    function extractDateToken(s){
+    function extractDateToken(s) {
 
       const raw = String(s || "");
 
@@ -3460,7 +3466,27 @@
 
     }
 
-    function tokenizeForSimilarity(s){
+    function extractDateTokenFromEnd(s) {
+
+      const raw = String(s || "")
+
+        .replace(/\.(pdf|mp3|m4a|wav|aac|ogg|flac)$/i, "")
+
+        .trim();
+
+      const m = raw.match(/(\d{1,2})[.\-_/](\d{1,2})[.\-_/](\d{2}|\d{4})\s*$/);
+
+      if (!m) return "";
+
+      let yy = Number(m[3]);
+
+      if (yy < 100) yy = 2000 + yy;
+
+      return `${String(m[1]).padStart(2, "0")}.${String(m[2]).padStart(2, "0")}.${yy}`;
+
+    }
+
+    function tokenizeForSimilarity(s) {
 
       return normalizeLoose(s)
 
@@ -3474,7 +3500,7 @@
 
     }
 
-    function jaccardScore(aTokens, bTokens){
+    function jaccardScore(aTokens, bTokens) {
 
       const a = new Set(aTokens);
 
@@ -3482,11 +3508,29 @@
 
       let inter = 0;
 
-      for (const x of a) if (b.has(x)) inter++;
+      for (const x of a) {
+
+        if (b.has(x)) inter++;
+
+      }
 
       const union = new Set([...a, ...b]).size;
 
       return union ? (inter / union) : 0;
+
+    }
+
+    function removeTrailingDateAndExt(name) {
+
+      return String(name || "")
+
+        .replace(/\.(pdf|mp3|m4a|wav|aac|ogg|flac)$/i, "")
+
+        .replace(/(\d{1,2})[.\-_/](\d{1,2})[.\-_/](\d{2}|\d{4})\s*$/i, "")
+
+        .replace(/[\s._-]+$/g, "")
+
+        .trim();
 
     }
 
@@ -3534,11 +3578,35 @@
 
     };
 
-    const loadMap = (k) => { try { return JSON.parse(localStorage.getItem(k) || "{}"); } catch { return {}; } };
+    const loadMap = (k) => {
+
+      try {
+
+        return JSON.parse(localStorage.getItem(k) || "{}");
+
+      } catch {
+
+        return {};
+
+      }
+
+    };
 
     const saveMap = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
-    const loadAny = (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } };
+    const loadAny = (k) => {
+
+      try {
+
+        return JSON.parse(localStorage.getItem(k) || "null");
+
+      } catch {
+
+        return null;
+
+      }
+
+    };
 
     const saveAny = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
@@ -3554,13 +3622,11 @@
 
     let selectedId = null;
 
-    const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-
     let pendingScrollTop = null;
 
-    function saveUiState(){
+    function saveUiState() {
 
-      try{
+      try {
 
         saveAny(LS.uiState, {
 
@@ -3576,11 +3642,11 @@
 
         });
 
-      }catch{}
+      } catch {}
 
     }
 
-    function restoreUiState(){
+    function restoreUiState() {
 
       const s = loadAny(LS.uiState);
 
@@ -3600,7 +3666,7 @@
 
     }
 
-    function restoreScrollIfNeeded(){
+    function restoreScrollIfNeeded() {
 
       if (pendingScrollTop == null) return;
 
@@ -3608,7 +3674,11 @@
 
       pendingScrollTop = null;
 
-      requestAnimationFrame(() => { scrollArea.scrollTop = v; });
+      requestAnimationFrame(() => {
+
+        scrollArea.scrollTop = v;
+
+      });
 
     }
 
@@ -3624,7 +3694,7 @@
 
     let globalDownloadCounts = {};
 
-    function chunk(arr, size){
+    function chunk(arr, size) {
 
       const out = [];
 
@@ -3634,11 +3704,11 @@
 
     }
 
-    async function fetchCounts(type, ids){
+    async function fetchCounts(type, ids) {
 
       if (!ids.length) return {};
 
-      try{
+      try {
 
         const res = await fetch(COUNTER_API + "/counts", {
 
@@ -3662,9 +3732,9 @@
 
         const j = await res.json();
 
-        return (j && j.counts) ? j.counts : {};
+        return j && j.counts ? j.counts : {};
 
-      }catch{
+      } catch {
 
         return {};
 
@@ -3674,19 +3744,19 @@
 
     let refreshCountsTimer = null;
 
-    function scheduleRefreshCounts(ms = 800){
+    function scheduleRefreshCounts(ms = 800) {
 
       clearTimeout(refreshCountsTimer);
 
-      refreshCountsTimer = setTimeout(() => refreshAllCounts().catch(()=>{}), ms);
+      refreshCountsTimer = setTimeout(() => refreshAllCounts().catch(() => {}), ms);
 
     }
 
-    async function refreshAllCounts(){
+    async function refreshAllCounts() {
 
       if (!items.length) return;
 
-      const ids = items.map(it => it.id);
+      const ids = items.map((it) => it.id);
 
       const parts = chunk(ids, 200);
 
@@ -3694,7 +3764,7 @@
 
       const dlAll = {};
 
-      for (const part of parts){
+      for (const part of parts) {
 
         const [p, d] = await Promise.all([fetchCounts("play", part), fetchCounts("download", part)]);
 
@@ -3712,9 +3782,9 @@
 
     }
 
-    function sendHit(type, it){
+    function sendHit(type, it) {
 
-      try{
+      try {
 
         const payload = {
 
@@ -3732,7 +3802,7 @@
 
         const data = JSON.stringify(payload);
 
-        if (IS_SAFARI && navigator.sendBeacon){
+        if (IS_SAFARI && navigator.sendBeacon) {
 
           const ok = navigator.sendBeacon(url, new Blob([data], { type: "text/plain;charset=utf-8" }));
 
@@ -3760,11 +3830,11 @@
 
         }).catch(() => {});
 
-      }catch{}
+      } catch {}
 
     }
 
-    function bumpLocalGlobalCount(type, id){
+    function bumpLocalGlobalCount(type, id) {
 
       if (!id) return;
 
@@ -3776,13 +3846,13 @@
 
     let playGate = { id: null, armed: false, sent: false };
 
-    function armPlayGate(it){
+    function armPlayGate(it) {
 
       playGate = { id: it?.id || null, armed: true, sent: false };
 
     }
 
-    function trySendPlayOnPlaying(){
+    function trySendPlayOnPlaying() {
 
       if (!playGate.armed || playGate.sent || !playGate.id) return;
 
@@ -3790,7 +3860,7 @@
 
       playGate.sent = true;
 
-      const it = items.find(x => x.id === playGate.id) || { id: playGate.id, title: "", name: "" };
+      const it = items.find((x) => x.id === playGate.id) || { id: playGate.id, title: "", name: "" };
 
       bumpLocalGlobalCount("play", it.id);
 
@@ -3818,19 +3888,19 @@
 
     if (!ALLOWED_SORT.has(sortMode)) sortMode = "date";
 
-    let durSortDir = (localStorage.getItem(LS.sortDirDur) === "desc") ? "desc" : "asc";
+    let durSortDir = localStorage.getItem(LS.sortDirDur) === "desc" ? "desc" : "asc";
 
-    let dateSortDir = (localStorage.getItem(LS.sortDirDate) === "asc") ? "asc" : "desc";
+    let dateSortDir = localStorage.getItem(LS.sortDirDate) === "asc" ? "asc" : "desc";
 
-    let playSortDir = (localStorage.getItem(LS.sortDirPlay) === "asc") ? "asc" : "desc";
+    let playSortDir = localStorage.getItem(LS.sortDirPlay) === "asc" ? "asc" : "desc";
 
-    let dlSortDir = (localStorage.getItem(LS.sortDirDl) === "asc") ? "asc" : "desc";
+    let dlSortDir = localStorage.getItem(LS.sortDirDl) === "asc" ? "asc" : "desc";
 
     const SPEEDS = [0.5, 0.75, 0.9, 1, 1.25, 1.5, 1.75, 2.0, 2.25];
 
     let speedIndex = SPEEDS.indexOf(1);
 
-    function fmtSpeed(v){
+    function fmtSpeed(v) {
 
       const s = (Math.round(v * 100) / 100).toString();
 
@@ -3838,15 +3908,15 @@
 
     }
 
-    function setSpeedUI(v){
+    function setSpeedUI(v) {
 
       speedValueEl.textContent = fmtSpeed(v);
 
       speedValueEl.classList.add("on");
 
-      slowBtn.disabled = (speedIndex <= 0);
+      slowBtn.disabled = speedIndex <= 0;
 
-      fastBtn.disabled = (speedIndex >= SPEEDS.length - 1);
+      fastBtn.disabled = speedIndex >= SPEEDS.length - 1;
 
       slowBtn.style.opacity = slowBtn.disabled ? 0.45 : 1;
 
@@ -3854,7 +3924,7 @@
 
     }
 
-    function applySpeedByIndex(idx){
+    function applySpeedByIndex(idx) {
 
       speedIndex = Math.max(0, Math.min(SPEEDS.length - 1, idx));
 
@@ -3868,13 +3938,13 @@
 
     }
 
-    function restoreSpeed(){
+    function restoreSpeed() {
 
       const saved = Number(localStorage.getItem(LS.speed) || "1");
 
-      if (Number.isFinite(saved)){
+      if (Number.isFinite(saved)) {
 
-        const i = SPEEDS.findIndex(x => Math.abs(x - saved) < 0.001);
+        const i = SPEEDS.findIndex((x) => Math.abs(x - saved) < 0.001);
 
         applySpeedByIndex(i === -1 ? SPEEDS.indexOf(1) : i);
 
@@ -3886,9 +3956,21 @@
 
     }
 
-    slowBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex - 1); });
+    slowBtn.addEventListener("click", (e) => {
 
-    fastBtn.addEventListener("click", (e) => { e.stopPropagation(); applySpeedByIndex(speedIndex + 1); });
+      e.stopPropagation();
+
+      applySpeedByIndex(speedIndex - 1);
+
+    });
+
+    fastBtn.addEventListener("click", (e) => {
+
+      e.stopPropagation();
+
+      applySpeedByIndex(speedIndex + 1);
+
+    });
 
     const ZOOMS = [0.85, 0.9, 0.95, 1, 1.05, 1.1, 1.15, 1.2];
 
@@ -3904,7 +3986,7 @@
 
     const IOS_MIN_INPUT_PX = 16;
 
-    function isIOSWebKit(){
+    function isIOSWebKit() {
 
       const ua = navigator.userAgent || "";
 
@@ -3916,7 +3998,7 @@
 
     }
 
-    function updateSearchNoZoomFontSizes(){
+    function updateSearchNoZoomFontSizes() {
 
       if (!isIOSWebKit()) return;
 
@@ -3926,9 +4008,9 @@
 
       const inputs = [searchEl, txSearchInput].filter(Boolean);
 
-      for (const el of inputs){
+      for (const el of inputs) {
 
-        if (!el.dataset.baseFontPx){
+        if (!el.dataset.baseFontPx) {
 
           const base = parseFloat(getComputedStyle(el).fontSize || "16");
 
@@ -3944,27 +4026,27 @@
 
     }
 
-    function getViewportWH(){
+    function getViewportWH() {
 
       const vv = window.visualViewport;
 
-      const vw = (vv && vv.width) ? vv.width : window.innerWidth;
+      const vw = vv && vv.width ? vv.width : window.innerWidth;
 
-      const vh = (vv && vv.height) ? vv.height : window.innerHeight;
+      const vh = vv && vv.height ? vv.height : window.innerHeight;
 
       return { vw, vh };
 
     }
 
-    function toLayoutPx(v){
+    function toLayoutPx(v) {
 
-      return useTransformScale ? (v / uiScale) : v;
+      return useTransformScale ? v / uiScale : v;
 
     }
 
-    function updateOverlayScale(){
+    function updateOverlayScale() {
 
-      if (!useTransformScale){
+      if (!useTransformScale) {
 
         sbOverlay.style.transform = "";
 
@@ -4000,13 +4082,13 @@
 
     }
 
-    function setZoomUI(v){
+    function setZoomUI(v) {
 
       const pct = Math.round(v * 100) + "%";
 
-      zoomOutBtn.disabled = (zoomIndex <= 0);
+      zoomOutBtn.disabled = zoomIndex <= 0;
 
-      zoomInBtn.disabled = (zoomIndex >= ZOOMS.length - 1);
+      zoomInBtn.disabled = zoomIndex >= ZOOMS.length - 1;
 
       zoomOutBtn.classList.toggle("enabled", !zoomOutBtn.disabled);
 
@@ -4022,7 +4104,7 @@
 
     }
 
-    function applyZoomByIndex(idx){
+    function applyZoomByIndex(idx) {
 
       zoomIndex = Math.max(0, Math.min(ZOOMS.length - 1, idx));
 
@@ -4032,7 +4114,7 @@
 
       useTransformScale = !(window.CSS && CSS.supports && CSS.supports("zoom", "1"));
 
-      if (!useTransformScale){
+      if (!useTransformScale) {
 
         document.documentElement.style.zoom = String(v);
 
@@ -4074,13 +4156,13 @@
 
     }
 
-    function restoreZoom(){
+    function restoreZoom() {
 
       const saved = Number(localStorage.getItem(LS.zoom) || "1");
 
-      if (Number.isFinite(saved)){
+      if (Number.isFinite(saved)) {
 
-        const i = ZOOMS.findIndex(x => Math.abs(x - saved) < 0.001);
+        const i = ZOOMS.findIndex((x) => Math.abs(x - saved) < 0.001);
 
         applyZoomByIndex(i === -1 ? ZOOMS.indexOf(1) : i);
 
@@ -4092,11 +4174,21 @@
 
     }
 
-    function resetZoom100(){ applyZoomByIndex(ZOOMS.indexOf(1)); }
+    function resetZoom100() {
 
-    function attachDoubleTapReset(el){
+      applyZoomByIndex(ZOOMS.indexOf(1));
 
-      el.addEventListener("dblclick", (e) => { e.preventDefault(); resetZoom100(); });
+    }
+
+    function attachDoubleTapReset(el) {
+
+      el.addEventListener("dblclick", (e) => {
+
+        e.preventDefault();
+
+        resetZoom100();
+
+      });
 
       let lastTap = 0;
 
@@ -4104,7 +4196,7 @@
 
         const now = Date.now();
 
-        if (now - lastTap < 320){
+        if (now - lastTap < 320) {
 
           e.preventDefault();
 
@@ -4122,31 +4214,75 @@
 
     }
 
-    zoomOutBtn.addEventListener("click", (e) => { e.stopPropagation(); applyZoomByIndex(zoomIndex - 1); });
+    zoomOutBtn.addEventListener("click", (e) => {
 
-    zoomInBtn.addEventListener("click", (e) => { e.stopPropagation(); applyZoomByIndex(zoomIndex + 1); });
+      e.stopPropagation();
+
+      applyZoomByIndex(zoomIndex - 1);
+
+    });
+
+    zoomInBtn.addEventListener("click", (e) => {
+
+      e.stopPropagation();
+
+      applyZoomByIndex(zoomIndex + 1);
+
+    });
 
     attachDoubleTapReset(zoomOutBtn);
 
     attachDoubleTapReset(zoomInBtn);
 
-    function setTypingMode(on){ fp.classList.toggle("hiddenWhileTyping", !!on); }
+    function setTypingMode(on) {
 
-    function setMomentumScroll(el, on){
-
-      try { if (el) el.style.webkitOverflowScrolling = on ? "auto" : "touch"; } catch {}
+      fp.classList.toggle("hiddenWhileTyping", !!on);
 
     }
 
-    searchEl.addEventListener("focus", () => { setTypingMode(true); setMomentumScroll(scrollArea, true); });
+    function setMomentumScroll(el, on) {
 
-    searchEl.addEventListener("blur", () => { setTypingMode(false); setMomentumScroll(scrollArea, false); });
+      try {
 
-    txSearchInput.addEventListener("focus", () => { setTypingMode(true); setMomentumScroll(txBodyEl, true); });
+        if (el) el.style.webkitOverflowScrolling = on ? "auto" : "touch";
 
-    txSearchInput.addEventListener("blur", () => { setTypingMode(false); setMomentumScroll(txBodyEl, false); });
+      } catch {}
 
-    function highlightDisease(title){
+    }
+
+    searchEl.addEventListener("focus", () => {
+
+      setTypingMode(true);
+
+      setMomentumScroll(scrollArea, true);
+
+    });
+
+    searchEl.addEventListener("blur", () => {
+
+      setTypingMode(false);
+
+      setMomentumScroll(scrollArea, false);
+
+    });
+
+    txSearchInput.addEventListener("focus", () => {
+
+      setTypingMode(true);
+
+      setMomentumScroll(txBodyEl, true);
+
+    });
+
+    txSearchInput.addEventListener("blur", () => {
+
+      setTypingMode(false);
+
+      setMomentumScroll(txBodyEl, false);
+
+    });
+
+    function highlightDisease(title) {
 
       const raw = (title ?? "").toString();
 
@@ -4170,7 +4306,7 @@
 
     const CAPTION_MODES = ["cc", "CC", "CCx"];
 
-    function readCaptionMode(){
+    function readCaptionMode() {
 
       const raw = localStorage.getItem(LS.captionsMode) || "";
 
@@ -4190,9 +4326,13 @@
 
     let lastCueIdx = -1;
 
-    function isCaptionsOn(){ return !!captionMode; }
+    function isCaptionsOn() {
 
-    function getCaptionMaxLines(){
+      return !!captionMode;
+
+    }
+
+    function getCaptionMaxLines() {
 
       if (captionMode === "CC") return CAPTION_MAX_LINES_9;
 
@@ -4202,7 +4342,7 @@
 
     }
 
-    function getCaptionTargetLines(){
+    function getCaptionTargetLines() {
 
       if (captionMode === "CC") return CAPTION_MAX_LINES_9;
 
@@ -4212,7 +4352,7 @@
 
     }
 
-    function setCaptionUi(){
+    function setCaptionUi() {
 
       const on = isCaptionsOn();
 
@@ -4236,13 +4376,13 @@
 
       captionsEl.style.setProperty("--capLines", String(getCaptionMaxLines()));
 
-      if (!on){
+      if (!on) {
 
         captionsEl.innerHTML = "";
 
         captionsEl.classList.add("isEmpty");
 
-      } else if (!captionsEl.innerHTML){
+      } else if (!captionsEl.innerHTML) {
 
         captionsEl.textContent = "…";
 
@@ -4254,13 +4394,13 @@
 
     }
 
-    function stripSrtTags(s){
+    function stripSrtTags(s) {
 
       return (s || "").toString().replace(/<[^>]+>/g, "");
 
     }
 
-    function srtTimeToSec(raw){
+    function srtTimeToSec(raw) {
 
       const s = String(raw || "").trim().replace(",", ".");
 
@@ -4268,7 +4408,11 @@
 
       if (!m) return null;
 
-      const hh = Number(m[1]), mm = Number(m[2]), ss = Number(m[3]);
+      const hh = Number(m[1]);
+
+      const mm = Number(m[2]);
+
+      const ss = Number(m[3]);
 
       const frac = Number(m[4] || "0");
 
@@ -4278,7 +4422,7 @@
 
     }
 
-    function parseSrtToCues(srtText){
+    function parseSrtToCues(srtText) {
 
       let t = (srtText || "").replace(/^\uFEFF/, "");
 
@@ -4288,9 +4432,9 @@
 
       const cues = [];
 
-      for (const block of blocks){
+      for (const block of blocks) {
 
-        const lines = block.split("\n").map(x => x.trimEnd()).filter(x => x.trim().length > 0);
+        const lines = block.split("\n").map((x) => x.trimEnd()).filter((x) => x.trim().length > 0);
 
         if (!lines.length) continue;
 
@@ -4324,13 +4468,15 @@
 
     }
 
-    function findCueIdx(cues, t){
+    function findCueIdx(cues, t) {
 
       if (!cues.length) return -1;
 
-      let lo = 0, hi = cues.length - 1;
+      let lo = 0;
 
-      while (lo <= hi){
+      let hi = cues.length - 1;
+
+      while (lo <= hi) {
 
         const mid = (lo + hi) >> 1;
 
@@ -4348,21 +4494,21 @@
 
     }
 
-    function splitCaptionLines(text){
+    function splitCaptionLines(text) {
 
       const t = (text || "").toString().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
-      return t.split("\n").map(l => l.trimEnd()).filter(l => l.trim().length > 0);
+      return t.split("\n").map((l) => l.trimEnd()).filter((l) => l.trim().length > 0);
 
     }
 
-    function countLinesText(text){
+    function countLinesText(text) {
 
       return splitCaptionLines(text).length;
 
     }
 
-    function composeCaptionParts(cues, idx){
+    function composeCaptionParts(cues, idx) {
 
       if (!cues || idx < 0 || idx >= cues.length) return [];
 
@@ -4372,7 +4518,7 @@
 
       const wide = getCaptionMaxLines() > CAPTION_MAX_LINES;
 
-      if (wide){
+      if (wide) {
 
         const preTarget = Math.max(2, Math.floor(target / 3));
 
@@ -4382,7 +4528,7 @@
 
         const stack = [];
 
-        while (p >= 0 && preLines < preTarget){
+        while (p >= 0 && preLines < preTarget) {
 
           const c = cues[p];
 
@@ -4390,7 +4536,7 @@
 
           const n = countLinesText(t);
 
-          if (n > 0){
+          if (n > 0) {
 
             stack.push({ role: "context", isActive: false, text: t, start: c.start, end: c.end });
 
@@ -4402,9 +4548,9 @@
 
         }
 
-        stack.reverse().forEach(x => parts.push(x));
+        stack.reverse().forEach((x) => parts.push(x));
 
-      } else if (idx > 0){
+      } else if (idx > 0) {
 
         const c = cues[idx - 1];
 
@@ -4420,7 +4566,7 @@
 
       let nidx = idx + 1;
 
-      while (total < target && nidx < cues.length){
+      while (total < target && nidx < cues.length) {
 
         const cc = cues[nidx];
 
@@ -4428,7 +4574,7 @@
 
         const n = countLinesText(t);
 
-        if (n > 0){
+        if (n > 0) {
 
           parts.push({ role: "context", isActive: false, text: t, start: cc.start, end: cc.end });
 
@@ -4444,13 +4590,13 @@
 
     }
 
-    function trimLinesAroundActive(lines, maxLines){
+    function trimLinesAroundActive(lines, maxLines) {
 
       if (lines.length <= maxLines) return { lines, activeStart: -1, activeEnd: -1 };
 
-      let activeStart = lines.findIndex(l => l.isActive);
+      let activeStart = lines.findIndex((l) => l.isActive);
 
-      let activeEnd = lines.length - 1 - [...lines].reverse().findIndex(l => l.isActive);
+      let activeEnd = lines.length - 1 - [...lines].reverse().findIndex((l) => l.isActive);
 
       if (activeStart < 0) activeStart = activeEnd = Math.floor(lines.length / 2);
 
@@ -4458,7 +4604,7 @@
 
       let end = lines.length - 1;
 
-      while ((end - start + 1) > maxLines){
+      while ((end - start + 1) > maxLines) {
 
         const distTop = activeStart - start;
 
@@ -4486,7 +4632,7 @@
 
     let segResumeTime = null;
 
-    function armSegmentEnd(end, resumeAfter, resumeTime){
+    function armSegmentEnd(end, resumeAfter, resumeTime) {
 
       segEndTime = Number.isFinite(end) ? end : null;
 
@@ -4496,13 +4642,13 @@
 
     }
 
-    function maybeStopAtSegmentEnd(){
+    function maybeStopAtSegmentEnd() {
 
       if (segEndTime == null) return;
 
       const t = Number(playerEl.currentTime) || 0;
 
-      if (t < (segEndTime - 0.03)) return;
+      if (t < segEndTime - 0.03) return;
 
       const resumeAfter = segResumeAfter;
 
@@ -4514,13 +4660,13 @@
 
       segResumeTime = null;
 
-      if (resumeAfter){
+      if (resumeAfter) {
 
-        try{
+        try {
 
           const dur = Number(playerEl.duration);
 
-          const target = Number.isFinite(resumeTime) ? resumeTime : (t + 0.01);
+          const target = Number.isFinite(resumeTime) ? resumeTime : t + 0.01;
 
           const safeTarget = Number.isFinite(dur) && dur > 0
 
@@ -4536,17 +4682,17 @@
 
           return;
 
-        }catch{}
+        } catch {}
 
       }
 
-      try{ plyr.pause(); }catch{}
+      try { plyr.pause(); } catch {}
 
     }
 
     playerEl.addEventListener("timeupdate", maybeStopAtSegmentEnd);
 
-    function playSegment(start, end){
+    function playSegment(start, end) {
 
       if (!Number.isFinite(start) || !Number.isFinite(end) || !(end > start)) return;
 
@@ -4554,7 +4700,7 @@
 
       const resumeTime = end + 0.01;
 
-      try{
+      try {
 
         armSegmentEnd(end, resumeAfter, resumeTime);
 
@@ -4564,11 +4710,11 @@
 
         if (p && typeof p.catch === "function") p.catch(() => {});
 
-      }catch{}
+      } catch {}
 
     }
 
-    function renderCaptionLines(lines){
+    function renderCaptionLines(lines) {
 
       if (!isCaptionsOn()) {
 
@@ -4586,7 +4732,7 @@
 
       const out = [];
 
-      for (let i = 0; i < trimmed.length; i++){
+      for (let i = 0; i < trimmed.length; i++) {
 
         const ln = trimmed[i];
 
@@ -4594,7 +4740,7 @@
 
         let dist = 0;
 
-        if (!isActive){
+        if (!isActive) {
 
           if (i < activeStart) dist = activeStart - i;
 
@@ -4626,7 +4772,7 @@
 
     }
 
-    function renderCaptionInfo(text){
+    function renderCaptionInfo(text) {
 
       if (!isCaptionsOn()) {
 
@@ -4644,7 +4790,7 @@
 
     }
 
-    function onCaptionsTimeupdate(){
+    function onCaptionsTimeupdate() {
 
       if (!isCaptionsOn()) return;
 
@@ -4654,7 +4800,7 @@
 
       const idx = findCueIdx(activeCues, t);
 
-      if (idx === -1){
+      if (idx === -1) {
 
         if (lastCueIdx === -1) renderCaptionInfo("…");
 
@@ -4670,9 +4816,9 @@
 
       const flat = [];
 
-      for (const p of parts){
+      for (const p of parts) {
 
-        for (const line of splitCaptionLines(p.text)){
+        for (const line of splitCaptionLines(p.text)) {
 
           flat.push({ text: line, isActive: !!p.isActive, start: p.start, end: p.end });
 
@@ -4700,7 +4846,7 @@
 
       const en = Number(span.getAttribute("data-end"));
 
-      if (Number.isFinite(s) && Number.isFinite(en) && en > s){
+      if (Number.isFinite(s) && Number.isFinite(en) && en > s) {
 
         playSegment(s, en);
 
@@ -4708,7 +4854,7 @@
 
     });
 
-    function buildSrtNameCandidates(it){
+    function buildSrtNameCandidates(it) {
 
       const rawName = (it?.name || "").split("/").pop() || "";
 
@@ -4748,7 +4894,7 @@
 
     }
 
-    function buildTxtNameCandidates(it){
+    function buildTxtNameCandidates(it) {
 
       const rawName = (it?.name || "").split("/").pop() || "";
 
@@ -4788,7 +4934,7 @@
 
     }
 
-    function __ia2EnsureSlashEnd(s){
+    function __ia2EnsureSlashEnd(s) {
 
       s = String(s || "");
 
@@ -4796,7 +4942,7 @@
 
     }
 
-    function __ia2BasesWithSubdir(bases, subdir){
+    function __ia2BasesWithSubdir(bases, subdir) {
 
       const sd = String(subdir || "").replace(/^\/+|\/+$/g, "");
 
@@ -4808,7 +4954,7 @@
 
     const __IA2_TXT_BASES = __ia2BasesWithSubdir(TXT_BASES, IA2_TX_SUBDIR);
 
-    async function buildTxtUrlsForItem(it){
+    async function buildTxtUrlsForItem(it) {
 
       const names = buildTxtNameCandidates(it);
 
@@ -4816,9 +4962,9 @@
 
       const bases = (it && it.src === IA2_SRC) ? __IA2_TXT_BASES : TXT_BASES;
 
-      for (const name of names){
+      for (const name of names) {
 
-        for (const base of bases){
+        for (const base of bases) {
 
           urls.push(base + encodeURIComponent(name));
 
@@ -4830,7 +4976,7 @@
 
     }
 
-    async function buildSrtUrlsForItem(it){
+    async function buildSrtUrlsForItem(it) {
 
       const names = buildSrtNameCandidates(it);
 
@@ -4838,9 +4984,9 @@
 
       const bases = (it && it.src === IA2_SRC) ? __IA2_SRT_BASES : SRT_BASES;
 
-      for (const name of names){
+      for (const name of names) {
 
-        for (const base of bases){
+        for (const base of bases) {
 
           urls.push(base + encodeURIComponent(name));
 
@@ -4852,7 +4998,7 @@
 
     }
 
-    async function loadSrtForItem(it){
+    async function loadSrtForItem(it) {
 
       activeCues = [];
 
@@ -4864,7 +5010,7 @@
 
       const cached = srtCache.get(it.id);
 
-      if (cached){
+      if (cached) {
 
         activeCues = cached;
 
@@ -4888,11 +5034,11 @@
 
       let lastUrl = urls[0] || "";
 
-      try{
+      try {
 
         let cues = null;
 
-        for (const u of urls){
+        for (const u of urls) {
 
           lastUrl = u;
 
@@ -4904,7 +5050,7 @@
 
           const parsed = parseSrtToCues(body);
 
-          if (parsed && parsed.length){
+          if (parsed && parsed.length) {
 
             cues = parsed;
 
@@ -4924,11 +5070,11 @@
 
         onCaptionsTimeupdate();
 
-      }catch(err){
+      } catch (err) {
 
         if (err && err.name === "AbortError") return;
 
-        if (SRT_DEBUG){
+        if (SRT_DEBUG) {
 
           renderCaptionInfo("SRT yok. Denenen isimler: " + (triedNames.join(" | ") || "-") + "\nSon URL: " + lastUrl);
 
@@ -4942,9 +5088,9 @@
 
     }
 
-    function setModeOrToggle(nextMode){
+    function setModeOrToggle(nextMode) {
 
-      if (captionMode === nextMode){
+      if (captionMode === nextMode) {
 
         captionMode = null;
 
@@ -4990,7 +5136,7 @@
 
     });
 
-    function parseEndDate(item){
+    function parseEndDate(item) {
 
       const raw0 = (item.name || item.file || item.title || "").toString();
 
@@ -5030,7 +5176,7 @@
 
     }
 
-    function setArrowIcon(svgEl, isAsc){
+    function setArrowIcon(svgEl, isAsc) {
 
       if (!svgEl) return;
 
@@ -5070,7 +5216,7 @@
 
     }
 
-    function setSortIcons(){
+    function setSortIcons() {
 
       sortDurBtn.classList.remove("on");
 
@@ -5186,7 +5332,7 @@
 
     let stickyHomeParent = null;
 
-    function measureStickyStartTop(){
+    function measureStickyStartTop() {
 
       if (!stickyBar || stickyDocked) return;
 
@@ -5198,7 +5344,7 @@
 
     }
 
-    function getScrollAreaPadding(){
+    function getScrollAreaPadding() {
 
       const cs = getComputedStyle(scrollArea);
 
@@ -5212,7 +5358,7 @@
 
     }
 
-    function dockStickyBar(){
+    function dockStickyBar() {
 
       if (stickyDocked) return;
 
@@ -5230,7 +5376,7 @@
 
     }
 
-    function undockStickyBar(){
+    function undockStickyBar() {
 
       if (!stickyDocked) return;
 
@@ -5258,7 +5404,7 @@
 
     }
 
-    function positionDockedStickyBar(){
+    function positionDockedStickyBar() {
 
       if (!stickyDocked) return;
 
@@ -5276,7 +5422,7 @@
 
       stickyBar.style.transformOrigin = "top left";
 
-      if (useTransformScale){
+      if (useTransformScale) {
 
         stickyBar.style.left = (left / uiScale) + "px";
 
@@ -5300,19 +5446,19 @@
 
     }
 
-    function updateSticky(forceRecalc = false){
+    function updateSticky(forceRecalc = false) {
 
       if (!stickyBar) return;
 
       const needDock = (IS_SAFARI || useTransformScale);
 
-      if (forceRecalc && !stickyDocked){
+      if (forceRecalc && !stickyDocked) {
 
         requestAnimationFrame(() => measureStickyStartTop());
 
       }
 
-      if (!needDock){
+      if (!needDock) {
 
         if (stickyDocked) undockStickyBar();
 
@@ -5320,7 +5466,7 @@
 
       }
 
-      if (stickyStartTop == null || forceRecalc){
+      if (stickyStartTop == null || forceRecalc) {
 
         if (stickyDocked) undockStickyBar();
 
@@ -5338,13 +5484,13 @@
 
     }
 
-    function isMobileFiltersMode(){
+    function isMobileFiltersMode() {
 
-      try{
+      try {
 
         return window.matchMedia("(max-width: 680px)").matches;
 
-      }catch{
+      } catch {
 
         return window.innerWidth <= 680;
 
@@ -5352,9 +5498,9 @@
 
     }
 
-    function readMobileFiltersOpen(){
+    function readMobileFiltersOpen() {
 
-      try{
+      try {
 
         const raw = localStorage.getItem(LS.mobileFiltersOpen);
 
@@ -5362,23 +5508,23 @@
 
         if (raw === "0") return false;
 
-      }catch{}
+      } catch {}
 
       return false;
 
     }
 
-    function saveMobileFiltersOpen(v){
+    function saveMobileFiltersOpen(v) {
 
-      try{
+      try {
 
         localStorage.setItem(LS.mobileFiltersOpen, v ? "1" : "0");
 
-      }catch{}
+      } catch {}
 
     }
 
-    function applyMobileFiltersState(forceOpen){
+    function applyMobileFiltersState(forceOpen) {
 
       if (!stickyBar || !mobileFiltersToggle) return;
 
@@ -5386,7 +5532,7 @@
 
       const open = !!forceOpen;
 
-      if (!isMobile){
+      if (!isMobile) {
 
         document.body.classList.remove("mobileFiltersCollapsed");
 
@@ -5398,11 +5544,7 @@
 
         mobileFiltersToggle.textContent = "Filtreler";
 
-        setTimeout(() => {
-
-          try{ updateSticky(true); }catch{}
-
-        }, 0);
+        setTimeout(() => { try { updateSticky(true); } catch {} }, 0);
 
         return;
 
@@ -5418,21 +5560,17 @@
 
       mobileFiltersToggle.textContent = open ? "Filtreleri Gizle" : "Filtreler";
 
-      setTimeout(() => {
-
-        try{ updateSticky(true); }catch{}
-
-      }, 0);
+      setTimeout(() => { try { updateSticky(true); } catch {} }, 0);
 
     }
 
-    function restoreMobileFiltersState(){
+    function restoreMobileFiltersState() {
 
       applyMobileFiltersState(readMobileFiltersOpen());
 
     }
 
-    function toggleMobileFilters(){
+    function toggleMobileFilters() {
 
       if (!isMobileFiltersMode()) return;
 
@@ -5464,7 +5602,7 @@
 
     let rerenderTimer = null;
 
-    function scheduleRerender(){
+    function scheduleRerender() {
 
       if (rerenderTimer) return;
 
@@ -5478,7 +5616,7 @@
 
     }
 
-    function requestDuration(it){
+    function requestDuration(it) {
 
       const id = it.id;
 
@@ -5494,9 +5632,9 @@
 
     }
 
-    function pumpDurationQueue(){
+    function pumpDurationQueue() {
 
-      while (durActive < DUR_CONCURRENCY && durQueue.length){
+      while (durActive < DUR_CONCURRENCY && durQueue.length) {
 
         const it = durQueue.shift();
 
@@ -5514,7 +5652,7 @@
 
     }
 
-    function loadDurationFor(it){
+    function loadDurationFor(it) {
 
       return new Promise((resolve, reject) => {
 
@@ -5554,7 +5692,7 @@
 
           const dur = a.duration;
 
-          if (Number.isFinite(dur) && dur > 0){
+          if (Number.isFinite(dur) && dur > 0) {
 
             durs[it.id] = dur;
 
@@ -5584,7 +5722,7 @@
 
     }
 
-    function makeProxyUrl(fileUrl, filename){
+    function makeProxyUrl(fileUrl, filename) {
 
       const u = DL_PROXY + "?u=" + encodeURIComponent(fileUrl);
 
@@ -5592,7 +5730,7 @@
 
     }
 
-    function clickDownload(href, filename){
+    function clickDownload(href, filename) {
 
       const a = document.createElement("a");
 
@@ -5612,19 +5750,19 @@
 
     }
 
-    async function forceDownload(fileUrl, filename){
+    async function forceDownload(fileUrl, filename) {
 
       const proxied = makeProxyUrl(fileUrl, filename);
 
-      try{
+      try {
 
         clickDownload(proxied, filename);
 
         return;
 
-      }catch{}
+      } catch {}
 
-      try{
+      try {
 
         const res = await fetch(proxied, { mode: "cors", cache: "no-store" });
 
@@ -5638,7 +5776,7 @@
 
         setTimeout(() => URL.revokeObjectURL(url), 60000);
 
-      }catch{
+      } catch {
 
         window.location.href = fileUrl;
 
@@ -5646,7 +5784,7 @@
 
     }
 
-    function buildDownloadUrl(identifier, name){
+    function buildDownloadUrl(identifier, name) {
 
       const parts = (name || "").split("/").map((p) => encodeURIComponent(p));
 
@@ -5654,13 +5792,13 @@
 
     }
 
-    function replaceExtToTxt(name){
+    function replaceExtToTxt(name) {
 
       return String(name || "").replace(/\.(m4a|mp3)$/i, ".txt");
 
     }
 
-    function __ia2IsBlockedByPrefix(fileName){
+    function __ia2IsBlockedByPrefix(fileName) {
 
       const blockPrefixes = ["Dusseldorf", "Düsseldorf", "Stuttgart", "Rheutlingen", "Reutlingen", "Sachsen", "Hessen", "Karlsruhe"];
 
@@ -5676,11 +5814,11 @@
 
       const folded = foldTR(base);
 
-      for (const p of blockPrefixes){
+      for (const p of blockPrefixes) {
 
         const c = foldTR(p);
 
-        if (folded.startsWith(c)){
+        if (folded.startsWith(c)) {
 
           const next = folded.slice(c.length, c.length + 1);
 
@@ -5694,7 +5832,7 @@
 
     }
 
-    function __ia2MakeItemsFromFiles(files){
+    function __ia2MakeItemsFromFiles(files) {
 
       return (files || [])
 
@@ -5738,6 +5876,42 @@
 
     }
 
+    function getGitHubPagesRepoInfo() {
+
+      const host = location.hostname || "";
+
+      const pathParts = location.pathname.split("/").filter(Boolean);
+
+      if (!/github\.io$/i.test(host) || !pathParts.length) return null;
+
+      const owner = host.split(".")[0] || "";
+
+      const repo = pathParts[0] || "";
+
+      if (!owner || !repo) return null;
+
+      return { owner, repo, branch: "main" };
+
+    }
+
+    function getRepoBasePath() {
+
+      const pathParts = location.pathname.split("/").filter(Boolean);
+
+      return pathParts.length ? `/${pathParts[0]}` : "";
+
+    }
+
+    function buildPagesPdfUrl(filePath) {
+
+      const clean = String(filePath || "").replace(/^\/+/, "");
+
+      const encoded = clean.split("/").map(encodeURIComponent).join("/");
+
+      return `${location.origin}${getRepoBasePath()}/${encoded}`;
+
+    }
+
     const pdfState = {
 
       rows: [],
@@ -5754,7 +5928,7 @@
 
     };
 
-    function pdfAdobeSvg(){
+    function pdfAdobeSvg() {
 
       return `
 
@@ -5772,25 +5946,13 @@
 
     }
 
-    function fileNameOnly(name){
+    function fileNameOnly(name) {
 
       return decodeURIComponentSafe(String(name || "").split("/").pop() || "");
 
     }
 
-    function removeAudioExt(name){
-
-      return String(name || "").replace(/\.(mp3|m4a|wav|aac|ogg|flac)$/i, "");
-
-    }
-
-    function removePdfExt(name){
-
-      return String(name || "").replace(/\.pdf$/i, "");
-
-    }
-
-    async function loadPdfIndex(){
+    async function loadPdfDocsIndex() {
 
       if (pdfState.loaded || pdfState.loading) return;
 
@@ -5798,45 +5960,77 @@
 
       pdfState.lastError = "";
 
-      try{
+      pdfState.rows = [];
 
-        const res = await fetch(PDF_INDEX_URL, { cache: FORCE_REFRESH ? "no-store" : "no-cache" });
+      pdfState.byItemId.clear();
 
-        if (!res.ok) throw new Error(`pdf-index.json okunamadı: ${res.status}`);
+      try {
 
-        const j = await res.json();
+        const repoInfo = getGitHubPagesRepoInfo();
 
-        const rows = Array.isArray(j?.items) ? j.items : (Array.isArray(j) ? j : []);
+        if (!repoInfo) throw new Error("GitHub Pages repo bilgisi çözülemedi");
 
-        pdfState.rows = rows.map((row) => {
+        const apiUrl = `https://api.github.com/repos/${encodeURIComponent(repoInfo.owner)}/${encodeURIComponent(repoInfo.repo)}/contents/docs?ref=${encodeURIComponent(repoInfo.branch)}`;
 
-          const pdfPath = String(row?.pdfPath || row?.path || row?.url || "").trim();
+        const res = await fetch(apiUrl, {
 
-          const pdfName = String(row?.pdfName || row?.name || fileNameOnly(pdfPath)).trim();
+          cache: FORCE_REFRESH ? "no-store" : "no-cache",
 
-          const audioId = String(row?.audioId || "").trim();
+          headers: { Accept: "application/vnd.github+json" }
 
-          const audioName = String(row?.audioName || row?.sourceAudioName || "").trim();
+        });
 
-          const dateToken = extractDateToken(pdfName || pdfPath || audioName);
+        if (!res.ok) {
 
-          const baseNorm = normalizeLoose(removePdfExt(pdfName || fileNameOnly(pdfPath)));
+          throw new Error(`docs klasörü okunamadı: ${res.status}`);
 
-          const tokens = tokenizeForSimilarity(removePdfExt(pdfName || fileNameOnly(pdfPath)));
+        }
 
-          return { pdfPath, pdfName, audioId, audioName, dateToken, baseNorm, tokens };
+        const data = await res.json();
 
-        }).filter((x) => x.pdfPath);
+        const files = Array.isArray(data) ? data : [];
+
+        pdfState.rows = files
+
+          .filter((row) => row && row.type === "file" && /\.pdf$/i.test(String(row.name || "")))
+
+          .map((row) => {
+
+            const pdfName = String(row.name || "").trim();
+
+            const pdfPath = String(row.path || `docs/${pdfName}`).trim();
+
+            const dateToken = extractDateTokenFromEnd(pdfName);
+
+            const baseNameNoDate = removeTrailingDateAndExt(pdfName);
+
+            const tokens = tokenizeForSimilarity(baseNameNoDate);
+
+            return {
+
+              pdfName,
+
+              pdfPath,
+
+              dateToken,
+
+              baseNameNoDate,
+
+              tokens
+
+            };
+
+          });
 
         pdfState.loaded = true;
 
-      }catch(err){
+      } catch (err) {
 
-        pdfState.lastError = err?.message || "PDF index yüklenemedi";
+        pdfState.lastError = err?.message || "docs klasörü okunamadı";
 
         console.error(err);
 
-      }finally{
+      } finally {
 
         pdfState.loading = false;
 
@@ -5844,69 +6038,77 @@
 
     }
 
-    function getBestPdfForItem(it){
+    function getBestPdfForItem(it) {
 
-      if (!pdfState.rows.length || !it) return null;
+      if (!it) return null;
 
-      if (pdfState.byItemId.has(it.id)) return pdfState.byItemId.get(it.id);
+      if (pdfState.byItemId.has(it.id)) return pdfState.byItemId.get(it.id) || null;
 
-      const itemName = fileNameOnly(it.name || it.title || "");
+      if (!pdfState.rows.length) {
 
-      const itemBase = removeAudioExt(itemName);
+        pdfState.byItemId.set(it.id, null);
 
-      const itemNorm = normalizeLoose(itemBase);
+        return null;
 
-      const itemDate = extractDateToken(itemBase);
+      }
 
-      const itemTokens = tokenizeForSimilarity(itemBase);
+      const audioName = fileNameOnly(it.name || it.title || "");
+
+      const audioDate = extractDateTokenFromEnd(audioName);
+
+      if (!audioDate) {
+
+        pdfState.byItemId.set(it.id, null);
+
+        return null;
+
+      }
+
+      const sameDate = pdfState.rows.filter((row) => row.dateToken === audioDate);
+
+      if (!sameDate.length) {
+
+        pdfState.byItemId.set(it.id, null);
+
+        return null;
+
+      }
+
+      if (sameDate.length === 1) {
+
+        pdfState.byItemId.set(it.id, sameDate[0]);
+
+        return sameDate[0];
+
+      }
+
+      const audioBase = removeTrailingDateAndExt(audioName);
+
+      const audioTokens = tokenizeForSimilarity(audioBase);
+
+      const audioNorm = normalizeLoose(audioBase);
 
       let best = null;
 
       let bestScore = -1;
 
-      for (const row of pdfState.rows){
+      for (const row of sameDate) {
 
-        if (row.audioId && row.audioId === it.id){
-
-          best = row;
-
-          bestScore = 9999;
-
-          break;
-
-        }
-
-        if (row.audioName){
-
-          const audioNorm = normalizeLoose(removeAudioExt(fileNameOnly(row.audioName)));
-
-          if (audioNorm && audioNorm === itemNorm){
-
-            best = row;
-
-            bestScore = 5000;
-
-            break;
-
-          }
-
-        }
+        const rowNorm = normalizeLoose(row.baseNameNoDate);
 
         let score = 0;
 
-        if (itemDate && row.dateToken && itemDate === row.dateToken) score += 100;
+        score += Math.round(jaccardScore(audioTokens, row.tokens) * 100);
 
-        score += Math.round(jaccardScore(itemTokens, row.tokens) * 100);
+        if (audioNorm && rowNorm) {
 
-        if (itemNorm && row.baseNorm){
+          if (audioNorm === rowNorm) score += 100;
 
-          if (itemNorm === row.baseNorm) score += 80;
-
-          if (row.baseNorm.includes(itemNorm) || itemNorm.includes(row.baseNorm)) score += 25;
+          else if (rowNorm.includes(audioNorm) || audioNorm.includes(rowNorm)) score += 25;
 
         }
 
-        if (score > bestScore){
+        if (score > bestScore) {
 
           bestScore = score;
 
@@ -5916,7 +6118,7 @@
 
       }
 
-      const accepted = best && bestScore >= 120 ? best : null;
+      const accepted = best || null;
 
       pdfState.byItemId.set(it.id, accepted);
 
@@ -5924,27 +6126,21 @@
 
     }
 
-    function buildPdfAbsoluteUrl(path){
-
-      try{
-
-        return new URL(path, location.href).toString();
-
-      }catch{
-
-        return path;
-
-      }
-
-    }
-
-    function openPdfViewer(it, pdfMeta){
+    function openPdfViewer(it, pdfMeta) {
 
       if (!pdfMeta) return;
 
-      const pdfUrl = buildPdfAbsoluteUrl(pdfMeta.pdfPath);
+      const pdfUrl = buildPagesPdfUrl(pdfMeta.pdfPath);
 
-      pdfState.current = { item: it, meta: pdfMeta, url: pdfUrl };
+      pdfState.current = {
+
+        item: it,
+
+        meta: pdfMeta,
+
+        url: pdfUrl
+
+      };
 
       pdfTitleEl.textContent = pdfMeta.pdfName || it.title || "PDF";
 
@@ -5958,7 +6154,7 @@
 
     }
 
-    function closePdfViewer(){
+    function closePdfViewer() {
 
       pdfOverlay.classList.remove("open");
 
@@ -5996,17 +6192,17 @@
 
       const text = `${pdfState.current.meta.pdfName || ""}\n${pdfState.current.url}`;
 
-      try{
+      try {
 
         await navigator.clipboard.writeText(text);
 
-      }catch{}
+      } catch {}
 
     });
 
     document.addEventListener("keydown", (e) => {
 
-      if (e.key === "Escape" && pdfOverlay.classList.contains("open")){
+      if (e.key === "Escape" && pdfOverlay.classList.contains("open")) {
 
         e.preventDefault();
 
@@ -6016,9 +6212,9 @@
 
     });
 
-    async function loadItems(){
+    async function loadItems() {
 
-      try{
+      try {
 
         statusEl.textContent = "Yükleniyor...";
 
@@ -6072,7 +6268,7 @@
 
         let finalItems = list1;
 
-        try{
+        try {
 
           const res2 = await fetch(`https://archive.org/metadata/${encodeURIComponent(IA_IDENTIFIER_2)}`, {
 
@@ -6088,7 +6284,7 @@
 
           finalItems = finalItems.concat(__ia2MakeItemsFromFiles(files2));
 
-        }catch(err){
+        } catch (err) {
 
           console.warn(err);
 
@@ -6096,7 +6292,7 @@
 
         items = finalItems;
 
-        await loadPdfIndex();
+        await loadPdfDocsIndex();
 
         statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
 
@@ -6110,7 +6306,7 @@
 
         updateSticky(true);
 
-      }catch(err){
+      } catch (err) {
 
         console.error(err);
 
@@ -6120,7 +6316,7 @@
 
     }
 
-    function getVisibleItems(){
+    function getVisibleItems() {
 
       const q = foldTR((searchEl.value || "").trim());
 
@@ -6134,7 +6330,7 @@
 
       });
 
-      if (sortMode === "dur"){
+      if (sortMode === "dur") {
 
         const dir = (durSortDir === "asc") ? 1 : -1;
 
@@ -6146,7 +6342,7 @@
 
           if (ha !== hb) return ha ? -1 : 1;
 
-          if (ha && hb){
+          if (ha && hb) {
 
             const da = durs[a.id];
 
@@ -6160,7 +6356,7 @@
 
         });
 
-      } else if (sortMode === "date"){
+      } else if (sortMode === "date") {
 
         const dir = (dateSortDir === "asc") ? 1 : -1;
 
@@ -6182,7 +6378,7 @@
 
         });
 
-      } else if (sortMode === "play"){
+      } else if (sortMode === "play") {
 
         const dir = (playSortDir === "asc") ? 1 : -1;
 
@@ -6198,7 +6394,7 @@
 
         });
 
-      } else if (sortMode === "download"){
+      } else if (sortMode === "download") {
 
         const dir = (dlSortDir === "asc") ? 1 : -1;
 
@@ -6224,7 +6420,7 @@
 
     }
 
-    function iconButton(kind, on, title){
+    function iconButton(kind, on, title) {
 
       const btn = document.createElement("button");
 
@@ -6236,7 +6432,7 @@
 
       btn.dataset.kind = kind;
 
-      if (kind === "star"){
+      if (kind === "star") {
 
         btn.setAttribute("aria-pressed", String(!!on));
 
@@ -6248,7 +6444,7 @@
 
           </svg>`;
 
-      } else if (kind === "download"){
+      } else if (kind === "download") {
 
         btn.innerHTML = `
 
@@ -6268,7 +6464,7 @@
 
     }
 
-    function makePdfBtn(it){
+    function makePdfBtn(it) {
 
       const pdfMeta = getBestPdfForItem(it);
 
@@ -6304,7 +6500,7 @@
 
     }
 
-    function render(){
+    function render() {
 
       const visible = getVisibleItems();
 
@@ -6320,13 +6516,13 @@
 
       const toMeasure = (sortMode === "dur") ? items : visible;
 
-      for (const it of toMeasure){
+      for (const it of toMeasure) {
 
         if (!(durs[it.id] > 0)) requestDuration(it);
 
       }
 
-      for (const it of visible){
+      for (const it of visible) {
 
         const row = document.createElement("div");
 
@@ -6406,7 +6602,7 @@
 
         });
 
-        for (const b of [favBtn, dlBtn]){
+        for (const b of [favBtn, dlBtn]) {
 
           b.addEventListener("pointerup", (e) => e.stopPropagation());
 
@@ -6432,7 +6628,7 @@
 
           const inTitle = !!(e.target && e.target.closest && e.target.closest(".title"));
 
-          if (!inTitle){
+          if (!inTitle) {
 
             selectedId = it.id;
 
@@ -6454,7 +6650,7 @@
 
     }
 
-    function playById(id){
+    function playById(id) {
 
       const visible = getVisibleItems();
 
@@ -6466,7 +6662,7 @@
 
     }
 
-    function setMediaSource(url, mime){
+    function setMediaSource(url, mime) {
 
       stopSkipLoop();
 
@@ -6484,7 +6680,7 @@
 
     }
 
-    async function ensureMapForItem(it){
+    async function ensureMapForItem(it) {
 
       if (!it) return null;
 
@@ -6492,7 +6688,7 @@
 
     }
 
-    function playAtVisibleIndex(idx){
+    function playAtVisibleIndex(idx) {
 
       const visible = getVisibleItems();
 
@@ -6524,7 +6720,7 @@
 
       const currentSpeed = SPEEDS[speedIndex] || 1;
 
-      try{
+      try {
 
         plyr.speed = currentSpeed;
 
@@ -6536,7 +6732,7 @@
 
         const p = plyr.play();
 
-        if (p && typeof p.catch === "function"){
+        if (p && typeof p.catch === "function") {
 
           p.catch(() => {
 
@@ -6548,7 +6744,7 @@
 
         setTimeout(() => {
 
-          if (playerEl && playerEl.paused){
+          if (playerEl && playerEl.paused) {
 
             statusEl.textContent = statusEl.textContent || "Oynatma başlamadı. Player içindeki ▶︎ tuşuna bas.";
 
@@ -6556,7 +6752,7 @@
 
         }, 900);
 
-      }catch{
+      } catch {
 
         statusEl.textContent = "Player başlatılamadı.";
 
@@ -6564,7 +6760,7 @@
 
     }
 
-    function playPrev(){
+    function playPrev() {
 
       const visible = getVisibleItems();
 
@@ -6580,7 +6776,7 @@
 
     }
 
-    function playNext(){
+    function playNext() {
 
       const visible = getVisibleItems();
 
@@ -6602,7 +6798,7 @@
 
     plyr.on("ended", () => { setTimeout(() => playNext(), 0); });
 
-    function isTypingTarget(){
+    function isTypingTarget() {
 
       const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
 
@@ -6612,9 +6808,9 @@
 
     document.addEventListener("keydown", (e) => {
 
-      if (e.key === "Escape"){
+      if (e.key === "Escape") {
 
-        if (txPanel.classList.contains("open")){
+        if (txPanel.classList.contains("open")) {
 
           e.preventDefault();
 
@@ -6624,7 +6820,7 @@
 
         }
 
-        if (sbOverlay.classList.contains("open")){
+        if (sbOverlay.classList.contains("open")) {
 
           e.preventDefault();
 
@@ -6638,19 +6834,19 @@
 
       if (isTypingTarget()) return;
 
-      if (e.code === "Space"){
+      if (e.code === "Space") {
 
         e.preventDefault();
 
         plyr.togglePlay();
 
-      } else if (e.code === "ArrowLeft"){
+      } else if (e.code === "ArrowLeft") {
 
         e.preventDefault();
 
         playPrev();
 
-      } else if (e.code === "ArrowRight"){
+      } else if (e.code === "ArrowRight") {
 
         e.preventDefault();
 
@@ -6694,7 +6890,7 @@
 
     let lastSentTermNorm = "";
 
-    function sendSearchEvent(termRawInput){
+    function sendSearchEvent(termRawInput) {
 
       const termRaw = (termRawInput || "").trim();
 
@@ -6702,9 +6898,9 @@
 
       const visibleCount = getVisibleItems().length;
 
-      if (termRaw.length === 0){
+      if (termRaw.length === 0) {
 
-        if (lastSentTermNorm !== ""){
+        if (lastSentTermNorm !== "") {
 
           lastSentTermNorm = "";
 
@@ -6730,7 +6926,7 @@
 
     }
 
-    function renderAndTrackSearch(){
+    function renderAndTrackSearch() {
 
       render();
 
@@ -6758,9 +6954,9 @@
 
     });
 
-    function restorePlayerPos(){
+    function restorePlayerPos() {
 
-      try{
+      try {
 
         const s = JSON.parse(localStorage.getItem(LS.pos) || "null");
 
@@ -6772,7 +6968,7 @@
 
         let y = s.y;
 
-        if (s.ver !== 2 && useTransformScale){
+        if (s.ver !== 2 && useTransformScale) {
 
           x = x * uiScale;
 
@@ -6790,23 +6986,23 @@
 
         clampPlayerToViewport();
 
-      }catch{}
+      } catch {}
 
     }
 
-    function savePlayerPos(x, y){
+    function savePlayerPos(x, y) {
 
       localStorage.setItem(LS.pos, JSON.stringify({ x, y, ver: 2 }));
 
     }
 
-    function getPlayerRect(){
+    function getPlayerRect() {
 
       return fp.getBoundingClientRect();
 
     }
 
-    function getPlayerPosPx(){
+    function getPlayerPosPx() {
 
       const left = parseFloat(fp.style.left);
 
@@ -6820,7 +7016,7 @@
 
     }
 
-    function getPlayerBoundsPx(){
+    function getPlayerBoundsPx() {
 
       const { vw, vh } = getViewportWH();
 
@@ -6858,13 +7054,13 @@
 
         minY: Math.min(minY, maxY),
 
-        maxY: Math.max(minY, maxY),
+        maxY: Math.max(minY, maxY)
 
       };
 
     }
 
-    function clampPlayerToViewport(){
+    function clampPlayerToViewport() {
 
       const { minX, maxX, minY, maxY } = getPlayerBoundsPx();
 
@@ -6892,7 +7088,7 @@
 
       ".plyr__controls, .plyr__control, .plyr__progress, .plyr__seek, .plyr__volume, .plyr__time, .plyr__menu";
 
-    function shouldStartDrag(target){
+    function shouldStartDrag(target) {
 
       return !(target && target.closest && target.closest(DRAG_IGNORE_SELECTOR));
 
@@ -6968,7 +7164,7 @@
 
     });
 
-    function endDrag(pointerId){
+    function endDrag(pointerId) {
 
       if (!dragging) return;
 
@@ -6980,7 +7176,7 @@
 
       clampPlayerToViewport();
 
-      if (moved){
+      if (moved) {
 
         suppressClickUntil = Date.now() + 350;
 
@@ -6996,7 +7192,7 @@
 
     fpHeader.addEventListener("click", (e) => {
 
-      if (Date.now() < suppressClickUntil){
+      if (Date.now() < suppressClickUntil) {
 
         e.preventDefault();
 
@@ -7042,7 +7238,7 @@
 
     }, 150));
 
-    if (window.visualViewport){
+    if (window.visualViewport) {
 
       window.visualViewport.addEventListener("resize", () => {
 
@@ -7064,7 +7260,7 @@
 
     }
 
-    (function disablePullToRefresh(){
+    (function disablePullToRefresh() {
 
       let startY = 0;
 
@@ -7088,7 +7284,7 @@
 
     })();
 
-    (function setActiveNav(){
+    (function setActiveNav() {
 
       const here = location.href.replace(/\/$/, "");
 
@@ -7106,7 +7302,7 @@
 
     })();
 
-    function openSidebar(){
+    function openSidebar() {
 
       sbOverlay.classList.add("open");
 
@@ -7118,7 +7314,7 @@
 
     }
 
-    function closeSidebar(){
+    function closeSidebar() {
 
       sbOverlay.classList.remove("open");
 
@@ -7152,7 +7348,15 @@
 
     sbRefreshBtn.addEventListener("click", async () => {
 
-      try{
+      try {
+
+        pdfState.loaded = false;
+
+        pdfState.loading = false;
+
+        pdfState.rows = [];
+
+        pdfState.byItemId.clear();
 
         await loadItems();
 
@@ -7176,9 +7380,9 @@
 
     });
 
-    function clickSort(kind){
+    function clickSort(kind) {
 
-      if (kind === "date"){
+      if (kind === "date") {
 
         if (sortMode !== "date") sortMode = "date";
 
@@ -7188,7 +7392,7 @@
 
         localStorage.setItem(LS.sortDirDate, dateSortDir);
 
-      } else if (kind === "dur"){
+      } else if (kind === "dur") {
 
         if (sortMode !== "dur") sortMode = "dur";
 
@@ -7198,7 +7402,7 @@
 
         localStorage.setItem(LS.sortDirDur, durSortDir);
 
-      } else if (kind === "play"){
+      } else if (kind === "play") {
 
         if (sortMode !== "play") sortMode = "play";
 
@@ -7208,7 +7412,7 @@
 
         localStorage.setItem(LS.sortDirPlay, playSortDir);
 
-      } else if (kind === "download"){
+      } else if (kind === "download") {
 
         if (sortMode !== "download") sortMode = "download";
 
@@ -7250,7 +7454,7 @@
 
     const TX_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
-    function clearTxSearchUI(){
+    function clearTxSearchUI() {
 
       txMatches = [];
 
@@ -7266,13 +7470,13 @@
 
     }
 
-    function clampTxSizeToViewport(){
+    function clampTxSizeToViewport() {
 
       if (!txOpen) return;
 
       const saved = loadAny(LS.txSize);
 
-      if (saved && typeof saved.w === "number" && typeof saved.h === "number"){
+      if (saved && typeof saved.w === "number" && typeof saved.h === "number") {
 
         txPanel.style.width = saved.w + "px";
 
@@ -7318,7 +7522,7 @@
 
     }
 
-    function getTxPosPx(){
+    function getTxPosPx() {
 
       const cs = getComputedStyle(txPanel);
 
@@ -7336,7 +7540,7 @@
 
     }
 
-    function setTxPosPx(top, right){
+    function setTxPosPx(top, right) {
 
       txPanel.style.top = top + "px";
 
@@ -7348,19 +7552,19 @@
 
     }
 
-    function saveTxPos(top, right){
+    function saveTxPos(top, right) {
 
       saveAny(LS.txPos, { top, right });
 
     }
 
-    function restoreTxPos(){
+    function restoreTxPos() {
 
       const saved = loadAny(LS.txPos);
 
       if (!saved) return;
 
-      if (typeof saved.top === "number" && typeof saved.right === "number"){
+      if (typeof saved.top === "number" && typeof saved.right === "number") {
 
         setTxPosPx(saved.top, saved.right);
 
@@ -7368,7 +7572,7 @@
 
     }
 
-    function clampTxPosCandidate(top, right){
+    function clampTxPosCandidate(top, right) {
 
       const { vw, vh } = getViewportWH();
 
@@ -7398,7 +7602,7 @@
 
     }
 
-    function clampTxPosToViewport(){
+    function clampTxPosToViewport() {
 
       if (!txOpen) return;
 
@@ -7412,7 +7616,7 @@
 
     }
 
-    function setTxtBtnUi(){
+    function setTxtBtnUi() {
 
       fpTxtBtn.classList.toggle("on", !!txOpen);
 
@@ -7420,7 +7624,7 @@
 
     }
 
-    function openTranscript(){
+    function openTranscript() {
 
       txOpen = true;
 
@@ -7442,7 +7646,7 @@
 
     }
 
-    function closeTranscript(){
+    function closeTranscript() {
 
       txOpen = false;
 
@@ -7458,13 +7662,13 @@
 
     txCloseBtn.addEventListener("click", () => closeTranscript());
 
-    function escapeForRegex(s){
+    function escapeForRegex(s) {
 
       return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
     }
 
-    function buildHighlightedHtml(text, ranges, activeIdx){
+    function buildHighlightedHtml(text, ranges, activeIdx) {
 
       if (!ranges.length) return escHtml(text);
 
@@ -7472,7 +7676,7 @@
 
       let last = 0;
 
-      for (let i = 0; i < ranges.length; i++){
+      for (let i = 0; i < ranges.length; i++) {
 
         const r = ranges[i];
 
@@ -7496,7 +7700,7 @@
 
     }
 
-    function computeMatches(text, q){
+    function computeMatches(text, q) {
 
       const out = [];
 
@@ -7506,7 +7710,7 @@
 
       let m;
 
-      while ((m = re.exec(text))){
+      while ((m = re.exec(text))) {
 
         const a = m.index;
 
@@ -7524,11 +7728,11 @@
 
     }
 
-    function applyTxSearch(){
+    function applyTxSearch() {
 
       const q = (txSearchInput.value || "").trim();
 
-      if (!q){
+      if (!q) {
 
         clearTxSearchUI();
 
@@ -7552,17 +7756,17 @@
 
     }
 
-    function scrollToActiveMatch(){
+    function scrollToActiveMatch() {
 
       const el = txContentEl.querySelector(".txMark.active");
 
       if (!el) return;
 
-      try{
+      try {
 
         el.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
 
-      }catch{
+      } catch {
 
         el.scrollIntoView();
 
@@ -7570,7 +7774,7 @@
 
     }
 
-    function setActiveMatch(idx){
+    function setActiveMatch(idx) {
 
       if (!txMatches.length) return;
 
@@ -7584,7 +7788,7 @@
 
       const next = txContentEl.querySelector(`.txMark[data-mi="${txActiveMatch}"]`);
 
-      if (next){
+      if (next) {
 
         next.classList.add("active");
 
@@ -7604,7 +7808,7 @@
 
       const on = txSearchRow.classList.toggle("on");
 
-      if (on){
+      if (on) {
 
         txSearchInput.focus();
 
@@ -7624,11 +7828,11 @@
 
     txSearchInput.addEventListener("keydown", (e) => {
 
-      if (e.key === "Enter"){
+      if (e.key === "Enter") {
 
         e.preventDefault();
 
-        if (!txMatches.length){
+        if (!txMatches.length) {
 
           applyTxSearch();
 
@@ -7640,7 +7844,7 @@
 
         else setActiveMatch(txActiveMatch + 1);
 
-      } else if (e.key === "Escape"){
+      } else if (e.key === "Escape") {
 
         e.preventDefault();
 
@@ -7654,19 +7858,19 @@
 
     txNextMatchBtn.addEventListener("click", () => setActiveMatch(txActiveMatch + 1));
 
-    async function copyToClipboard(text){
+    async function copyToClipboard(text) {
 
       if (!text) return false;
 
-      try{
+      try {
 
         await navigator.clipboard.writeText(text);
 
         return true;
 
-      }catch{}
+      } catch {}
 
-      try{
+      try {
 
         const ta = document.createElement("textarea");
 
@@ -7690,7 +7894,7 @@
 
         return !!ok;
 
-      }catch{
+      } catch {
 
         return false;
 
@@ -7724,7 +7928,7 @@
 
     });
 
-    function updateTxInfo(it){
+    function updateTxInfo(it) {
 
       const file = (it?.txtName || "").split("/").pop() || "—";
 
@@ -7732,7 +7936,7 @@
 
     }
 
-    async function fetchTranscriptText(it){
+    async function fetchTranscriptText(it) {
 
       const cached = txCache.get(it.id);
 
@@ -7744,7 +7948,7 @@
 
       const seen = new Set();
 
-      for (const u of [it?.txtUrl, ...(built?.urls || [])]){
+      for (const u of [it?.txtUrl, ...(built?.urls || [])]) {
 
         const uu = String(u || "").trim();
 
@@ -7758,9 +7962,9 @@
 
       let lastErr = null;
 
-      for (const url of urls){
+      for (const url of urls) {
 
-        try{
+        try {
 
           const res = await fetch(url, { cache: "no-cache" });
 
@@ -7768,7 +7972,7 @@
 
           const text = await res.text();
 
-          try{
+          try {
 
             const u = new URL(url, location.href);
 
@@ -7776,7 +7980,7 @@
 
             if (fn) it.txtName = fn;
 
-          }catch{}
+          } catch {}
 
           it.txtUrl = url;
 
@@ -7784,7 +7988,7 @@
 
           return text;
 
-        }catch(err){
+        } catch (err) {
 
           lastErr = err;
 
@@ -7796,7 +8000,7 @@
 
     }
 
-    async function openTranscriptFor(it){
+    async function openTranscriptFor(it) {
 
       if (!it) return;
 
@@ -7820,7 +8024,7 @@
 
       clearTxSearchUI();
 
-      try{
+      try {
 
         const t = await fetchTranscriptText(it);
 
@@ -7834,7 +8038,7 @@
 
         clearTxSearchUI();
 
-      }catch{
+      } catch {
 
         txContentEl.textContent = "TXT yüklenemedi.";
 
@@ -7844,9 +8048,9 @@
 
     }
 
-    function toggleTranscriptFromPlayer(){
+    function toggleTranscriptFromPlayer() {
 
-      if (txOpen){
+      if (txOpen) {
 
         closeTranscript();
 
@@ -7856,7 +8060,7 @@
 
       const it = items.find((x) => x.id === activeId) || items.find((x) => x.id === selectedId) || null;
 
-      if (!it){
+      if (!it) {
 
         openTranscript();
 
@@ -7906,7 +8110,7 @@
 
     const TX_DRAG_IGNORE_SELECTOR = "button, a, input, textarea, select, option";
 
-    function shouldStartTxDrag(target){
+    function shouldStartTxDrag(target) {
 
       return !(target && target.closest && target.closest(TX_DRAG_IGNORE_SELECTOR));
 
@@ -7964,7 +8168,7 @@
 
     });
 
-    function endTxDrag(pointerId){
+    function endTxDrag(pointerId) {
 
       if (!txDragging) return;
 
@@ -7992,13 +8196,13 @@
 
     let txResizeStartH = 0;
 
-    function saveTxSize(w, h){
+    function saveTxSize(w, h) {
 
       saveAny(LS.txSize, { w, h });
 
     }
 
-    function clampTxSize(w, h){
+    function clampTxSize(w, h) {
 
       const { vw, vh } = getViewportWH();
 
@@ -8070,7 +8274,7 @@
 
     });
 
-    function endTxResize(pointerId){
+    function endTxResize(pointerId) {
 
       if (!txResizing) return;
 
@@ -8110,11 +8314,11 @@
 
     let skipSettings = (() => {
 
-      try{
+      try {
 
         return { ...DEFAULT_SKIP_SETTINGS, ...(JSON.parse(localStorage.getItem(LS.skipSettings) || "{}")) };
 
-      }catch{
+      } catch {
 
         return { ...DEFAULT_SKIP_SETTINGS };
 
@@ -8164,13 +8368,13 @@
 
     };
 
-    function saveSkipSettings(){
+    function saveSkipSettings() {
 
       localStorage.setItem(LS.skipSettings, JSON.stringify(skipSettings));
 
     }
 
-    function setSkipStatus(text){
+    function setSkipStatus(text) {
 
       skipState.status = String(text || "");
 
@@ -8178,7 +8382,7 @@
 
     }
 
-    function updateSkipGainUi(){
+    function updateSkipGainUi() {
 
       if (skipEstimatedValueEl) skipEstimatedValueEl.textContent = fmtMsHuman(skipState.estimatedGainMs);
 
@@ -8188,13 +8392,13 @@
 
     }
 
-    function sourceFolderForItem(item){
+    function sourceFolderForItem(item) {
 
       return item?.src === IA2_SRC ? "S2" : "S1";
 
     }
 
-    function buildMapCandidateUrls(item, metaPath = ""){
+    function buildMapCandidateUrls(item, metaPath = "") {
 
       const folder = sourceFolderForItem(item);
 
@@ -8206,9 +8410,9 @@
 
       const p = String(metaPath || "").trim();
 
-      if (p){
+      if (p) {
 
-        if (/^https?:\/\//i.test(p)){
+        if (/^https?:\/\//i.test(p)) {
 
           out.push(p);
 
@@ -8216,7 +8420,7 @@
 
           const clean = p.replace(/^\.?\//, "").replace(/^silence-maps\//, "");
 
-          for (const base of STUMMSKIP_BASES){
+          for (const base of STUMMSKIP_BASES) {
 
             out.push(`${base}/${clean}`);
 
@@ -8226,7 +8430,7 @@
 
       }
 
-      for (const base of STUMMSKIP_BASES){
+      for (const base of STUMMSKIP_BASES) {
 
         out.push(`${base}/${folder}/${encodeURIComponent(jsonName)}`);
 
@@ -8236,7 +8440,7 @@
 
     }
 
-    function getMapMetaForItem(indexData, item){
+    function getMapMetaForItem(indexData, item) {
 
       if (!indexData || !item) return null;
 
@@ -8270,13 +8474,13 @@
 
     }
 
-    async function fetchJsonFirstOk(urls){
+    async function fetchJsonFirstOk(urls) {
 
       let lastErr = null;
 
-      for (const url of urls){
+      for (const url of urls) {
 
-        try{
+        try {
 
           const res = await fetch(url, { cache: "no-cache" });
 
@@ -8286,7 +8490,7 @@
 
           return { json, url };
 
-        }catch(err){
+        } catch (err) {
 
           lastErr = err;
 
@@ -8298,7 +8502,7 @@
 
     }
 
-    async function loadSilenceMapIndex(force = false){
+    async function loadSilenceMapIndex(force = false) {
 
       if (!force && skipState.mapIndex) return skipState.mapIndex;
 
@@ -8314,7 +8518,7 @@
 
       })();
 
-      try{
+      try {
 
         return await skipState.indexPromise;
 
@@ -8326,17 +8530,17 @@
 
     }
 
-    async function loadSilenceMapForItem(item, force = false){
+    async function loadSilenceMapForItem(item, force = false) {
 
       if (!item?.id) return null;
 
-      if (!force && skipState.mapCacheById.has(item.id)){
+      if (!force && skipState.mapCacheById.has(item.id)) {
 
         return skipState.mapCacheById.get(item.id) || null;
 
       }
 
-      if (!force && skipState.mapPromiseById.has(item.id)){
+      if (!force && skipState.mapPromiseById.has(item.id)) {
 
         return skipState.mapPromiseById.get(item.id);
 
@@ -8346,13 +8550,13 @@
 
         let meta = null;
 
-        try{
+        try {
 
           const indexData = await loadSilenceMapIndex(force);
 
           meta = getMapMetaForItem(indexData, item);
 
-        }catch{}
+        } catch {}
 
         const candidateUrls = buildMapCandidateUrls(item, meta?.path || meta?.url || meta?.file || "");
 
@@ -8396,7 +8600,7 @@
 
       skipState.mapPromiseById.set(item.id, p);
 
-      try{
+      try {
 
         return await p;
 
@@ -8408,7 +8612,7 @@
 
     }
 
-    function getEligibleSkipMsForSegment(seg){
+    function getEligibleSkipMsForSegment(seg) {
 
       if (!seg) return 0;
 
@@ -8424,7 +8628,7 @@
 
     }
 
-    function recomputeEstimatedGain(){
+    function recomputeEstimatedGain() {
 
       const segs = skipState.currentMap?.segments || [];
 
@@ -8438,7 +8642,7 @@
 
     }
 
-    async function primeSilenceMapForItem(item){
+    async function primeSilenceMapForItem(item) {
 
       skipState.currentMapItemId = item?.id || null;
 
@@ -8448,7 +8652,7 @@
 
       updateSkipGainUi();
 
-      if (!item){
+      if (!item) {
 
         setSkipStatus("Silence map yok.");
 
@@ -8458,13 +8662,13 @@
 
       }
 
-      try{
+      try {
 
         setSkipStatus("Silence map aranıyor…");
 
         const map = await loadSilenceMapForItem(item, false);
 
-        if (!map || !map.segments.length){
+        if (!map || !map.segments.length) {
 
           skipState.currentMap = null;
 
@@ -8480,7 +8684,7 @@
 
         }
 
-        if (skipState.currentMapItemId === item.id){
+        if (skipState.currentMapItemId === item.id) {
 
           skipState.currentMap = map;
 
@@ -8496,7 +8700,7 @@
 
         return map;
 
-      }catch(err){
+      } catch (err) {
 
         console.error("Silence map yüklenemedi:", err);
 
@@ -8516,7 +8720,7 @@
 
     }
 
-    function findSilenceSegmentAt(t){
+    function findSilenceSegmentAt(t) {
 
       const map = skipState.currentMap;
 
@@ -8526,7 +8730,7 @@
 
       let hi = map.segments.length - 1;
 
-      while (lo <= hi){
+      while (lo <= hi) {
 
         const mid = (lo + hi) >> 1;
 
@@ -8544,11 +8748,11 @@
 
     }
 
-    async function fadePlayerVolume(from, to, ms){
+    async function fadePlayerVolume(from, to, ms) {
 
       const duration = Math.max(0, Number(ms) || 0);
 
-      if (duration <= 0){
+      if (duration <= 0) {
 
         try { playerEl.volume = Math.max(0, Math.min(1, to)); } catch {}
 
@@ -8562,7 +8766,7 @@
 
       return new Promise((resolve) => {
 
-        function step(now){
+        function step(now) {
 
           const p = Math.min(1, (now - start) / duration);
 
@@ -8582,9 +8786,9 @@
 
     }
 
-    function stopSkipLoop(){
+    function stopSkipLoop() {
 
-      if (skipState.rafId){
+      if (skipState.rafId) {
 
         cancelAnimationFrame(skipState.rafId);
 
@@ -8594,7 +8798,7 @@
 
     }
 
-    function startSkipLoop(){
+    function startSkipLoop() {
 
       if (!skipSettings.enabled) return;
 
@@ -8606,7 +8810,7 @@
 
     }
 
-    function canSkipNow(nowMs){
+    function canSkipNow(nowMs) {
 
       if (!skipSettings.enabled) return false;
 
@@ -8630,7 +8834,7 @@
 
     }
 
-    async function performMapSkip(seg){
+    async function performMapSkip(seg) {
 
       if (!seg || skipState.skipInFlight) return false;
 
@@ -8652,7 +8856,7 @@
 
       target = Math.min(target, seg.start + maxAutoSeekSec);
 
-      if (duration > 0){
+      if (duration > 0) {
 
         target = Math.min(target, Math.max(0, duration - 0.05));
 
@@ -8666,9 +8870,9 @@
 
       const originalVol = Number(playerEl.volume);
 
-      try{
+      try {
 
-        if (fadeMs > 0){
+        if (fadeMs > 0) {
 
           await fadePlayerVolume(originalVol, Math.max(0, originalVol * 0.08), Math.floor(fadeMs / 2));
 
@@ -8690,7 +8894,7 @@
 
         skipState.manualSuppressUntil = performance.now() + Math.max(35, fadeMs + 25);
 
-        if (fadeMs > 0){
+        if (fadeMs > 0) {
 
           await fadePlayerVolume(Math.max(0, originalVol * 0.08), originalVol, Math.ceil(fadeMs / 2));
 
@@ -8700,13 +8904,13 @@
 
         return true;
 
-      }catch(err){
+      } catch (err) {
 
         console.warn("performMapSkip failed:", err);
 
         return false;
 
-      }finally{
+      } finally {
 
         skipState.skipInFlight = false;
 
@@ -8714,11 +8918,11 @@
 
     }
 
-    async function skipLoop(){
+    async function skipLoop() {
 
       skipState.rafId = 0;
 
-      if (!skipSettings.enabled){
+      if (!skipSettings.enabled) {
 
         stopSkipLoop();
 
@@ -8728,7 +8932,7 @@
 
       const nowMs = performance.now();
 
-      if (canSkipNow(nowMs)){
+      if (canSkipNow(nowMs)) {
 
         const t = Number(playerEl.currentTime) || 0;
 
@@ -8742,7 +8946,7 @@
 
     }
 
-    function syncSkipUi(){
+    function syncSkipUi() {
 
       const open = !skipDrawer.hidden;
 
@@ -8782,7 +8986,7 @@
 
       updateSkipGainUi();
 
-      if (!skipState.status){
+      if (!skipState.status) {
 
         setSkipStatus(
 
@@ -8798,7 +9002,7 @@
 
     }
 
-    function toggleSkipDrawer(force){
+    function toggleSkipDrawer(force) {
 
       const shouldOpen = typeof force === "boolean" ? force : skipDrawer.hidden;
 
@@ -8812,7 +9016,7 @@
 
     }
 
-    function resetSkipRuntimeForNewTrack(){
+    function resetSkipRuntimeForNewTrack() {
 
       stopSkipLoop();
 
@@ -8830,9 +9034,9 @@
 
     }
 
-    function applySkipPreset(mode){
+    function applySkipPreset(mode) {
 
-      if (mode === "light"){
+      if (mode === "light") {
 
         Object.assign(skipSettings, {
 
@@ -8852,7 +9056,7 @@
 
         });
 
-      } else if (mode === "balanced"){
+      } else if (mode === "balanced") {
 
         Object.assign(skipSettings, {
 
@@ -8872,7 +9076,7 @@
 
         });
 
-      } else if (mode === "aggressive"){
+      } else if (mode === "aggressive") {
 
         Object.assign(skipSettings, {
 
@@ -8892,7 +9096,7 @@
 
         });
 
-      } else if (mode === "ultra"){
+      } else if (mode === "ultra") {
 
         Object.assign(skipSettings, {
 
@@ -8912,7 +9116,7 @@
 
         });
 
-      } else if (mode === "max"){
+      } else if (mode === "max") {
 
         Object.assign(skipSettings, {
 
@@ -8958,7 +9162,7 @@
 
       syncSkipUi();
 
-      if (!skipSettings.enabled){
+      if (!skipSettings.enabled) {
 
         stopSkipLoop();
 
@@ -8970,13 +9174,13 @@
 
       const it = items.find((x) => x.id === activeId) || null;
 
-      if (it && (!skipState.currentMap || skipState.currentMapItemId !== it.id)){
+      if (it && (!skipState.currentMap || skipState.currentMapItemId !== it.id)) {
 
         await primeSilenceMapForItem(it);
 
       }
 
-      if (skipState.currentMap?.segments?.length && !playerEl.paused){
+      if (skipState.currentMap?.segments?.length && !playerEl.paused) {
 
         startSkipLoop();
 
@@ -9070,7 +9274,7 @@
 
     });
 
-    async function checkSrtAvailability(){
+    async function checkSrtAvailability() {
 
       if (!SRT_CHECK || !items.length) return;
 
@@ -9086,17 +9290,17 @@
 
       const q = subset.slice();
 
-      async function headOk(url){
+      async function headOk(url) {
 
-        try{
+        try {
 
           const r = await fetch(url, { method: "HEAD", cache: "no-store" });
 
           if (r.ok) return true;
 
-        }catch{}
+        } catch {}
 
-        try{
+        try {
 
           const r = await fetch(url, {
 
@@ -9110,7 +9314,7 @@
 
           return r.ok;
 
-        }catch{
+        } catch {
 
           return false;
 
@@ -9118,9 +9322,9 @@
 
       }
 
-      async function worker(){
+      async function worker() {
 
-        while (q.length){
+        while (q.length) {
 
           const it = q.shift();
 
@@ -9130,9 +9334,9 @@
 
           let ok = false;
 
-          for (const u of urls){
+          for (const u of urls) {
 
-            if (await headOk(u)){
+            if (await headOk(u)) {
 
               ok = true;
 
@@ -9144,7 +9348,7 @@
 
           checked++;
 
-          if (!ok){
+          if (!ok) {
 
             missing++;
 
@@ -9152,7 +9356,7 @@
 
           }
 
-          if (checked % 25 === 0){
+          if (checked % 25 === 0) {
 
             statusEl.textContent = `SRT kontrol: ${checked}/${maxN} (eksik: ${missing})`;
 
