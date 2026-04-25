@@ -18,8 +18,6 @@ DOCS_DIR = ROOT / "docs"
 OUTPUT_PATH = DOCS_DIR / "pdf-index.json"
 
 AUDIO_EXTENSIONS = {".m4a", ".mp3", ".wav", ".aac", ".ogg", ".flac"}
-PDF_EXTENSION = ".pdf"
-
 ARCHIVE_IDENTIFIERS: list[tuple[str, str]] = [
     ("S1", "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25"),
     ("S2", "FSPneu"),
@@ -49,6 +47,7 @@ STOP_WORDS = {
     "a",
     "frau",
     "herr",
+    "abi",
 }
 
 DATE_RE = re.compile(r"(\d{1,2})[.\-_/](\d{1,2})[.\-_/](\d{2}|\d{4})")
@@ -95,12 +94,20 @@ def extract_date_token(value: str) -> str:
     match = DATE_RE.search(value or "")
     if not match:
         return ""
+
     day = int(match.group(1))
     month = int(match.group(2))
-    year = int(match.group(3))
-    if year < 100:
-        year += 2000
-    return f"{day:02d}.{month:02d}.{year}"
+    year_raw = match.group(3)
+
+    if len(year_raw) == 2:
+        year = 2000 + int(year_raw)
+    else:
+        year = int(year_raw)
+
+    if not (1 <= day <= 31 and 1 <= month <= 12):
+        return ""
+
+    return f"{day:02d}.{month:02d}.{year:04d}"
 
 
 def tokenize(value: str) -> tuple[str, ...]:
@@ -120,14 +127,17 @@ def jaccard_score(a_tokens: Iterable[str], b_tokens: Iterable[str]) -> int:
     if not a and not b:
         return 0
     union = len(a | b)
+    if union == 0:
+        return 0
     inter = len(a & b)
-    return round((inter / union) * 100) if union else 0
+    return round((inter / union) * 100)
 
 
 def is_blocked_s2_name(file_name: str) -> bool:
     base = remove_extension(Path(file_name).name)
     base = re.sub(r"^A[\s_-]+", "", base, flags=re.IGNORECASE).strip()
     folded = normalize_text(base)
+
     for prefix in BLOCKED_S2_PREFIXES:
         p = normalize_text(prefix)
         if folded.startswith(p):
@@ -150,29 +160,24 @@ def fetch_json(url: str) -> dict:
     return json.loads(raw)
 
 
-def build_archive_download_url(identifier: str, name: str) -> str:
-    encoded_parts = [urllib.parse.quote(part, safe="") for part in name.split("/")]
-    return f"https://archive.org/download/{identifier}/{'/'.join(encoded_parts)}"
-
-
 def load_archive_audio_items() -> list[AudioItem]:
     items: list[AudioItem] = []
 
     for source, identifier in ARCHIVE_IDENTIFIERS:
-        url = f"https://archive.org/metadata/{urllib.parse.quote(identifier, safe='')}"
-        payload = fetch_json(url)
+        meta_url = f"https://archive.org/metadata/{urllib.parse.quote(identifier, safe='')}"
+        payload = fetch_json(meta_url)
         files = payload.get("files") or []
 
         for index, entry in enumerate(files):
-            name = str(entry.get("name") or "")
+            name = str(entry.get("name") or "").strip()
             if not name:
                 continue
 
-            lower = name.lower()
-            if Path(lower).suffix not in AUDIO_EXTENSIONS:
+            suffix = Path(name.lower()).suffix
+            if suffix not in AUDIO_EXTENSIONS:
                 continue
 
-            source_flag = str(entry.get("source") or "").lower()
+            source_flag = str(entry.get("source") or "").lower().strip()
             if "source" in entry and source_flag and source_flag != "original":
                 continue
 
@@ -180,7 +185,7 @@ def load_archive_audio_items() -> list[AudioItem]:
                 continue
 
             title = str(entry.get("title") or "").strip() or Path(name).name
-            local_id = name or build_archive_download_url(identifier, name) or f"{title}#{index}"
+            local_id = name or f"{title}#{index}"
             audio_id = f"{source}|{local_id}"
             audio_name = Path(name).name
             audio_base = remove_extension(audio_name)
@@ -206,19 +211,25 @@ def load_pdf_items() -> list[PdfItem]:
         return []
 
     items: list[PdfItem] = []
+
     for path in sorted(DOCS_DIR.rglob("*.pdf")):
+        if path.name.lower() == "pdf-index.json":
+            continue
+
         rel = path.relative_to(ROOT).as_posix()
-        name = path.name
-        base = remove_extension(name)
+        pdf_name = path.name
+        pdf_base = remove_extension(pdf_name)
+
         items.append(
             PdfItem(
-                pdf_name=name,
+                pdf_name=pdf_name,
                 pdf_path=f"./{rel}",
-                pdf_date=extract_date_token(base),
-                normalized_base=normalize_text(base),
-                tokens=tokenize(base),
+                pdf_date=extract_date_token(pdf_base),
+                normalized_base=normalize_text(pdf_base),
+                tokens=tokenize(pdf_base),
             )
         )
+
     return items
 
 
@@ -245,11 +256,14 @@ def match_audio_to_pdf(audio_items: list[AudioItem], pdf_items: list[PdfItem]) -
     rows: list[dict] = []
 
     for audio in audio_items:
+        if not pdf_items:
+            continue
+
+        same_date = [pdf for pdf in pdf_items if audio.audio_date and pdf.pdf_date == audio.audio_date]
+        pool = same_date if same_date else pdf_items
+
         best_pdf: PdfItem | None = None
         best_score = -1
-
-        dated_candidates = [pdf for pdf in pdf_items if audio.audio_date and pdf.pdf_date == audio.audio_date]
-        pool = dated_candidates if dated_candidates else pdf_items
 
         for pdf in pool:
             score = score_match(audio, pdf)
@@ -257,8 +271,15 @@ def match_audio_to_pdf(audio_items: list[AudioItem], pdf_items: list[PdfItem]) -
                 best_score = score
                 best_pdf = pdf
 
-        if not best_pdf or best_score < 120:
+        if not best_pdf:
             continue
+
+        if same_date:
+            if best_score < 120:
+                continue
+        else:
+            if best_score < 160:
+                continue
 
         rows.append(
             {
@@ -277,29 +298,34 @@ def match_audio_to_pdf(audio_items: list[AudioItem], pdf_items: list[PdfItem]) -
 
 
 def write_output(items: list[dict]) -> None:
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    DOCS_DIR.mkdir(parents=True, exist_ok=True)
+
     payload = {
         "generatedAt": datetime.now(TR_TZ).strftime("%d.%m.%Y %H:%M"),
         "count": len(items),
         "items": items,
     }
-    OUTPUT_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    OUTPUT_PATH.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
 
 
 def main() -> int:
     try:
-        print(f"ROOT: {ROOT}")
-        print(f"DOCS_DIR: {DOCS_DIR}")
-        print(f"OUTPUT_PATH: {OUTPUT_PATH}")
+        print(f"ROOT={ROOT}")
+        print(f"DOCS_DIR={DOCS_DIR}")
+        print(f"OUTPUT_PATH={OUTPUT_PATH}")
 
         audio_items = load_archive_audio_items()
-        print(f"Loaded audio items: {len(audio_items)}")
+        print(f"audio_items={len(audio_items)}")
 
         pdf_items = load_pdf_items()
-        print(f"Loaded pdf items: {len(pdf_items)}")
+        print(f"pdf_items={len(pdf_items)}")
 
         matches = match_audio_to_pdf(audio_items, pdf_items)
-        print(f"Matched items: {len(matches)}")
+        print(f"matches={len(matches)}")
 
         write_output(matches)
         print(f"Built {OUTPUT_PATH} with {len(matches)} matches.")
