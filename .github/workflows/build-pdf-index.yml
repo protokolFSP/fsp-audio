@@ -27,8 +27,24 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Show repo tree
+        run: |
+          pwd
+          ls -la
+          echo "---- docs ----"
+          ls -la docs || true
+          echo "---- scripts ----"
+          ls -la scripts || true
+
       - name: Build pdf-index.json
         run: python scripts/build_pdf_index.py
+
+      - name: Show generated file
+        run: |
+          echo "---- docs after build ----"
+          ls -la docs || true
+          echo "---- pdf-index.json ----"
+          cat docs/pdf-index.json || true
 
       - name: Commit and push
         run: |
