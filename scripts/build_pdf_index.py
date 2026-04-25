@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 import sys
 import unicodedata
+import urllib.parse
+import urllib.request
 from dataclasses import dataclass
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable
 
@@ -103,14 +104,14 @@ def extract_date_token(value: str) -> str:
 
 
 def tokenize(value: str) -> tuple[str, ...]:
-    tokens = []
+    out: list[str] = []
     for token in normalize_text(value).split():
         if len(token) <= 1:
             continue
         if token in STOP_WORDS:
             continue
-        tokens.append(token)
-    return tuple(tokens)
+        out.append(token)
+    return tuple(out)
 
 
 def jaccard_score(a_tokens: Iterable[str], b_tokens: Iterable[str]) -> int:
@@ -128,29 +129,40 @@ def is_blocked_s2_name(file_name: str) -> bool:
     base = re.sub(r"^A[\s_-]+", "", base, flags=re.IGNORECASE).strip()
     folded = normalize_text(base)
     for prefix in BLOCKED_S2_PREFIXES:
-        if folded.startswith(normalize_text(prefix)):
-            rest = folded[len(normalize_text(prefix)):len(normalize_text(prefix)) + 1]
+        p = normalize_text(prefix)
+        if folded.startswith(p):
+            rest = folded[len(p):len(p) + 1]
             if not rest or re.match(r"[\s\-_0-9.:]", rest):
                 return True
     return False
 
 
+def fetch_json(url: str) -> dict:
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "application/json",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=60) as response:
+        raw = response.read().decode("utf-8")
+    return json.loads(raw)
+
+
 def build_archive_download_url(identifier: str, name: str) -> str:
-    encoded_parts = [__import__("urllib.parse").parse.quote(part, safe="") for part in name.split("/")]
+    encoded_parts = [urllib.parse.quote(part, safe="") for part in name.split("/")]
     return f"https://archive.org/download/{identifier}/{'/'.join(encoded_parts)}"
 
 
 def load_archive_audio_items() -> list[AudioItem]:
-    import urllib.request
-
     items: list[AudioItem] = []
 
     for source, identifier in ARCHIVE_IDENTIFIERS:
-        url = f"https://archive.org/metadata/{__import__('urllib.parse').parse.quote(identifier, safe='')}"
-        with urllib.request.urlopen(url, timeout=30) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-
+        url = f"https://archive.org/metadata/{urllib.parse.quote(identifier, safe='')}"
+        payload = fetch_json(url)
         files = payload.get("files") or []
+
         for index, entry in enumerate(files):
             name = str(entry.get("name") or "")
             if not name:
@@ -214,10 +226,9 @@ def score_match(audio: AudioItem, pdf: PdfItem) -> int:
     score = 0
 
     if audio.audio_date and pdf.pdf_date:
-        if audio.audio_date == pdf.pdf_date:
-            score += 100
-        else:
+        if audio.audio_date != pdf.pdf_date:
             return -1
+        score += 100
 
     if audio.normalized_base == pdf.normalized_base:
         score += 120
@@ -227,7 +238,6 @@ def score_match(audio: AudioItem, pdf: PdfItem) -> int:
             score += 30
 
     score += jaccard_score(audio.tokens, pdf.tokens)
-
     return score
 
 
@@ -262,7 +272,7 @@ def match_audio_to_pdf(audio_items: list[AudioItem], pdf_items: list[PdfItem]) -
             }
         )
 
-    rows.sort(key=lambda row: (row["audioDate"], row["audioName"]))
+    rows.sort(key=lambda row: (row["audioDate"], row["audioName"], row["pdfName"]))
     return rows
 
 
@@ -278,9 +288,19 @@ def write_output(items: list[dict]) -> None:
 
 def main() -> int:
     try:
+        print(f"ROOT: {ROOT}")
+        print(f"DOCS_DIR: {DOCS_DIR}")
+        print(f"OUTPUT_PATH: {OUTPUT_PATH}")
+
         audio_items = load_archive_audio_items()
+        print(f"Loaded audio items: {len(audio_items)}")
+
         pdf_items = load_pdf_items()
+        print(f"Loaded pdf items: {len(pdf_items)}")
+
         matches = match_audio_to_pdf(audio_items, pdf_items)
+        print(f"Matched items: {len(matches)}")
+
         write_output(matches)
         print(f"Built {OUTPUT_PATH} with {len(matches)} matches.")
         return 0
