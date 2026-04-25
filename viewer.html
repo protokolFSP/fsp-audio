@@ -1,0 +1,547 @@
+<!doctype html>
+
+<html lang="tr">
+
+<head>
+
+  <meta charset="utf-8" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>PDF Görüntüleyici</title>
+
+  <style>
+
+    :root {
+
+      --bg: #f6f7f9;
+
+      --panel: #ffffff;
+
+      --text: #111827;
+
+      --muted: #6b7280;
+
+      --line: #e5e7eb;
+
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+
+      margin: 0;
+
+      padding: 0;
+
+      height: 100%;
+
+      background: var(--bg);
+
+      color: var(--text);
+
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+    }
+
+    body {
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 16px;
+
+      padding: 20px;
+
+    }
+
+    .topbar {
+
+      display: flex;
+
+      flex-wrap: wrap;
+
+      gap: 12px;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      background: var(--panel);
+
+      border: 1px solid var(--line);
+
+      border-radius: 20px;
+
+      box-shadow: var(--shadow);
+
+      padding: 16px 18px;
+
+    }
+
+    .title-wrap {
+
+      min-width: 0;
+
+      flex: 1 1 360px;
+
+    }
+
+    .title {
+
+      margin: 0;
+
+      font-size: 18px;
+
+      line-height: 1.4;
+
+      word-break: break-word;
+
+    }
+
+    .meta {
+
+      margin-top: 6px;
+
+      font-size: 13px;
+
+      color: var(--muted);
+
+    }
+
+    .actions {
+
+      display: flex;
+
+      gap: 10px;
+
+      flex-wrap: wrap;
+
+    }
+
+    .btn {
+
+      display: inline-flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      min-height: 42px;
+
+      padding: 0 14px;
+
+      border-radius: 12px;
+
+      border: 1px solid var(--line);
+
+      background: #fff;
+
+      color: var(--text);
+
+      text-decoration: none;
+
+      font-size: 14px;
+
+      cursor: pointer;
+
+    }
+
+    .btn:disabled,
+
+    .btn[aria-disabled="true"] {
+
+      opacity: 0.5;
+
+      pointer-events: none;
+
+      cursor: not-allowed;
+
+    }
+
+    .viewer {
+
+      flex: 1;
+
+      min-height: 0;
+
+      background: var(--panel);
+
+      border: 1px solid var(--line);
+
+      border-radius: 20px;
+
+      box-shadow: var(--shadow);
+
+      overflow: hidden;
+
+    }
+
+    iframe {
+
+      width: 100%;
+
+      height: calc(100vh - 150px);
+
+      border: 0;
+
+      display: block;
+
+      background: #eef2f7;
+
+    }
+
+    .error {
+
+      padding: 24px;
+
+      color: var(--muted);
+
+    }
+
+    @media (max-width: 720px) {
+
+      body { padding: 14px; }
+
+      iframe { height: calc(100vh - 210px); }
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  <section class="topbar">
+
+    <div class="title-wrap">
+
+      <h1 id="title" class="title">PDF yükleniyor...</h1>
+
+      <div id="meta" class="meta">Dosya bilgisi yükleniyor...</div>
+
+    </div>
+
+    <div class="actions">
+
+      <a id="backBtn" class="btn" href="./">Listeye dön</a>
+
+      <button id="copyBtn" class="btn" type="button">PDF linkini kopyala</button>
+
+      <a id="downloadBtn" class="btn" href="#" download>İndir</a>
+
+      <a id="prevBtn" class="btn" href="#" aria-disabled="true">Önceki</a>
+
+      <a id="nextBtn" class="btn" href="#" aria-disabled="true">Sonraki</a>
+
+    </div>
+
+  </section>
+
+  <section class="viewer">
+
+    <iframe id="pdfViewer" title="PDF Görüntüleyici"></iframe>
+
+    <div id="errorBox" class="error" hidden>PDF yolu bulunamadı.</div>
+
+  </section>
+
+  <script>
+
+    const owner = "protokolFSP";
+
+    const repo = "FSP-pdfs";
+
+    const branch = "main";
+
+    const pagesBase = "https://protokolfsp.github.io/FSP-pdfs/";
+
+    function getParam(name) {
+
+      return new URLSearchParams(window.location.search).get(name);
+
+    }
+
+    function decodeSafe(value) {
+
+      try { return decodeURIComponent(value || ""); }
+
+      catch { return String(value || ""); }
+
+    }
+
+    function escapeHtml(value) {
+
+      return String(value)
+
+        .replaceAll("&", "&amp;")
+
+        .replaceAll("<", "&lt;")
+
+        .replaceAll(">", "&gt;")
+
+        .replaceAll('"', "&quot;")
+
+        .replaceAll("'", "&#39;");
+
+    }
+
+    function formatTitle(fileName) {
+
+      return (fileName || "PDF")
+
+        .replace(/\.pdf$/i, "")
+
+        .replace(/[_-]+/g, " ")
+
+        .replace(/\s+/g, " ")
+
+        .trim();
+
+    }
+
+    function setNavState(element, enabled, href = "#") {
+
+      element.href = href;
+
+      element.setAttribute("aria-disabled", enabled ? "false" : "true");
+
+    }
+
+    function pagesPdfUrl(path) {
+
+      return pagesBase + path.split("/").map(encodeURIComponent).join("/");
+
+    }
+
+    function buildViewerUrl(path, title, back) {
+
+      const qs = new URLSearchParams();
+
+      qs.set("path", path);
+
+      if (title) qs.set("title", title);
+
+      if (back) qs.set("back", back);
+
+      return `viewer.html?${qs.toString()}`;
+
+    }
+
+    async function loadFolderFiles(folderPath) {
+
+      const apiPath = encodeURIComponent(folderPath).replace(/%2F/g, "/");
+
+      const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${apiPath}?ref=${encodeURIComponent(branch)}`;
+
+      const response = await fetch(apiUrl, {
+
+        headers: { Accept: "application/vnd.github+json" }
+
+      });
+
+      if (!response.ok) {
+
+        throw new Error(`GitHub API hatası: ${response.status}`);
+
+      }
+
+      const data = await response.json();
+
+      if (!Array.isArray(data)) return [];
+
+      return data
+
+        .filter((item) => item.type === "file" && /\.pdf$/i.test(item.name))
+
+        .sort((a, b) => a.name.localeCompare(b.name, "tr"));
+
+    }
+
+    async function copyToClipboard(text) {
+
+      if (!text) return false;
+
+      try {
+
+        await navigator.clipboard.writeText(text);
+
+        return true;
+
+      } catch {}
+
+      try {
+
+        const ta = document.createElement("textarea");
+
+        ta.value = text;
+
+        ta.style.position = "fixed";
+
+        ta.style.left = "-9999px";
+
+        ta.style.top = "-9999px";
+
+        document.body.appendChild(ta);
+
+        ta.focus();
+
+        ta.select();
+
+        const ok = document.execCommand("copy");
+
+        ta.remove();
+
+        return !!ok;
+
+      } catch {
+
+        return false;
+
+      }
+
+    }
+
+    const path = decodeSafe(getParam("path"));
+
+    const rawTitle = decodeSafe(getParam("title"));
+
+    const back = getParam("back") || "./";
+
+    const titleEl = document.getElementById("title");
+
+    const metaEl = document.getElementById("meta");
+
+    const backBtn = document.getElementById("backBtn");
+
+    const copyBtn = document.getElementById("copyBtn");
+
+    const downloadBtn = document.getElementById("downloadBtn");
+
+    const prevBtn = document.getElementById("prevBtn");
+
+    const nextBtn = document.getElementById("nextBtn");
+
+    const pdfViewer = document.getElementById("pdfViewer");
+
+    const errorBox = document.getElementById("errorBox");
+
+    backBtn.href = back;
+
+    if (!path || !/^docs\/.+\.pdf$/i.test(path)) {
+
+      titleEl.textContent = "PDF yolu bulunamadı.";
+
+      metaEl.textContent = "";
+
+      pdfViewer.hidden = true;
+
+      errorBox.hidden = false;
+
+      setNavState(prevBtn, false);
+
+      setNavState(nextBtn, false);
+
+      downloadBtn.setAttribute("aria-disabled", "true");
+
+      downloadBtn.removeAttribute("href");
+
+      copyBtn.disabled = true;
+
+    } else {
+
+      const fileName = rawTitle || decodeSafe(path.split("/").pop() || "PDF");
+
+      const folderPath = path.split("/").slice(0, -1).join("/");
+
+      const pdfUrl = pagesPdfUrl(path);
+
+      titleEl.textContent = formatTitle(fileName);
+
+      metaEl.innerHTML = `Klasör: <code>${escapeHtml(folderPath)}</code>`;
+
+      pdfViewer.src = `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(pdfUrl)}`;
+
+      downloadBtn.href = pdfUrl;
+
+      downloadBtn.download = fileName;
+
+      copyBtn.addEventListener("click", async () => {
+
+        const ok = await copyToClipboard(pdfUrl);
+
+        const old = copyBtn.textContent;
+
+        copyBtn.textContent = ok ? "Kopyalandı" : "Kopyalanamadı";
+
+        setTimeout(() => { copyBtn.textContent = old; }, 1200);
+
+      });
+
+      loadFolderFiles(folderPath)
+
+        .then((files) => {
+
+          const currentName = path.split("/").pop() || "";
+
+          const currentIndex = files.findIndex((file) => file.name === currentName);
+
+          if (currentIndex === -1) {
+
+            metaEl.innerHTML = `Klasör: <code>${escapeHtml(folderPath)}</code>`;
+
+            setNavState(prevBtn, false);
+
+            setNavState(nextBtn, false);
+
+            return;
+
+          }
+
+          metaEl.innerHTML = `Klasör: <code>${escapeHtml(folderPath)}</code> · ${currentIndex + 1} / ${files.length}`;
+
+          const prevFile = currentIndex > 0 ? files[currentIndex - 1] : null;
+
+          const nextFile = currentIndex < files.length - 1 ? files[currentIndex + 1] : null;
+
+          setNavState(
+
+            prevBtn,
+
+            Boolean(prevFile),
+
+            prevFile ? buildViewerUrl(`${folderPath}/${prevFile.name}`, prevFile.name, back) : "#"
+
+          );
+
+          setNavState(
+
+            nextBtn,
+
+            Boolean(nextFile),
+
+            nextFile ? buildViewerUrl(`${folderPath}/${nextFile.name}`, nextFile.name, back) : "#"
+
+          );
+
+        })
+
+        .catch(() => {
+
+          setNavState(prevBtn, false);
+
+          setNavState(nextBtn, false);
+
+        });
+
+    }
+
+  </script>
+
+</body>
+
+</html>
