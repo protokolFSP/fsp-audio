@@ -568,7 +568,7 @@
 
       display: grid;
 
-      grid-template-columns: minmax(0, 1fr) 8ch 54px 36px 36px 54px 36px;
+      grid-template-columns: minmax(0, 1fr) 8ch 54px 36px 40px 54px 40px;
 
       align-items: center;
 
@@ -619,6 +619,16 @@
       justify-content:center;
 
       user-select:none;
+
+    }
+
+    .headPdfIcon svg{
+
+      width: 20px;
+
+      height: 20px;
+
+      display:block;
 
     }
 
@@ -677,14 +687,6 @@
       width: 20px;
 
       height: 20px;
-
-    }
-
-    .sortBtn .mainIcon.diskIcon{
-
-      width: 23px;
-
-      height: 23px;
 
     }
 
@@ -810,9 +812,9 @@
 
     .iconBtn{
 
-      width: 30px;
+      width: 32px;
 
-      height: 30px;
+      height: 32px;
 
       border-radius: 999px;
 
@@ -852,13 +854,31 @@
 
     }
 
-    .iconBtn svg{ width: 14px; height: 14px; opacity: .9; }
+    .iconBtn svg{
+
+      width: 16px;
+
+      height: 16px;
+
+      opacity: .95;
+
+      display:block;
+
+    }
+
+    .audioDlBtn svg{
+
+      width: 18px;
+
+      height: 18px;
+
+    }
 
     .pdfBtn svg{
 
-      width: 15px;
+      width: 17px;
 
-      height: 15px;
+      height: 17px;
 
       opacity: 1;
 
@@ -1085,16 +1105,6 @@
     .miniBtn:hover{ background: var(--hover); }
 
     .miniBtn svg{ width:16px; height:16px; }
-
-    .miniBtn.on{
-
-      border-color: var(--blue);
-
-      background: rgba(43,124,255,.10);
-
-      box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
-
-    }
 
     .speedWrap{
 
@@ -1816,6 +1826,16 @@
 
     #txResizeHandle svg{ width: 22px; height: 22px; opacity: .88; }
 
+    .miniBtn.on{
+
+      border-color: var(--blue);
+
+      background: rgba(43,124,255,.10);
+
+      box-shadow: 0 0 0 3px rgba(43,124,255,.12) inset;
+
+    }
+
     #captions{
 
       margin: 0;
@@ -1868,15 +1888,7 @@
 
     }
 
-    #captions{
-
-      pointer-events: auto;
-
-      border-bottom-left-radius: 0;
-
-      border-bottom-right-radius: 0;
-
-    }
+    #captions{ pointer-events: auto; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 
     .ccModeBtn{
 
@@ -1963,228 +1975,6 @@
     }
 
     #fpTxtBtn.on .btnMark{ color: #0b5fff; }
-
-    #skipDrawerBtn{
-
-      width:auto;
-
-      min-width:64px;
-
-      padding:0 12px;
-
-      border-radius:12px;
-
-      border-color: rgba(22,163,74,.50);
-
-    }
-
-    #skipDrawerBtn .btnMark{
-
-      font-weight:900;
-
-      font-size:14px;
-
-      letter-spacing:.4px;
-
-      line-height:1;
-
-    }
-
-    #skipDrawerBtn.on{
-
-      border-color: var(--green);
-
-      background: rgba(22,163,74,.12);
-
-      box-shadow: var(--greenGlow);
-
-    }
-
-    #skipDrawerBtn.breathing{
-
-      animation: skipBreath 1.8s ease-in-out infinite;
-
-    }
-
-    @keyframes skipBreath{
-
-      0%,100%{
-
-        transform: scale(1);
-
-        box-shadow: 0 0 0 0 rgba(22,163,74,.18), 0 0 0 3px rgba(22,163,74,.10) inset;
-
-      }
-
-      50%{
-
-        transform: scale(1.04);
-
-        box-shadow: 0 0 0 10px rgba(22,163,74,0), 0 0 0 3px rgba(22,163,74,.16) inset, 0 0 14px rgba(22,163,74,.16);
-
-      }
-
-    }
-
-    .skipDrawer{
-
-      padding: 0 12px 12px 12px;
-
-      animation: skipDrawerIn .18s ease;
-
-    }
-
-    .skipDrawerInner{
-
-      border: 1px solid #e2e2e2;
-
-      border-radius: 14px;
-
-      background: #fbfbfb;
-
-      padding: 10px;
-
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
-
-    }
-
-    .skipRow{
-
-      display:flex;
-
-      gap:8px;
-
-      flex-wrap:wrap;
-
-      align-items:center;
-
-      margin-bottom:8px;
-
-    }
-
-    .skipRangeRow label{
-
-      min-width:120px;
-
-      font-size:.92rem;
-
-      font-weight:650;
-
-    }
-
-    .skipRangeRow input[type="range"]{
-
-      flex:1 1 180px;
-
-    }
-
-    .skipRangeRow span{
-
-      min-width:72px;
-
-      text-align:right;
-
-      font-variant-numeric: tabular-nums;
-
-      color:#404040;
-
-      font-size:.92rem;
-
-    }
-
-    .skipHint{
-
-      color: var(--muted);
-
-      font-size: .88rem;
-
-      line-height: 1.25;
-
-      margin-top: 4px;
-
-    }
-
-    .skipEngineLabel{
-
-      height: 30px;
-
-      padding: 0 10px;
-
-      border-radius: 999px;
-
-      border: 1px solid rgba(22,163,74,.26);
-
-      background: rgba(22,163,74,.08);
-
-      color: #166534;
-
-      display:inline-flex;
-
-      align-items:center;
-
-      justify-content:center;
-
-      font-size: .86rem;
-
-      font-weight: 800;
-
-      line-height: 1;
-
-    }
-
-    .skipStats{
-
-      display:grid;
-
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-
-      gap: 8px;
-
-      margin-top: 8px;
-
-    }
-
-    .skipStat{
-
-      border: 1px solid #e2e2e2;
-
-      border-radius: 12px;
-
-      background: white;
-
-      padding: 8px 10px;
-
-    }
-
-    .skipStatLabel{
-
-      color: var(--muted);
-
-      font-size: .8rem;
-
-      line-height: 1.1;
-
-      margin-bottom: 4px;
-
-    }
-
-    .skipStatValue{
-
-      font-weight: 800;
-
-      font-variant-numeric: tabular-nums;
-
-      line-height: 1.1;
-
-    }
-
-    @keyframes skipDrawerIn{
-
-      from{ opacity:0; transform:translateY(-6px); }
-
-      to{ opacity:1; transform:translateY(0); }
-
-    }
 
     #pdfOverlay{
 
@@ -2332,11 +2122,7 @@
 
       #scrollArea{ padding: 14px; }
 
-      .headerRow, .itemRow{
-
-        grid-template-columns: minmax(0, 1fr) 8ch 46px 34px 34px 46px 34px;
-
-      }
+      .headerRow, .itemRow{ grid-template-columns: minmax(0, 1fr) 8ch 46px 34px 36px 46px 36px; }
 
       .title{
 
@@ -2458,17 +2244,13 @@
 
           <span>FSP Audio — Güncel</span>
 
-          <div id="buildMeta" class="buildMeta">v1.88 · Güncelleme: --.--.---- · --:--</div>
+          <div id="buildMeta" class="buildMeta">v1.87 · Güncelleme: 25.04.2026 · 00:00</div>
 
         </div>
 
         <div class="pageTitleActions">
 
-          <button id="mobileFiltersToggle" type="button" aria-label="Filtreleri göster" aria-expanded="false" title="Filtreler">
-
-            Filtreler
-
-          </button>
+          <button id="mobileFiltersToggle" type="button" aria-label="Filtreleri göster" aria-expanded="false" title="Filtreler">Filtreler</button>
 
           <button id="sidebarOpenBtn" type="button" aria-label="Menü" title="Menü">
 
@@ -2496,7 +2278,7 @@
 
         <a class="navLink" href="https://protokolfsp.github.io/MenschiB/">MenschiB</a>
 
-        <a class="navLink" href="https://protokolfsp.github.io/FSP-pdfs/">FSP-PDFs</a>
+              <a class="navLink" href="https://protokolfsp.github.io/FSP-pdfs/">FSP-PDFs</a>
 
         <a class="navLink" href="https://protokolfsp.github.io/FSP_DrYemliha/">DrYemliha Notları</a>
 
@@ -2624,15 +2406,13 @@
 
             <button id="sortDlCountBtn" class="sortBtn" type="button" title="İndirme sayısına göre sırala">
 
-              <svg class="mainIcon diskIcon" viewBox="0 0 24 24" aria-hidden="true">
+              <svg class="mainIcon" viewBox="0 0 24 24" aria-hidden="true">
 
-                <path class="iconBlue" d="M4 3h13l3 3v15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
+                <path class="iconBlue" d="M5 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
 
-                <path fill="#fff" d="M7 4h8v5H7z"/>
+                <path class="iconOrange" d="M8 7h4v3H8zM8 13h4v4H8z"/>
 
-                <path class="iconOrange" d="M8 14h8v6H8z"/>
-
-                <path fill="#fff" d="M10 15h4v2h-4z"/>
+                <circle class="iconOrange" cx="16.5" cy="16.5" r="3.2"/>
 
               </svg>
 
@@ -2644,7 +2424,7 @@
 
           <div class="headIconCell" title="PDF">
 
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
 
               <path fill="#E53935" d="M6 2h8l4 4v16H6z"/>
 
@@ -2696,7 +2476,7 @@
 
           </div>
 
-          <div class="sbHint">Listeyi yenile: metadata ve PDF index tekrar okunur.</div>
+          <div class="sbHint">Listeyi yenile: Archive.org metadata tekrar okunur.</div>
 
         </div>
 
@@ -3036,23 +2816,9 @@
 
   <script>
 
-    function pad2(n){
+    const BUILD_VERSION = "v1.87";
 
-      return String(n).padStart(2, "0");
-
-    }
-
-    function getBuildStampNow(){
-
-      const d = new Date();
-
-      return `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()} · ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
-
-    }
-
-    const BUILD_VERSION = "v1.88";
-
-    const BUILD_UPDATED = getBuildStampNow();
+    const BUILD_UPDATED = "25.04.2026 · 00:00";
 
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
 
@@ -3502,7 +3268,7 @@
 
       return normalizeLoose(s)
 
-        .replace(/\b(dr|doktor|mit|und|bei|von|der|die|das|abi)\b/g, " ")
+        .replace(/\b(dr|doktor|mit|und|bei|von|der|die|das)\b/g, " ")
 
         .split(/\s+/)
 
@@ -3554,6 +3320,12 @@
 
       mobileFiltersOpen: "fsp1.mobile.filters.open.v1",
 
+      itemsCache: "fsp1.items.cache.s1.v2",
+
+      itemsCacheAt: "fsp1.items.cache.s1.at.v1",
+
+      metaUpdated: "fsp1.items.meta.updated.s1.v1",
+
       uiState: "fsp1.ui.state.v1",
 
       txSize: "fsp1.tx.size.v1",
@@ -3585,6 +3357,8 @@
     let activeId = null;
 
     let selectedId = null;
+
+    const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
     let pendingScrollTop = null;
 
@@ -5428,7 +5202,11 @@
 
         mobileFiltersToggle.textContent = "Filtreler";
 
-        setTimeout(() => { try{ updateSticky(true); }catch{} }, 0);
+        setTimeout(() => {
+
+          try{ updateSticky(true); }catch{}
+
+        }, 0);
 
         return;
 
@@ -5444,7 +5222,11 @@
 
       mobileFiltersToggle.textContent = open ? "Filtreleri Gizle" : "Filtreler";
 
-      setTimeout(() => { try{ updateSticky(true); }catch{} }, 0);
+      setTimeout(() => {
+
+        try{ updateSticky(true); }catch{}
+
+      }, 0);
 
     }
 
@@ -5766,8 +5548,6 @@
 
       byItemId: new Map(),
 
-      byAudioId: new Map(),
-
       loaded: false,
 
       loading: false,
@@ -5814,31 +5594,17 @@
 
     }
 
-    async function loadPdfIndex(force = false){
+    async function loadPdfIndex(){
 
-      if (pdfState.loaded && !force) return;
-
-      if (pdfState.loading) return;
+      if (pdfState.loaded || pdfState.loading) return;
 
       pdfState.loading = true;
 
       pdfState.lastError = "";
 
-      if (force){
-
-        pdfState.rows = [];
-
-        pdfState.byItemId.clear();
-
-        pdfState.byAudioId.clear();
-
-        pdfState.loaded = false;
-
-      }
-
       try{
 
-        const res = await fetch(PDF_INDEX_URL, { cache: FORCE_REFRESH || force ? "no-store" : "no-cache" });
+        const res = await fetch(PDF_INDEX_URL, { cache: FORCE_REFRESH ? "no-store" : "no-cache" });
 
         if (!res.ok) throw new Error(`pdf-index.json okunamadı: ${res.status}`);
 
@@ -5856,31 +5622,15 @@
 
           const audioName = String(row?.audioName || row?.sourceAudioName || "").trim();
 
-          const audioTitle = String(row?.audioTitle || "").trim();
-
-          const dateToken = extractDateToken(pdfName || pdfPath || audioName || audioTitle);
+          const dateToken = extractDateToken(pdfName || pdfPath || audioName);
 
           const baseNorm = normalizeLoose(removePdfExt(pdfName || fileNameOnly(pdfPath)));
 
           const tokens = tokenizeForSimilarity(removePdfExt(pdfName || fileNameOnly(pdfPath)));
 
-          const audioNameNorm = normalizeLoose(removeAudioExt(fileNameOnly(audioName || audioTitle)));
-
-          return { pdfPath, pdfName, audioId, audioName, audioTitle, audioNameNorm, dateToken, baseNorm, tokens, score: Number(row?.score) || 0 };
+          return { pdfPath, pdfName, audioId, audioName, dateToken, baseNorm, tokens };
 
         }).filter((x) => x.pdfPath);
-
-        pdfState.byAudioId.clear();
-
-        for (const row of pdfState.rows){
-
-          if (row.audioId && !pdfState.byAudioId.has(row.audioId)){
-
-            pdfState.byAudioId.set(row.audioId, row);
-
-          }
-
-        }
 
         pdfState.loaded = true;
 
@@ -5904,16 +5654,6 @@
 
       if (pdfState.byItemId.has(it.id)) return pdfState.byItemId.get(it.id);
 
-      const exact = pdfState.byAudioId.get(it.id);
-
-      if (exact){
-
-        pdfState.byItemId.set(it.id, exact);
-
-        return exact;
-
-      }
-
       const itemName = fileNameOnly(it.name || it.title || "");
 
       const itemBase = removeAudioExt(itemName);
@@ -5930,8 +5670,6 @@
 
       for (const row of pdfState.rows){
 
-        let score = 0;
-
         if (row.audioId && row.audioId === it.id){
 
           best = row;
@@ -5942,31 +5680,35 @@
 
         }
 
-        if (row.audioNameNorm && row.audioNameNorm === itemNorm){
+        if (row.audioName){
 
-          score += 250;
+          const audioNorm = normalizeLoose(removeAudioExt(fileNameOnly(row.audioName)));
+
+          if (audioNorm && audioNorm === itemNorm){
+
+            best = row;
+
+            bestScore = 5000;
+
+            break;
+
+          }
 
         }
 
-        if (itemDate && row.dateToken && itemDate === row.dateToken){
+        let score = 0;
 
-          score += 120;
+        if (itemDate && row.dateToken && itemDate === row.dateToken) score += 100;
 
-        }
-
-        const jac = jaccardScore(itemTokens, row.tokens);
-
-        score += Math.round(jac * 100);
+        score += Math.round(jaccardScore(itemTokens, row.tokens) * 100);
 
         if (itemNorm && row.baseNorm){
 
-          if (itemNorm === row.baseNorm) score += 90;
+          if (itemNorm === row.baseNorm) score += 80;
 
-          if (row.baseNorm.includes(itemNorm) || itemNorm.includes(row.baseNorm)) score += 30;
+          if (row.baseNorm.includes(itemNorm) || itemNorm.includes(row.baseNorm)) score += 25;
 
         }
-
-        score += Math.min(30, row.score || 0);
 
         if (score > bestScore){
 
@@ -6000,17 +5742,39 @@
 
     }
 
+    function buildPdfViewerUrl(pdfMeta){
+
+      const pdfUrl = buildPdfAbsoluteUrl(pdfMeta.pdfPath);
+
+      const fileName = pdfMeta.pdfName || fileNameOnly(pdfMeta.pdfPath) || "PDF";
+
+      return `./viewer.html?pdf=${encodeURIComponent(pdfUrl)}&name=${encodeURIComponent(fileName)}`;
+
+    }
+
     function openPdfViewer(it, pdfMeta){
 
       if (!pdfMeta) return;
 
       const pdfUrl = buildPdfAbsoluteUrl(pdfMeta.pdfPath);
 
-      pdfState.current = { item: it, meta: pdfMeta, url: pdfUrl };
+      const viewerUrl = buildPdfViewerUrl(pdfMeta);
+
+      pdfState.current = {
+
+        item: it,
+
+        meta: pdfMeta,
+
+        url: pdfUrl,
+
+        viewerUrl
+
+      };
 
       pdfTitleEl.textContent = pdfMeta.pdfName || it.title || "PDF";
 
-      pdfFrame.src = pdfUrl + "#toolbar=1&navpanes=1&scrollbar=1&view=FitH";
+      pdfFrame.src = viewerUrl;
 
       pdfOverlay.classList.add("open");
 
@@ -6063,6 +5827,18 @@
         await navigator.clipboard.writeText(text);
 
       }catch{}
+
+    });
+
+    document.addEventListener("keydown", (e) => {
+
+      if (e.key === "Escape" && pdfOverlay.classList.contains("open")){
+
+        e.preventDefault();
+
+        closePdfViewer();
+
+      }
 
     });
 
@@ -6146,7 +5922,7 @@
 
         items = finalItems;
 
-        await loadPdfIndex(true);
+        await loadPdfIndex();
 
         statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
 
@@ -6302,13 +6078,13 @@
 
         btn.innerHTML = `
 
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
 
-            <path d="M12 3v12"/>
+            <path class="iconBlue" d="M5 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
 
-            <path d="M7 10l5 5 5-5"/>
+            <path class="iconOrange" d="M8 7h4v3H8zM8 13h4v4H8z"/>
 
-            <path d="M5 21h14"/>
+            <circle class="iconOrange" cx="16.5" cy="16.5" r="3.2"/>
 
           </svg>`;
 
@@ -6663,16 +6439,6 @@
     document.addEventListener("keydown", (e) => {
 
       if (e.key === "Escape"){
-
-        if (pdfOverlay.classList.contains("open")){
-
-          e.preventDefault();
-
-          closePdfViewer();
-
-          return;
-
-        }
 
         if (txPanel.classList.contains("open")){
 
@@ -7066,6 +6832,266 @@
 
     }, true);
 
+    window.addEventListener("resize", () => {
+
+      clampPlayerToViewport();
+
+      updateOverlayScale();
+
+      updateSearchNoZoomFontSizes();
+
+      clampTxSizeToViewport();
+
+      clampTxPosToViewport();
+
+      updateSticky(true);
+
+      restoreMobileFiltersState();
+
+    });
+
+    window.addEventListener("orientationchange", () => setTimeout(() => {
+
+      clampPlayerToViewport();
+
+      updateOverlayScale();
+
+      updateSearchNoZoomFontSizes();
+
+      clampTxSizeToViewport();
+
+      clampTxPosToViewport();
+
+      updateSticky(true);
+
+      restoreMobileFiltersState();
+
+    }, 150));
+
+    if (window.visualViewport){
+
+      window.visualViewport.addEventListener("resize", () => {
+
+        clampPlayerToViewport();
+
+        updateOverlayScale();
+
+        updateSearchNoZoomFontSizes();
+
+        clampTxSizeToViewport();
+
+        clampTxPosToViewport();
+
+        updateSticky(true);
+
+        restoreMobileFiltersState();
+
+      });
+
+    }
+
+    (function disablePullToRefresh(){
+
+      let startY = 0;
+
+      scrollArea.addEventListener("touchstart", (e) => {
+
+        if (!e.touches || !e.touches.length) return;
+
+        startY = e.touches[0].clientY;
+
+      }, { passive: true });
+
+      scrollArea.addEventListener("touchmove", (e) => {
+
+        if (!e.touches || !e.touches.length) return;
+
+        const y = e.touches[0].clientY;
+
+        if (scrollArea.scrollTop <= 0 && y > startY + 4) e.preventDefault();
+
+      }, { passive: false });
+
+    })();
+
+    (function setActiveNav(){
+
+      const here = location.href.replace(/\/$/, "");
+
+      document.querySelectorAll(".navRow .navLink").forEach((a) => {
+
+        a.classList.remove("on");
+
+        const u = (a.getAttribute("href") || "").replace(/\/$/, "");
+
+        if (!u) return;
+
+        if (here === u || here.startsWith(u + "/")) a.classList.add("on");
+
+      });
+
+    })();
+
+    function openSidebar(){
+
+      sbOverlay.classList.add("open");
+
+      sbOverlay.setAttribute("aria-hidden", "false");
+
+      updateOverlayScale();
+
+      setSortIcons();
+
+    }
+
+    function closeSidebar(){
+
+      sbOverlay.classList.remove("open");
+
+      sbOverlay.setAttribute("aria-hidden", "true");
+
+    }
+
+    sidebarOpenBtn.addEventListener("click", (e) => {
+
+      e.stopPropagation();
+
+      openSidebar();
+
+    });
+
+    sbCloseBtn.addEventListener("click", (e) => {
+
+      e.stopPropagation();
+
+      closeSidebar();
+
+    });
+
+    sbOverlay.addEventListener("click", (e) => {
+
+      if (e.target === sbOverlay) closeSidebar();
+
+    });
+
+    document.getElementById("sidebar").addEventListener("click", (e) => e.stopPropagation());
+
+    sbRefreshBtn.addEventListener("click", async () => {
+
+      try{
+
+        await loadItems();
+
+      } finally {
+
+        statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
+
+      }
+
+    });
+
+    sbZoomResetBtn.addEventListener("click", () => resetZoom100());
+
+    sbFavBtn.addEventListener("click", () => {
+
+      filterFav = !filterFav;
+
+      setSortIcons();
+
+      render();
+
+    });
+
+    function clickSort(kind){
+
+      if (kind === "date"){
+
+        if (sortMode !== "date") sortMode = "date";
+
+        else dateSortDir = (dateSortDir === "asc") ? "desc" : "asc";
+
+        localStorage.setItem(LS.sortMode, sortMode);
+
+        localStorage.setItem(LS.sortDirDate, dateSortDir);
+
+      } else if (kind === "dur"){
+
+        if (sortMode !== "dur") sortMode = "dur";
+
+        else durSortDir = (durSortDir === "asc") ? "desc" : "asc";
+
+        localStorage.setItem(LS.sortMode, sortMode);
+
+        localStorage.setItem(LS.sortDirDur, durSortDir);
+
+      } else if (kind === "play"){
+
+        if (sortMode !== "play") sortMode = "play";
+
+        else playSortDir = (playSortDir === "asc") ? "desc" : "asc";
+
+        localStorage.setItem(LS.sortMode, sortMode);
+
+        localStorage.setItem(LS.sortDirPlay, playSortDir);
+
+      } else if (kind === "download"){
+
+        if (sortMode !== "download") sortMode = "download";
+
+        else dlSortDir = (dlSortDir === "asc") ? "desc" : "asc";
+
+        localStorage.setItem(LS.sortMode, sortMode);
+
+        localStorage.setItem(LS.sortDirDl, dlSortDir);
+
+      }
+
+      setSortIcons();
+
+      render();
+
+    }
+
+    sbSortDateBtn.addEventListener("click", () => clickSort("date"));
+
+    sbSortDurBtn.addEventListener("click", () => clickSort("dur"));
+
+    sbSortPlayBtn.addEventListener("click", () => clickSort("play"));
+
+    sbSortDlBtn.addEventListener("click", () => clickSort("download"));
+
+    let txOpen = false;
+
+    let txCurrent = null;
+
+    let txPlainText = "";
+
+    let txMatches = [];
+
+    let txActiveMatch = -1;
+
+    let txSearchTimer = null;
+
+    const txCache = new Map();
+
+    const TX_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+    function clearTxSearchUI(){
+
+      txMatches = [];
+
+      txActiveMatch = -1;
+
+      txMatchCountEl.textContent = "0/0";
+
+      txPrevMatchBtn.disabled = true;
+
+      txNextMatchBtn.disabled = true;
+
+      txContentEl.textContent = txPlainText || "";
+
+    }
+
     function clampTxSizeToViewport(){
 
       if (!txOpen) return;
@@ -7220,22 +7246,6 @@
 
     }
 
-    let txOpen = false;
-
-    let txCurrent = null;
-
-    let txPlainText = "";
-
-    let txMatches = [];
-
-    let txActiveMatch = -1;
-
-    let txSearchTimer = null;
-
-    const txCache = new Map();
-
-    const TX_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-
     function openTranscript(){
 
       txOpen = true;
@@ -7273,22 +7283,6 @@
     }
 
     txCloseBtn.addEventListener("click", () => closeTranscript());
-
-    function clearTxSearchUI(){
-
-      txMatches = [];
-
-      txActiveMatch = -1;
-
-      txMatchCountEl.textContent = "0/0";
-
-      txPrevMatchBtn.disabled = true;
-
-      txNextMatchBtn.disabled = true;
-
-      txContentEl.textContent = txPlainText || "";
-
-    }
 
     function escapeForRegex(s){
 
@@ -7356,24 +7350,6 @@
 
     }
 
-    function scrollToActiveMatch(){
-
-      const el = txContentEl.querySelector(".txMark.active");
-
-      if (!el) return;
-
-      try{
-
-        el.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
-
-      }catch{
-
-        el.scrollIntoView();
-
-      }
-
-    }
-
     function applyTxSearch(){
 
       const q = (txSearchInput.value || "").trim();
@@ -7399,6 +7375,24 @@
       txContentEl.innerHTML = buildHighlightedHtml(txPlainText, txMatches, txActiveMatch);
 
       if (txMatches.length) setTimeout(() => scrollToActiveMatch(), 0);
+
+    }
+
+    function scrollToActiveMatch(){
+
+      const el = txContentEl.querySelector(".txMark.active");
+
+      if (!el) return;
+
+      try{
+
+        el.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+
+      }catch{
+
+        el.scrollIntoView();
+
+      }
 
     }
 
@@ -8871,234 +8865,6 @@
       if (skipSettings.enabled) startSkipLoop();
 
     });
-
-    function openSidebar(){
-
-      sbOverlay.classList.add("open");
-
-      sbOverlay.setAttribute("aria-hidden", "false");
-
-      updateOverlayScale();
-
-      setSortIcons();
-
-    }
-
-    function closeSidebar(){
-
-      sbOverlay.classList.remove("open");
-
-      sbOverlay.setAttribute("aria-hidden", "true");
-
-    }
-
-    sidebarOpenBtn.addEventListener("click", (e) => {
-
-      e.stopPropagation();
-
-      openSidebar();
-
-    });
-
-    sbCloseBtn.addEventListener("click", (e) => {
-
-      e.stopPropagation();
-
-      closeSidebar();
-
-    });
-
-    sbOverlay.addEventListener("click", (e) => {
-
-      if (e.target === sbOverlay) closeSidebar();
-
-    });
-
-    document.getElementById("sidebar").addEventListener("click", (e) => e.stopPropagation());
-
-    sbRefreshBtn.addEventListener("click", async () => {
-
-      try{
-
-        await loadItems();
-
-      } finally {
-
-        statusEl.textContent = items.length ? "" : "Kayıt bulunamadı.";
-
-      }
-
-    });
-
-    sbZoomResetBtn.addEventListener("click", () => resetZoom100());
-
-    sbFavBtn.addEventListener("click", () => {
-
-      filterFav = !filterFav;
-
-      setSortIcons();
-
-      render();
-
-    });
-
-    function clickSort(kind){
-
-      if (kind === "date"){
-
-        if (sortMode !== "date") sortMode = "date";
-
-        else dateSortDir = (dateSortDir === "asc") ? "desc" : "asc";
-
-        localStorage.setItem(LS.sortMode, sortMode);
-
-        localStorage.setItem(LS.sortDirDate, dateSortDir);
-
-      } else if (kind === "dur"){
-
-        if (sortMode !== "dur") sortMode = "dur";
-
-        else durSortDir = (durSortDir === "asc") ? "desc" : "asc";
-
-        localStorage.setItem(LS.sortMode, sortMode);
-
-        localStorage.setItem(LS.sortDirDur, durSortDir);
-
-      } else if (kind === "play"){
-
-        if (sortMode !== "play") sortMode = "play";
-
-        else playSortDir = (playSortDir === "asc") ? "desc" : "asc";
-
-        localStorage.setItem(LS.sortMode, sortMode);
-
-        localStorage.setItem(LS.sortDirPlay, playSortDir);
-
-      } else if (kind === "download"){
-
-        if (sortMode !== "download") sortMode = "download";
-
-        else dlSortDir = (dlSortDir === "asc") ? "desc" : "asc";
-
-        localStorage.setItem(LS.sortMode, sortMode);
-
-        localStorage.setItem(LS.sortDirDl, dlSortDir);
-
-      }
-
-      setSortIcons();
-
-      render();
-
-    }
-
-    sbSortDateBtn.addEventListener("click", () => clickSort("date"));
-
-    sbSortDurBtn.addEventListener("click", () => clickSort("dur"));
-
-    sbSortPlayBtn.addEventListener("click", () => clickSort("play"));
-
-    sbSortDlBtn.addEventListener("click", () => clickSort("download"));
-
-    window.addEventListener("resize", () => {
-
-      clampPlayerToViewport();
-
-      updateOverlayScale();
-
-      updateSearchNoZoomFontSizes();
-
-      clampTxSizeToViewport();
-
-      clampTxPosToViewport();
-
-      updateSticky(true);
-
-      restoreMobileFiltersState();
-
-    });
-
-    window.addEventListener("orientationchange", () => setTimeout(() => {
-
-      clampPlayerToViewport();
-
-      updateOverlayScale();
-
-      updateSearchNoZoomFontSizes();
-
-      clampTxSizeToViewport();
-
-      clampTxPosToViewport();
-
-      updateSticky(true);
-
-      restoreMobileFiltersState();
-
-    }, 150));
-
-    if (window.visualViewport){
-
-      window.visualViewport.addEventListener("resize", () => {
-
-        clampPlayerToViewport();
-
-        updateOverlayScale();
-
-        updateSearchNoZoomFontSizes();
-
-        clampTxSizeToViewport();
-
-        clampTxPosToViewport();
-
-        updateSticky(true);
-
-        restoreMobileFiltersState();
-
-      });
-
-    }
-
-    (function disablePullToRefresh(){
-
-      let startY = 0;
-
-      scrollArea.addEventListener("touchstart", (e) => {
-
-        if (!e.touches || !e.touches.length) return;
-
-        startY = e.touches[0].clientY;
-
-      }, { passive: true });
-
-      scrollArea.addEventListener("touchmove", (e) => {
-
-        if (!e.touches || !e.touches.length) return;
-
-        const y = e.touches[0].clientY;
-
-        if (scrollArea.scrollTop <= 0 && y > startY + 4) e.preventDefault();
-
-      }, { passive: false });
-
-    })();
-
-    (function setActiveNav(){
-
-      const here = location.href.replace(/\/$/, "");
-
-      document.querySelectorAll(".navRow .navLink").forEach((a) => {
-
-        a.classList.remove("on");
-
-        const u = (a.getAttribute("href") || "").replace(/\/$/, "");
-
-        if (!u) return;
-
-        if (here === u || here.startsWith(u + "/")) a.classList.add("on");
-
-      });
-
-    })();
 
     setSortIcons();
 
