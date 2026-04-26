@@ -1,390 +1,633 @@
 <!doctype html>
+
 <html lang="tr">
+
 <head>
+
   <meta charset="utf-8" />
+
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+
   <title>PDF</title>
 
   <style>
+
     :root{
+
       --bg:#f3f4f6;
+
       --panel:#ffffff;
+
       --border:#d8d8d8;
+
       --text:#111827;
+
       --muted:#6b7280;
+
       --hover:#f9fafb;
-      --ok:#166534;
-      --err:#991b1b;
+
     }
 
     html, body{
+
       margin:0;
+
       width:100%;
+
       height:100%;
+
       background:var(--bg);
+
       color:var(--text);
+
       font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+
     }
 
     body{
+
       display:flex;
+
       flex-direction:column;
+
       overflow:hidden;
+
     }
 
     #topbar{
+
       flex:0 0 auto;
+
       display:flex;
+
       align-items:center;
+
       justify-content:space-between;
+
       gap:12px;
+
       padding:10px 12px;
+
       background:var(--panel);
+
       border-bottom:1px solid var(--border);
+
       box-shadow:0 1px 0 rgba(0,0,0,.04);
+
       z-index:10;
+
     }
 
     #title{
+
       min-width:0;
+
       flex:1 1 auto;
+
       font-weight:700;
+
       font-size:.98rem;
+
       white-space:nowrap;
+
       overflow:hidden;
+
       text-overflow:ellipsis;
+
     }
 
     #actions{
+
       display:flex;
+
       align-items:center;
+
       gap:8px;
+
       flex:0 0 auto;
+
       flex-wrap:wrap;
+
     }
 
     .btn{
+
       height:36px;
+
       padding:0 12px;
+
       border-radius:12px;
+
       border:1px solid var(--border);
+
       background:#fff;
+
       color:var(--text);
+
       cursor:pointer;
+
       font-size:.92rem;
+
       font-weight:650;
+
     }
 
     .btn:hover{ background:var(--hover); }
+
     .btn:disabled{ opacity:.5; cursor:default; }
 
     #status{
+
       padding:8px 12px;
+
       background:#fff;
+
       color:var(--muted);
+
       font-size:.92rem;
+
       border-bottom:1px solid var(--border);
+
       white-space:nowrap;
+
       overflow:hidden;
+
       text-overflow:ellipsis;
+
     }
 
     #frame{
+
       width:100%;
+
       height:100%;
+
       border:0;
+
       background:#fff;
+
       flex:1 1 auto;
+
     }
 
     @media (max-width: 720px){
+
       #topbar{ align-items:flex-start; flex-wrap:wrap; }
+
       #title{
+
         flex:1 1 100%;
+
         white-space:normal;
+
       }
+
     }
+
   </style>
+
 </head>
+
 <body>
+
   <div id="topbar">
+
     <div id="title">PDF</div>
 
     <div id="actions">
+
       <button id="reloadBtn" class="btn" type="button">Yenile</button>
+
       <button id="downloadBtn" class="btn" type="button">İndir</button>
+
       <button id="copyBtn" class="btn" type="button">Hepsini kopyala</button>
+
       <button id="openBtn" class="btn" type="button">Yeni sekmede aç</button>
+
     </div>
+
   </div>
 
   <div id="status">Hazırlanıyor…</div>
+
   <iframe id="frame" title="PDF.js görüntüleyici" referrerpolicy="no-referrer"></iframe>
 
   <script type="module">
-    const PDFJS_VERSION = "4.4.168";
-    const PDFJS_VIEWER_URL = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/web/viewer.html`;
-    const PDFJS_LIB_URL = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/legacy/build/pdf.mjs`;
-    const PDFJS_WORKER_URL = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/legacy/build/pdf.worker.mjs`;
+
+    const PDFJS_VIEWER_URL = "https://mozilla.github.io/pdf.js/web/viewer.html";
+
+    const PDFJS_LIB_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/legacy/build/pdf.mjs";
+
+    const PDFJS_WORKER_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/legacy/build/pdf.worker.mjs";
 
     const params = new URLSearchParams(location.search);
+
     const rawPdfUrl = params.get("pdf") || "";
+
     const rawName = params.get("name") || "";
 
     const titleEl = document.getElementById("title");
+
     const statusEl = document.getElementById("status");
+
     const frameEl = document.getElementById("frame");
 
     const reloadBtn = document.getElementById("reloadBtn");
+
     const downloadBtn = document.getElementById("downloadBtn");
+
     const copyBtn = document.getElementById("copyBtn");
+
     const openBtn = document.getElementById("openBtn");
 
     let pdfjsLibPromise = null;
-    let currentFreshPdfUrl = "";
+
     let currentBlobUrl = "";
+
     let currentFileName = "";
+
     let loadToken = 0;
+
     let copyToken = 0;
 
     function decodeSafe(value){
+
       try{
+
         return decodeURIComponent(value);
+
       }catch{
+
         return value;
+
       }
+
     }
 
     function fileNameFromUrl(url){
+
       try{
+
         const u = new URL(url, location.href);
+
         const raw = (u.pathname || "").split("/").pop() || "PDF";
+
         return decodeSafe(raw);
+
       }catch{
+
         return "PDF";
+
       }
+
     }
 
     function sanitizeFileName(name){
+
       const clean = String(name || "").trim().replace(/[\\/:*?"<>|]+/g, "_");
+
       return clean || "document.pdf";
+
     }
 
     function ensurePdfExtension(name){
+
       return /\.pdf$/i.test(name) ? name : `${name}.pdf`;
+
     }
 
     function getDisplayFileName(){
+
       const fromParam = decodeSafe(rawName || "").trim();
+
       const base = fromParam || fileNameFromUrl(rawPdfUrl) || "PDF";
+
       return ensurePdfExtension(sanitizeFileName(base));
+
     }
 
     function buildFreshUrl(url){
+
       const u = new URL(url, location.href);
+
       u.searchParams.set("_ts", String(Date.now()));
+
       return u.toString();
+
     }
 
     function setStatus(text){
+
       statusEl.textContent = text || "";
+
     }
 
     function revokeCurrentBlobUrl(){
+
       if (!currentBlobUrl) return;
+
       try{ URL.revokeObjectURL(currentBlobUrl); }catch{}
+
       currentBlobUrl = "";
+
     }
 
     async function ensurePdfJsLib(){
+
       if (!pdfjsLibPromise){
+
         pdfjsLibPromise = import(PDFJS_LIB_URL).then((mod) => {
+
           mod.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+
           return mod;
+
         });
+
       }
+
       return pdfjsLibPromise;
+
     }
 
     async function fetchPdfBlob(url){
+
       const res = await fetch(url, {
+
         mode: "cors",
+
         cache: "no-store",
+
         credentials: "omit"
+
       });
+
       if (!res.ok) throw new Error(`PDF indirilemedi (${res.status})`);
+
       return await res.blob();
+
     }
 
     async function ensureBlobUrl(url){
+
       const blob = await fetchPdfBlob(url);
+
       revokeCurrentBlobUrl();
+
       currentBlobUrl = URL.createObjectURL(blob);
+
       return currentBlobUrl;
+
     }
 
     function setTitle(name){
+
       currentFileName = ensurePdfExtension(sanitizeFileName(name || "PDF"));
+
       titleEl.textContent = currentFileName;
+
       document.title = currentFileName;
+
     }
 
     function buildViewerUrl(pdfUrl){
+
       const u = new URL(PDFJS_VIEWER_URL);
+
       u.searchParams.set("file", pdfUrl);
+
       u.searchParams.set("zoom", "page-width");
+
       u.searchParams.set("pagemode", "none");
+
       return u.toString();
+
     }
 
     async function renderPdf(){
+
       const myToken = ++loadToken;
 
       if (!rawPdfUrl){
+
         setTitle("PDF");
+
         setStatus("PDF yolu bulunamadı.");
+
         frameEl.src = "about:blank";
+
         downloadBtn.disabled = true;
+
         copyBtn.disabled = true;
+
         openBtn.disabled = true;
+
         return;
+
       }
 
       downloadBtn.disabled = false;
+
       copyBtn.disabled = false;
+
       openBtn.disabled = false;
 
       const fileName = getDisplayFileName();
+
       setTitle(fileName);
+
       setStatus("PDF.js görüntüleyici hazırlanıyor…");
 
       try{
+
         const fresh = buildFreshUrl(rawPdfUrl);
-        currentFreshPdfUrl = fresh;
 
         if (myToken !== loadToken) return;
 
-        const viewerUrl = buildViewerUrl(fresh);
-        frameEl.src = viewerUrl;
+        frameEl.src = buildViewerUrl(fresh);
+
         setStatus("PDF yükleniyor…");
+
       }catch(err){
+
         console.error(err);
+
         frameEl.src = "about:blank";
+
         setStatus(`PDF yüklenemedi: ${err?.message || "bilinmeyen hata"}`);
+
       }
+
     }
 
     frameEl.addEventListener("load", () => {
+
       if (!rawPdfUrl) return;
+
       setStatus("Yüklendi");
+
     });
 
     async function downloadPdf(){
+
       if (!rawPdfUrl) return;
 
-      const btnText = downloadBtn.textContent;
+      const oldText = downloadBtn.textContent;
+
       downloadBtn.disabled = true;
+
       downloadBtn.textContent = "İndiriliyor…";
 
       try{
+
         const blobUrl = await ensureBlobUrl(buildFreshUrl(rawPdfUrl));
+
         const a = document.createElement("a");
+
         a.href = blobUrl;
+
         a.download = currentFileName || getDisplayFileName();
+
         a.rel = "noopener";
+
         document.body.appendChild(a);
+
         a.click();
+
         a.remove();
+
         setStatus("İndirme başlatıldı");
+
       }catch(err){
+
         console.error(err);
+
         setStatus(`İndirme başarısız: ${err?.message || "bilinmeyen hata"}`);
+
       }finally{
+
         downloadBtn.disabled = false;
-        downloadBtn.textContent = btnText;
+
+        downloadBtn.textContent = oldText;
+
       }
+
     }
 
     async function extractAllTextFromPdf(url){
+
       const pdfjsLib = await ensurePdfJsLib();
+
       const blob = await fetchPdfBlob(url);
+
       const bytes = new Uint8Array(await blob.arrayBuffer());
 
       const loadingTask = pdfjsLib.getDocument({
+
         data: bytes,
+
         useWorkerFetch: false,
+
         isEvalSupported: false
+
       });
 
       const pdf = await loadingTask.promise;
+
       const pages = [];
 
       for (let pageNo = 1; pageNo <= pdf.numPages; pageNo++){
+
         setStatus(`Metin çıkarılıyor: ${pageNo}/${pdf.numPages}`);
+
         const page = await pdf.getPage(pageNo);
+
         const content = await page.getTextContent();
+
         const pageText = (content.items || [])
+
           .map((item) => String(item?.str || "").trim())
+
           .filter(Boolean)
+
           .join(" ");
+
         pages.push(pageText);
+
       }
 
       try{ await loadingTask.destroy(); }catch{}
+
       return pages.join("\n\n");
+
     }
 
     async function copyAllText(){
+
       if (!rawPdfUrl) return;
 
       const myToken = ++copyToken;
-      const btnText = copyBtn.textContent;
+
+      const oldText = copyBtn.textContent;
+
       copyBtn.disabled = true;
+
       copyBtn.textContent = "Kopyalanıyor…";
 
       try{
+
         const text = await extractAllTextFromPdf(buildFreshUrl(rawPdfUrl));
+
         if (myToken !== copyToken) return;
 
         if (!text.trim()) throw new Error("PDF içinde kopyalanabilir metin bulunamadı");
 
         await navigator.clipboard.writeText(text);
+
         setStatus("Tüm metin panoya kopyalandı");
+
       }catch(err){
+
         console.error(err);
+
         setStatus(`Kopyalama başarısız: ${err?.message || "bilinmeyen hata"}`);
+
       }finally{
+
         copyBtn.disabled = false;
-        copyBtn.textContent = btnText;
+
+        copyBtn.textContent = oldText;
+
       }
+
     }
 
     function openInNewTab(){
+
       if (!rawPdfUrl) return;
+
       window.open(buildViewerUrl(buildFreshUrl(rawPdfUrl)), "_blank", "noopener");
+
     }
 
-    reloadBtn.addEventListener("click", () => {
-      renderPdf();
-    });
+    reloadBtn.addEventListener("click", () => renderPdf());
 
-    downloadBtn.addEventListener("click", () => {
-      downloadPdf();
-    });
+    downloadBtn.addEventListener("click", () => downloadPdf());
 
-    copyBtn.addEventListener("click", () => {
-      copyAllText();
-    });
+    copyBtn.addEventListener("click", () => copyAllText());
 
-    openBtn.addEventListener("click", () => {
-      openInNewTab();
-    });
+    openBtn.addEventListener("click", () => openInNewTab());
 
     window.addEventListener("beforeunload", () => {
+
       revokeCurrentBlobUrl();
+
     });
 
     renderPdf();
+
   </script>
+
 </body>
+
 </html>
