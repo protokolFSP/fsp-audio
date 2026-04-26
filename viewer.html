@@ -1,6 +1,3 @@
-<!-- ========================================= -->
-<!-- FULL: viewer.html -->
-<!-- ========================================= -->
 <!doctype html>
 <html lang="tr">
 <head>
@@ -17,165 +14,228 @@
       --shadow:0 10px 30px rgba(0,0,0,.06);
     }
 
-    *{ box-sizing:border-box; }
+    *{
+      box-sizing:border-box;
+    }
 
     html, body{
       margin:0;
       padding:0;
       width:100%;
       height:100%;
+      min-width:0;
       background:var(--bg);
       color:var(--text);
       font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
       overflow:hidden;
+      overflow-x:hidden;
     }
 
     body{
-      width:100vw;
-      height:100vh;
+      width:100%;
+      max-width:100%;
     }
 
     #app{
       position:fixed;
       inset:0;
-      width:100vw;
-      height:100vh;
+      display:flex;
+      flex-direction:column;
+      width:100%;
+      height:100%;
+      min-width:0;
       background:var(--bg);
       overflow:hidden;
     }
 
-    #pdfFrame{
-      position:absolute;
-      inset:0;
-      width:100%;
-      height:100%;
-      border:0;
-      background:#fff;
-      display:block;
-    }
-
-    #overlay{
-      position:absolute;
-      inset:0;
+    #topbar{
+      flex:0 0 auto;
       display:flex;
       align-items:center;
-      justify-content:center;
-      padding:20px;
-      background:rgba(243,244,246,.96);
-      z-index:10;
-      transition:opacity .18s ease, visibility .18s ease;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 12px;
+      background:#fff;
+      border-bottom:1px solid var(--line);
+      box-shadow:0 1px 0 rgba(0,0,0,.03);
+      z-index:2;
     }
 
-    #overlay.hidden{
-      opacity:0;
-      visibility:hidden;
-      pointer-events:none;
-    }
-
-    .card{
-      width:min(720px, calc(100vw - 32px));
-      background:var(--panel);
-      border:1px solid var(--line);
-      border-radius:18px;
-      box-shadow:var(--shadow);
-      padding:18px;
-    }
-
-    .title{
-      margin:0 0 8px 0;
+    #title{
+      min-width:0;
+      flex:1 1 auto;
       font-size:1rem;
       font-weight:750;
-      line-height:1.4;
-      word-break:break-word;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
-    .text{
-      margin:0;
-      color:var(--muted);
-      line-height:1.5;
-      font-size:.95rem;
-      word-break:break-word;
-    }
-
-    .actions{
+    #actions{
       display:flex;
+      gap:8px;
       flex-wrap:wrap;
-      gap:10px;
-      margin-top:14px;
+      flex:0 0 auto;
     }
 
     .btn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-height:40px;
-      padding:0 14px;
+      height:38px;
+      padding:0 12px;
       border-radius:12px;
       border:1px solid var(--line);
       background:#fff;
       color:var(--text);
-      text-decoration:none;
+      cursor:pointer;
       font-size:.92rem;
       font-weight:650;
-      cursor:pointer;
     }
 
     .btn:hover{
       background:#f9fafb;
     }
 
-    .spinner{
-      width:18px;
-      height:18px;
-      border:2px solid #d1d5db;
-      border-top-color:#2563eb;
-      border-radius:999px;
-      display:inline-block;
-      vertical-align:-3px;
-      margin-right:8px;
-      animation:spin .75s linear infinite;
+    #status{
+      flex:0 0 auto;
+      padding:8px 12px;
+      background:#fff;
+      color:var(--muted);
+      font-size:.92rem;
+      border-bottom:1px solid var(--line);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
-    @keyframes spin{
-      from{ transform:rotate(0deg); }
-      to{ transform:rotate(360deg); }
+    #viewerWrap{
+      flex:1 1 auto;
+      min-height:0;
+      overflow:auto;
+      overflow-x:hidden;
+      padding:10px 8px 18px;
+      -webkit-overflow-scrolling:touch;
+    }
+
+    #viewer{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:14px;
+      width:100%;
+      min-width:0;
+    }
+
+    .pageCard{
+      width:fit-content;
+      max-width:100%;
+      background:#fff;
+      border:1px solid #e5e7eb;
+      box-shadow:0 10px 28px rgba(0,0,0,.08);
+      border-radius:8px;
+      overflow:hidden;
+    }
+
+    .pageCanvas{
+      display:block;
+      max-width:100%;
+      width:auto;
+      height:auto;
+      background:#fff;
+    }
+
+    .pageMeta{
+      padding:8px 10px;
+      font-size:.88rem;
+      color:var(--muted);
+      border-top:1px solid #eee;
+      background:#fff;
+      text-align:center;
+    }
+
+    .loading,
+    .error{
+      width:min(720px, 100%);
+      background:#fff;
+      border-radius:12px;
+      padding:14px;
+      box-shadow:0 8px 20px rgba(0,0,0,.06);
+    }
+
+    .loading{
+      color:var(--muted);
+      text-align:center;
+    }
+
+    .error{
+      border:1px solid #fecaca;
+      color:#991b1b;
+    }
+
+    @media (max-width: 720px){
+      #topbar{
+        align-items:flex-start;
+        flex-wrap:wrap;
+      }
+
+      #title{
+        flex:1 1 100%;
+        white-space:normal;
+        overflow:visible;
+        text-overflow:clip;
+      }
+
+      #viewerWrap{
+        padding:8px 4px 14px;
+      }
+
+      .btn{
+        height:36px;
+        padding:0 10px;
+      }
     }
   </style>
 </head>
 <body>
   <div id="app">
-    <iframe id="pdfFrame" title="PDF görüntüleyici"></iframe>
+    <div id="topbar">
+      <div id="title">PDF yükleniyor…</div>
+      <div id="actions">
+        <button id="downloadBtn" class="btn" type="button">İndir</button>
+        <button id="openBtn" class="btn" type="button">Yeni sekmede aç</button>
+        <button id="reloadBtn" class="btn" type="button">Yenile</button>
+      </div>
+    </div>
 
-    <div id="overlay">
-      <div class="card">
-        <h1 id="title" class="title">PDF hazırlanıyor…</h1>
-        <p id="message" class="text">
-          <span class="spinner" aria-hidden="true"></span>
-          PDF görüntüleyici yükleniyor…
-        </p>
-        <div id="actions" class="actions" hidden>
-          <a id="openBtn" class="btn" href="#" target="_blank" rel="noopener">Yeni sekmede aç</a>
-        </div>
+    <div id="status">Hazırlanıyor…</div>
+
+    <div id="viewerWrap">
+      <div id="viewer">
+        <div class="loading" id="loadingText">PDF yükleniyor…</div>
       </div>
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.js"></script>
   <script>
-    const PDFJS_VIEWER_BASE = "https://mozilla.github.io/pdf.js/web/viewer.html";
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.js";
 
     const params = new URLSearchParams(location.search);
-    const rawPdf = params.get("pdf") || "";
+    const rawPdfUrl = params.get("pdf") || "";
     const rawName = params.get("name") || "";
 
-    const pdfFrame = document.getElementById("pdfFrame");
-    const overlay = document.getElementById("overlay");
     const titleEl = document.getElementById("title");
-    const messageEl = document.getElementById("message");
-    const actionsEl = document.getElementById("actions");
+    const statusEl = document.getElementById("status");
+    const viewerEl = document.getElementById("viewer");
+    const viewerWrapEl = document.getElementById("viewerWrap");
+    const reloadBtn = document.getElementById("reloadBtn");
     const openBtn = document.getElementById("openBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
 
-    let timeoutId = 0;
-    let settled = false;
+    let currentPdfUrl = "";
+    let currentFileName = "";
+    let renderToken = 0;
+    let activeLoadingTask = null;
+    let resizeTimer = 0;
 
     function decodeSafe(value){
       try{
@@ -185,7 +245,7 @@
       }
     }
 
-    function buildAbsoluteUrl(input){
+    function absoluteUrl(input){
       try{
         return new URL(decodeSafe(input), location.href).toString();
       }catch{
@@ -203,78 +263,228 @@
       }
     }
 
-    function getTitle(){
-      const name = decodeSafe(rawName) || fileNameFromUrl(rawPdf);
-      return String(name || "PDF")
-        .replace(/\.pdf$/i, "")
-        .replace(/\s+/g, " ")
-        .trim() || "PDF";
-    }
-
     function buildFreshUrl(url){
       const u = new URL(url, location.href);
       u.searchParams.set("_ts", String(Date.now()));
       return u.toString();
     }
 
-    function buildPdfJsViewerUrl(pdfUrl){
-      return `${PDFJS_VIEWER_BASE}?file=${encodeURIComponent(pdfUrl)}`;
+    function setStatus(text){
+      statusEl.textContent = text || "";
     }
 
-    function hideOverlay(){
-      overlay.classList.add("hidden");
+    function clearViewer(){
+      viewerEl.innerHTML = "";
     }
 
-    function showOverlay(){
-      overlay.classList.remove("hidden");
+    function showLoading(text){
+      clearViewer();
+      const box = document.createElement("div");
+      box.className = "loading";
+      box.textContent = text || "PDF yükleniyor…";
+      viewerEl.appendChild(box);
     }
 
-    function showError(text, url){
-      titleEl.textContent = getTitle();
-      messageEl.textContent = text || "PDF açılamadı.";
-      actionsEl.hidden = false;
-      openBtn.href = url || "#";
-      showOverlay();
+    function showError(message){
+      clearViewer();
+      const box = document.createElement("div");
+      box.className = "error";
+      box.textContent = message || "PDF yüklenemedi.";
+      viewerEl.appendChild(box);
+      setStatus("Hata");
     }
 
-    function markLoaded(){
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeoutId);
-      hideOverlay();
+    function createPageCard(pageNo, totalPages, canvas){
+      const card = document.createElement("div");
+      card.className = "pageCard";
+
+      const meta = document.createElement("div");
+      meta.className = "pageMeta";
+      meta.textContent = `Sayfa ${pageNo} / ${totalPages}`;
+
+      canvas.className = "pageCanvas";
+      card.appendChild(canvas);
+      card.appendChild(meta);
+      return card;
     }
 
-    function init(){
-      const absPdfUrl = buildAbsoluteUrl(rawPdf);
+    async function verifyPdf(url){
+      try{
+        const r = await fetch(url, {
+          method: "HEAD",
+          cache: "no-store",
+          mode: "cors"
+        });
+        if (r.ok) return true;
+      }catch{}
 
-      titleEl.textContent = getTitle();
+      try{
+        const r = await fetch(url, {
+          method: "GET",
+          cache: "no-store",
+          mode: "cors",
+          headers: { Range: "bytes=0-1" }
+        });
+        return r.ok;
+      }catch{
+        return false;
+      }
+    }
 
-      if (!absPdfUrl){
-        showError("PDF yolu bulunamadı.", "#");
-        pdfFrame.src = "about:blank";
+    async function directDownload(url, filename){
+      const freshUrl = buildFreshUrl(url);
+
+      try{
+        const res = await fetch(freshUrl, {
+          cache: "no-store",
+          mode: "cors"
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const blob = await res.blob();
+        const objectUrl = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = filename || "document.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+        return true;
+      } catch {
+        window.open(freshUrl, "_blank", "noopener");
+        return false;
+      }
+    }
+
+    async function renderPdf(url){
+      const token = ++renderToken;
+      currentPdfUrl = absoluteUrl(url);
+      currentFileName = decodeSafe(rawName) || fileNameFromUrl(currentPdfUrl);
+
+      if (!currentPdfUrl){
+        showError("PDF yolu bulunamadı.");
         return;
       }
 
-      const freshPdfUrl = buildFreshUrl(absPdfUrl);
-      const pdfJsViewerUrl = buildPdfJsViewerUrl(freshPdfUrl);
+      titleEl.textContent = currentFileName;
+      document.title = currentFileName;
+      showLoading("PDF yükleniyor…");
+      setStatus("PDF kontrol ediliyor…");
 
-      openBtn.href = freshPdfUrl;
-      actionsEl.hidden = true;
-      showOverlay();
+      if (activeLoadingTask && typeof activeLoadingTask.destroy === "function"){
+        try{
+          activeLoadingTask.destroy();
+        }catch{}
+      }
 
-      pdfFrame.addEventListener("load", () => {
-        markLoaded();
-      }, { once: true });
+      const ok = await verifyPdf(buildFreshUrl(currentPdfUrl));
+      if (!ok){
+        if (token !== renderToken) return;
+        showError("PDF dosyasına erişilemedi.");
+        return;
+      }
 
-      pdfFrame.src = pdfJsViewerUrl;
+      try{
+        setStatus("PDF indiriliyor…");
 
-      timeoutId = setTimeout(() => {
-        if (settled) return;
-        showError("Görüntüleyici geç yanıt verdi. Yeni sekmede açmayı deneyin.", freshPdfUrl);
-      }, 12000);
+        const loadingTask = pdfjsLib.getDocument({
+          url: buildFreshUrl(currentPdfUrl),
+          withCredentials: false,
+          useWorkerFetch: true,
+          isEvalSupported: false,
+          disableAutoFetch: false,
+          disableStream: false,
+          disableRange: false
+        });
+
+        activeLoadingTask = loadingTask;
+        const pdf = await loadingTask.promise;
+
+        if (token !== renderToken){
+          try{
+            if (typeof pdf.destroy === "function") pdf.destroy();
+          }catch{}
+          return;
+        }
+
+        clearViewer();
+        setStatus(`Toplam ${pdf.numPages} sayfa`);
+
+        const wrapWidth = Math.max(
+          280,
+          Math.floor(viewerWrapEl.clientWidth - 8)
+        );
+
+        for (let pageNo = 1; pageNo <= pdf.numPages; pageNo++){
+          if (token !== renderToken) return;
+
+          setStatus(`Sayfa ${pageNo} / ${pdf.numPages} hazırlanıyor…`);
+
+          const page = await pdf.getPage(pageNo);
+          const baseViewport = page.getViewport({ scale: 1 });
+
+          const scale = Math.min(2, wrapWidth / baseViewport.width);
+          const viewport = page.getViewport({ scale });
+
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d", { alpha: false });
+
+          const outputScale = Math.min(window.devicePixelRatio || 1, 2);
+          canvas.width = Math.floor(viewport.width * outputScale);
+          canvas.height = Math.floor(viewport.height * outputScale);
+          canvas.style.width = `${Math.floor(viewport.width)}px`;
+          canvas.style.height = `${Math.floor(viewport.height)}px`;
+
+          const transform = outputScale !== 1
+            ? [outputScale, 0, 0, outputScale, 0, 0]
+            : null;
+
+          await page.render({
+            canvasContext: ctx,
+            viewport,
+            transform
+          }).promise;
+
+          if (token !== renderToken) return;
+          viewerEl.appendChild(createPageCard(pageNo, pdf.numPages, canvas));
+        }
+
+        setStatus(`Yüklendi · ${pdf.numPages} sayfa`);
+      } catch (err){
+        console.error(err);
+        if (token !== renderToken) return;
+        showError(`PDF yüklenemedi: ${err?.message || "bilinmeyen hata"}`);
+      }
     }
 
-    init();
+    reloadBtn.addEventListener("click", () => {
+      renderPdf(currentPdfUrl || rawPdfUrl);
+    });
+
+    openBtn.addEventListener("click", () => {
+      const url = currentPdfUrl || absoluteUrl(rawPdfUrl);
+      if (!url) return;
+      window.open(buildFreshUrl(url), "_blank", "noopener");
+    });
+
+    downloadBtn.addEventListener("click", async () => {
+      const url = currentPdfUrl || absoluteUrl(rawPdfUrl);
+      if (!url) return;
+      await directDownload(url, currentFileName || "document.pdf");
+    });
+
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (!currentPdfUrl) return;
+        renderPdf(currentPdfUrl);
+      }, 220);
+    });
+
+    renderPdf(absoluteUrl(rawPdfUrl));
   </script>
 </body>
 </html>
