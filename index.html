@@ -5908,23 +5908,11 @@
 
     }
 
-    function buildPdfViewerUrl(pdfMeta){
-
-      const pdfUrl = buildPdfAbsoluteUrl(pdfMeta.pdfPath);
-
-      const fileName = pdfMeta.pdfName || fileNameOnly(pdfMeta.pdfPath) || "PDF";
-
-      return `./viewer.html?pdf=${encodeURIComponent(pdfUrl)}&name=${encodeURIComponent(fileName)}`;
-
-    }
-
     function openPdfViewer(it, pdfMeta){
 
       if (!pdfMeta) return;
 
       const pdfUrl = buildPdfAbsoluteUrl(pdfMeta.pdfPath);
-
-      const viewerUrl = buildPdfViewerUrl(pdfMeta);
 
       pdfState.current = {
 
@@ -5932,15 +5920,13 @@
 
         meta: pdfMeta,
 
-        url: pdfUrl,
-
-        viewerUrl
+        url: pdfUrl
 
       };
 
       pdfTitleEl.textContent = pdfMeta.pdfName || it.title || "PDF";
 
-      pdfFrame.src = viewerUrl;
+      pdfFrame.src = pdfUrl;
 
       pdfOverlay.classList.add("open");
 
