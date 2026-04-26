@@ -868,9 +868,9 @@
 
     .audioDlBtn svg{
 
-      width: 20px;
+      width: 18px;
 
-      height: 20px;
+      height: 18px;
 
     }
 
@@ -1888,7 +1888,15 @@
 
     }
 
-    #captions{ pointer-events: auto; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+    #captions{
+
+      pointer-events: auto;
+
+      border-bottom-left-radius: 0;
+
+      border-bottom-right-radius: 0;
+
+    }
 
     .ccModeBtn{
 
@@ -2180,7 +2188,7 @@
 
       justify-content:center;
 
-      min-width: 64px;
+      min-width: 72px;
 
       height: 36px;
 
@@ -2234,8 +2242,6 @@
 
       background: #fafafa;
 
-      min-width: 0;
-
     }
 
     .skipStatLabel{
@@ -2245,12 +2251,6 @@
       color: var(--muted);
 
       margin-bottom: 4px;
-
-      white-space: nowrap;
-
-      overflow: hidden;
-
-      text-overflow: ellipsis;
 
     }
 
@@ -2263,10 +2263,6 @@
       color: #111;
 
       white-space: nowrap;
-
-      overflow: hidden;
-
-      text-overflow: ellipsis;
 
     }
 
@@ -2380,7 +2376,7 @@
 
       .skipStats{
 
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: 1fr;
 
       }
 
@@ -2402,7 +2398,7 @@
 
           <span>FSP Audio — Güncel</span>
 
-          <div id="buildMeta" class="buildMeta">v1.87 · Güncelleme: 25.04.2026 · 00:00</div>
+          <div id="buildMeta" class="buildMeta">v1.88 · Güncelleme: 26.04.2026 · 00:00</div>
 
         </div>
 
@@ -2564,13 +2560,13 @@
 
             <button id="sortDlCountBtn" class="sortBtn" type="button" title="İndirme sayısına göre sırala">
 
-              <svg class="mainIcon" viewBox="0 0 24 24" aria-hidden="true">
+              <svg class="mainIcon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 
-                <path class="iconBlue" d="M5 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
+                <path d="M12 4.5v9" stroke="#2b7cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 
-                <path class="iconOrange" d="M8 7h4v3H8zM8 13h4v4H8z"/>
+                <path d="M8.5 10.5L12 14l3.5-3.5" stroke="#2b7cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 
-                <circle class="iconOrange" cx="16.5" cy="16.5" r="3.2"/>
+                <path d="M7 18h10" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 
               </svg>
 
@@ -2774,6 +2770,16 @@
 
         <div class="skipRow">
 
+          <span class="skipEngineLabel">Harita</span>
+
+          <button id="skipMap1Btn" class="sbBtn" type="button">Map 1</button>
+
+          <button id="skipMap2Btn" class="sbBtn" type="button">Map 2</button>
+
+        </div>
+
+        <div class="skipRow">
+
           <button id="skipEnableBtn" class="sbBtn" type="button">Sessiz atlama: Kapalı</button>
 
           <span id="skipEngineLabel" class="skipEngineLabel">Hazır değil</span>
@@ -2974,9 +2980,9 @@
 
   <script>
 
-    const BUILD_VERSION = "v1.87";
+    const BUILD_VERSION = "v1.88";
 
-    const BUILD_UPDATED = "25.04.2026 · 00:00";
+    const BUILD_UPDATED = "26.04.2026 · 00:00";
 
     const IA_IDENTIFIER_1 = "vorhofflimmern-bei-bekannter-khk-dr-oemer-dr-remzi-09.05.25";
 
@@ -3085,6 +3091,10 @@
     const skipDrawerBtn = document.getElementById("skipDrawerBtn");
 
     const skipDrawer = document.getElementById("skipDrawer");
+
+    const skipMap1Btn = document.getElementById("skipMap1Btn");
+
+    const skipMap2Btn = document.getElementById("skipMap2Btn");
 
     const skipEnableBtn = document.getElementById("skipEnableBtn");
 
@@ -3490,7 +3500,7 @@
 
       txPos: "fsp1.tx.pos.v1",
 
-      skipSettings: "fsp1.skip.settings.map.v4",
+      skipSettings: "fsp1.skip.settings.map.v5",
 
       skipDrawerOpen: "fsp1.skip.drawer.open.v1"
 
@@ -5954,50 +5964,6 @@
 
     }
 
-    function waitForPdfViewerMessage(expectedType, timeoutMs = 20000){
-
-      return new Promise((resolve, reject) => {
-
-        let done = false;
-
-        const timer = setTimeout(() => {
-
-          if (done) return;
-
-          done = true;
-
-          window.removeEventListener("message", onMessage);
-
-          reject(new Error("viewer timeout"));
-
-        }, timeoutMs);
-
-        function onMessage(event){
-
-          const data = event.data || {};
-
-          if (!data || typeof data !== "object") return;
-
-          if (data.type !== expectedType) return;
-
-          if (done) return;
-
-          done = true;
-
-          clearTimeout(timer);
-
-          window.removeEventListener("message", onMessage);
-
-          resolve(data);
-
-        }
-
-        window.addEventListener("message", onMessage);
-
-      });
-
-    }
-
     pdfCloseBtn.addEventListener("click", closePdfViewer);
 
     pdfOverlay.addEventListener("click", (e) => {
@@ -6006,61 +5972,13 @@
 
     });
 
-    pdfDownloadBtn.addEventListener("click", async () => {
+    pdfDownloadBtn.addEventListener("click", () => {
 
       if (!pdfState.current?.url) return;
 
-      try{
+      const filename = pdfState.current?.meta?.pdfName || "document.pdf";
 
-        const frameWin = pdfFrame?.contentWindow;
-
-        if (!frameWin) throw new Error("viewer not ready");
-
-        frameWin.postMessage({ type: "pdf-download-request" }, "*");
-
-        const result = await waitForPdfViewerMessage("pdf-download-result", 25000);
-
-        if (!result?.ok) throw new Error(result?.error || "download failed");
-
-      }catch(err){
-
-        console.error(err);
-
-        try{
-
-          const filename = pdfState.current?.meta?.pdfName || "document.pdf";
-
-          const res = await fetch(pdfState.current.url, { cache: "no-store" });
-
-          if (!res.ok) throw new Error("pdf fetch failed");
-
-          const blob = await res.blob();
-
-          const blobUrl = URL.createObjectURL(blob);
-
-          const a = document.createElement("a");
-
-          a.href = blobUrl;
-
-          a.download = filename;
-
-          a.rel = "noopener";
-
-          document.body.appendChild(a);
-
-          a.click();
-
-          a.remove();
-
-          setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
-
-        }catch(e){
-
-          console.error(e);
-
-        }
-
-      }
+      clickDownload(pdfState.current.url, filename);
 
     });
 
@@ -6068,29 +5986,13 @@
 
       if (!pdfState.current?.url) return;
 
+      const text = `${pdfState.current.meta.pdfName || ""}\n${pdfState.current.url}`;
+
       try{
-
-        const frameWin = pdfFrame?.contentWindow;
-
-        if (!frameWin) throw new Error("viewer not ready");
-
-        frameWin.postMessage({ type: "pdf-copy-request" }, "*");
-
-        const result = await waitForPdfViewerMessage("pdf-copy-result", 30000);
-
-        if (!result?.ok) throw new Error(result?.error || "copy failed");
-
-        const text = String(result?.text || "").trim();
-
-        if (!text) throw new Error("empty pdf text");
 
         await navigator.clipboard.writeText(text);
 
-      }catch(err){
-
-        console.error(err);
-
-      }
+      }catch{}
 
     });
 
@@ -6314,6 +6216,22 @@
 
     }
 
+    function downloadArrowSvg(){
+
+      return `
+
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+
+          <path d="M12 4.5v9" stroke="#2b7cff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <path d="M8.5 10.5L12 14l3.5-3.5" stroke="#2b7cff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <path d="M7 18h10" stroke="#f59e0b" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+
+        </svg>`;
+
+    }
+
     function iconButton(kind, on, title){
 
       const btn = document.createElement("button");
@@ -6340,17 +6258,7 @@
 
       } else if (kind === "download"){
 
-        btn.innerHTML = `
-
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-
-            <path class="iconBlue" d="M5 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
-
-            <path class="iconOrange" d="M8 7h4v3H8zM8 13h4v4H8z"/>
-
-            <circle class="iconOrange" cx="16.5" cy="16.5" r="3.2"/>
-
-          </svg>`;
+        btn.innerHTML = downloadArrowSvg();
 
       }
 
@@ -8182,19 +8090,21 @@
 
       enabled: false,
 
+      mapSet: "v2",
+
       mode: "max",
 
       fadeMs: 0,
 
       tailKeepMs: 0,
 
-      resumeOffsetMs: 280,
+      resumeOffsetMs: 360,
 
-      minSegmentMs: 45,
+      minSegmentMs: 15,
 
-      cooldownMs: 8,
+      cooldownMs: 0,
 
-      maxAutoSeekMs: 140000
+      maxAutoSeekMs: 240000
 
     };
 
@@ -8202,7 +8112,13 @@
 
       try{
 
-        return { ...DEFAULT_SKIP_SETTINGS, ...(JSON.parse(localStorage.getItem(LS.skipSettings) || "{}")) };
+        const parsed = JSON.parse(localStorage.getItem(LS.skipSettings) || "{}");
+
+        const merged = { ...DEFAULT_SKIP_SETTINGS, ...parsed };
+
+        merged.mapSet = (merged.mapSet === "v1") ? "v1" : "v2";
+
+        return merged;
 
       }catch{
 
@@ -8212,15 +8128,29 @@
 
     })();
 
-    const STUMMSKIP_BASES = [
+    const STUMMSKIP_ROOTS = [
 
-      "https://cdn.jsdelivr.net/gh/protokolFSP/stummskip@main/silence-maps",
+      "https://cdn.jsdelivr.net/gh/protokolFSP/stummskip@main",
 
-      "https://raw.githubusercontent.com/protokolFSP/stummskip/main/silence-maps"
+      "https://raw.githubusercontent.com/protokolFSP/stummskip/main"
 
     ];
 
-    const STUMMSKIP_INDEX_URLS = STUMMSKIP_BASES.map((b) => `${b}/index.json`);
+    const STUMMSKIP_DIRS = {
+
+      v1: "silence-maps",
+
+      v2: "silence-maps-v2"
+
+    };
+
+    const MAP_SET_LABELS = {
+
+      v1: "Map 1",
+
+      v2: "Map 2"
+
+    };
 
     const skipState = {
 
@@ -8234,15 +8164,17 @@
 
       currentMapItemId: null,
 
+      currentMapSet: null,
+
       currentMap: null,
 
-      mapIndex: null,
+      mapIndexBySet: new Map(),
 
-      indexPromise: null,
+      indexPromiseBySet: new Map(),
 
-      mapPromiseById: new Map(),
+      mapPromiseByKey: new Map(),
 
-      mapCacheById: new Map(),
+      mapCacheByKey: new Map(),
 
       status: "",
 
@@ -8257,6 +8189,38 @@
     function saveSkipSettings(){
 
       localStorage.setItem(LS.skipSettings, JSON.stringify(skipSettings));
+
+    }
+
+    function mapSetLabel(mapSet){
+
+      return MAP_SET_LABELS[mapSet === "v1" ? "v1" : "v2"];
+
+    }
+
+    function getCurrentMapSet(){
+
+      return skipSettings.mapSet === "v1" ? "v1" : "v2";
+
+    }
+
+    function getStummskipBases(mapSet = getCurrentMapSet()){
+
+      const dir = STUMMSKIP_DIRS[mapSet === "v1" ? "v1" : "v2"];
+
+      return STUMMSKIP_ROOTS.map((root) => `${root}/${dir}`);
+
+    }
+
+    function getStummskipIndexUrls(mapSet = getCurrentMapSet()){
+
+      return getStummskipBases(mapSet).map((b) => `${b}/index.json`);
+
+    }
+
+    function getMapCacheKey(item, mapSet = getCurrentMapSet()){
+
+      return `${mapSet}|${item?.id || ""}`;
 
     }
 
@@ -8284,7 +8248,7 @@
 
     }
 
-    function buildMapCandidateUrls(item, metaPath = ""){
+    function buildMapCandidateUrls(item, metaPath = "", mapSet = getCurrentMapSet()){
 
       const folder = sourceFolderForItem(item);
 
@@ -8293,6 +8257,8 @@
       const jsonName = rawName.replace(/\.(m4a|mp3)$/i, ".json");
 
       const out = [];
+
+      const bases = getStummskipBases(mapSet);
 
       const p = String(metaPath || "").trim();
 
@@ -8304,9 +8270,15 @@
 
         } else {
 
-          const clean = p.replace(/^\.?\//, "").replace(/^silence-maps\//, "");
+          const clean = p
 
-          for (const base of STUMMSKIP_BASES){
+            .replace(/^\.?\//, "")
+
+            .replace(/^silence-maps-v2\//, "")
+
+            .replace(/^silence-maps\//, "");
+
+          for (const base of bases){
 
             out.push(`${base}/${clean}`);
 
@@ -8316,7 +8288,7 @@
 
       }
 
-      for (const base of STUMMSKIP_BASES){
+      for (const base of bases){
 
         out.push(`${base}/${folder}/${encodeURIComponent(jsonName)}`);
 
@@ -8388,47 +8360,53 @@
 
     }
 
-    async function loadSilenceMapIndex(force = false){
+    async function loadSilenceMapIndex(force = false, mapSet = getCurrentMapSet()){
 
-      if (!force && skipState.mapIndex) return skipState.mapIndex;
+      if (!force && skipState.mapIndexBySet.has(mapSet)) return skipState.mapIndexBySet.get(mapSet);
 
-      if (!force && skipState.indexPromise) return skipState.indexPromise;
+      if (!force && skipState.indexPromiseBySet.has(mapSet)) return skipState.indexPromiseBySet.get(mapSet);
 
-      skipState.indexPromise = (async () => {
+      const promise = (async () => {
 
-        const { json } = await fetchJsonFirstOk(STUMMSKIP_INDEX_URLS);
+        const { json } = await fetchJsonFirstOk(getStummskipIndexUrls(mapSet));
 
-        skipState.mapIndex = json || {};
+        const data = json || {};
 
-        return skipState.mapIndex;
+        skipState.mapIndexBySet.set(mapSet, data);
+
+        return data;
 
       })();
 
+      skipState.indexPromiseBySet.set(mapSet, promise);
+
       try{
 
-        return await skipState.indexPromise;
+        return await promise;
 
       } finally {
 
-        skipState.indexPromise = null;
+        skipState.indexPromiseBySet.delete(mapSet);
 
       }
 
     }
 
-    async function loadSilenceMapForItem(item, force = false){
+    async function loadSilenceMapForItem(item, force = false, mapSet = getCurrentMapSet()){
 
       if (!item?.id) return null;
 
-      if (!force && skipState.mapCacheById.has(item.id)){
+      const key = getMapCacheKey(item, mapSet);
 
-        return skipState.mapCacheById.get(item.id) || null;
+      if (!force && skipState.mapCacheByKey.has(key)){
+
+        return skipState.mapCacheByKey.get(key) || null;
 
       }
 
-      if (!force && skipState.mapPromiseById.has(item.id)){
+      if (!force && skipState.mapPromiseByKey.has(key)){
 
-        return skipState.mapPromiseById.get(item.id);
+        return skipState.mapPromiseByKey.get(key);
 
       }
 
@@ -8438,13 +8416,13 @@
 
         try{
 
-          const indexData = await loadSilenceMapIndex(force);
+          const indexData = await loadSilenceMapIndex(force, mapSet);
 
           meta = getMapMetaForItem(indexData, item);
 
         }catch{}
 
-        const candidateUrls = buildMapCandidateUrls(item, meta?.path || meta?.url || meta?.file || "");
+        const candidateUrls = buildMapCandidateUrls(item, meta?.path || meta?.url || meta?.file || "", mapSet);
 
         const { json: j, url } = await fetchJsonFirstOk(candidateUrls);
 
@@ -8458,9 +8436,13 @@
 
           name: j?.name || item.name || "",
 
+          title: j?.title || item.title || "",
+
           duration: Number(j?.duration) || 0,
 
           sourceUrl: url,
+
+          mapSet,
 
           segments: segments
 
@@ -8478,13 +8460,13 @@
 
         };
 
-        skipState.mapCacheById.set(item.id, normalized);
+        skipState.mapCacheByKey.set(key, normalized);
 
         return normalized;
 
       })();
 
-      skipState.mapPromiseById.set(item.id, p);
+      skipState.mapPromiseByKey.set(key, p);
 
       try{
 
@@ -8492,7 +8474,7 @@
 
       } finally {
 
-        skipState.mapPromiseById.delete(item.id);
+        skipState.mapPromiseByKey.delete(key);
 
       }
 
@@ -8530,7 +8512,11 @@
 
     async function primeSilenceMapForItem(item){
 
+      const mapSet = getCurrentMapSet();
+
       skipState.currentMapItemId = item?.id || null;
+
+      skipState.currentMapSet = mapSet;
 
       skipState.currentMap = null;
 
@@ -8540,7 +8526,7 @@
 
       if (!item){
 
-        setSkipStatus("Silence map yok.");
+        setSkipStatus(`${mapSetLabel(mapSet)} yok.`);
 
         syncSkipUi();
 
@@ -8550,9 +8536,9 @@
 
       try{
 
-        setSkipStatus("Silence map aranıyor…");
+        setSkipStatus(`${mapSetLabel(mapSet)} aranıyor…`);
 
-        const map = await loadSilenceMapForItem(item, false);
+        const map = await loadSilenceMapForItem(item, false, mapSet);
 
         if (!map || !map.segments.length){
 
@@ -8560,7 +8546,7 @@
 
           skipState.estimatedGainMs = 0;
 
-          setSkipStatus("Bu kayıtta silence map boş.");
+          setSkipStatus(`Bu kayıtta ${mapSetLabel(mapSet)} boş.`);
 
           syncSkipUi();
 
@@ -8570,13 +8556,13 @@
 
         }
 
-        if (skipState.currentMapItemId === item.id){
+        if (skipState.currentMapItemId === item.id && skipState.currentMapSet === mapSet){
 
           skipState.currentMap = map;
 
           recomputeEstimatedGain();
 
-          setSkipStatus(`Silence map hazır · ${map.segments.length} segment`);
+          setSkipStatus(`${mapSetLabel(mapSet)} hazır · ${map.segments.length} segment`);
 
           syncSkipUi();
 
@@ -8596,7 +8582,7 @@
 
         updateSkipGainUi();
 
-        setSkipStatus(`Silence map yüklenemedi. ${err.message || ""}`.trim());
+        setSkipStatus(`${mapSetLabel(mapSet)} yüklenemedi. ${err.message || ""}`.trim());
 
         syncSkipUi();
 
@@ -8778,7 +8764,7 @@
 
         updateSkipGainUi();
 
-        skipState.manualSuppressUntil = performance.now() + Math.max(60, fadeMs + 70);
+        skipState.manualSuppressUntil = performance.now() + Math.max(35, fadeMs + 25);
 
         if (fadeMs > 0){
 
@@ -8838,13 +8824,15 @@
 
       skipDrawerBtn.classList.toggle("on", open || skipSettings.enabled);
 
-      skipDrawerBtn.classList.toggle("breathing", !!skipSettings.enabled);
-
       skipDrawerBtn.setAttribute("aria-expanded", String(open));
 
       skipEnableBtn.textContent = "Sessiz atlama: " + (skipSettings.enabled ? "Açık" : "Kapalı");
 
       skipEnableBtn.classList.toggle("on", !!skipSettings.enabled);
+
+      skipMap1Btn.classList.toggle("on", getCurrentMapSet() === "v1");
+
+      skipMap2Btn.classList.toggle("on", getCurrentMapSet() === "v2");
 
       skipModeLight.classList.toggle("on", skipSettings.mode === "light");
 
@@ -8864,11 +8852,17 @@
 
       skipFadeValue.textContent = `${Math.round(skipSettings.fadeMs)}ms`;
 
-      skipEngineLabel.textContent = (skipState.currentMap?.segments?.length || 0)
+      if (skipState.currentMap?.segments?.length){
 
-        ? `MAP ${skipState.currentMap.segments.length}`
+        const labelShort = getCurrentMapSet() === "v1" ? "M1" : "M2";
 
-        : "MAP";
+        skipEngineLabel.textContent = `${labelShort} ${skipState.currentMap.segments.length}`;
+
+      } else {
+
+        skipEngineLabel.textContent = (getCurrentMapSet() === "v1") ? "M1" : "M2";
+
+      }
 
       updateSkipGainUi();
 
@@ -8878,9 +8872,9 @@
 
           (skipState.currentMap?.segments?.length || 0)
 
-            ? `Silence map hazır · ${skipState.currentMap.segments.length} segment`
+            ? `${mapSetLabel(getCurrentMapSet())} hazır · ${skipState.currentMap.segments.length} segment`
 
-            : "Silence map bekleniyor…"
+            : `${mapSetLabel(getCurrentMapSet())} bekleniyor…`
 
         );
 
@@ -8910,7 +8904,7 @@
 
       skipState.lastSkipAt = 0;
 
-      skipState.manualSuppressUntil = performance.now() + 1200;
+      skipState.manualSuppressUntil = performance.now() + 900;
 
       skipState.fileSavedMs = 0;
 
@@ -8928,17 +8922,17 @@
 
           mode: "light",
 
-          fadeMs: 40,
+          fadeMs: 28,
 
           tailKeepMs: 0,
 
-          resumeOffsetMs: 40,
+          resumeOffsetMs: 60,
 
-          minSegmentMs: 520,
+          minSegmentMs: 420,
 
-          cooldownMs: 140,
+          cooldownMs: 110,
 
-          maxAutoSeekMs: 22000
+          maxAutoSeekMs: 26000
 
         });
 
@@ -8948,17 +8942,17 @@
 
           mode: "balanced",
 
-          fadeMs: 16,
+          fadeMs: 6,
 
           tailKeepMs: 0,
 
-          resumeOffsetMs: 80,
+          resumeOffsetMs: 110,
 
-          minSegmentMs: 260,
+          minSegmentMs: 180,
 
-          cooldownMs: 75,
+          cooldownMs: 36,
 
-          maxAutoSeekMs: 42000
+          maxAutoSeekMs: 50000
 
         });
 
@@ -8968,17 +8962,17 @@
 
           mode: "aggressive",
 
-          fadeMs: 8,
+          fadeMs: 0,
 
           tailKeepMs: 0,
 
-          resumeOffsetMs: 130,
+          resumeOffsetMs: 170,
 
-          minSegmentMs: 140,
+          minSegmentMs: 95,
 
-          cooldownMs: 45,
+          cooldownMs: 16,
 
-          maxAutoSeekMs: 72000
+          maxAutoSeekMs: 90000
 
         });
 
@@ -8988,17 +8982,17 @@
 
           mode: "ultra",
 
-          fadeMs: 4,
+          fadeMs: 0,
 
           tailKeepMs: 0,
 
-          resumeOffsetMs: 190,
+          resumeOffsetMs: 250,
 
-          minSegmentMs: 85,
+          minSegmentMs: 45,
 
-          cooldownMs: 22,
+          cooldownMs: 6,
 
-          maxAutoSeekMs: 105000
+          maxAutoSeekMs: 150000
 
         });
 
@@ -9012,13 +9006,13 @@
 
           tailKeepMs: 0,
 
-          resumeOffsetMs: 280,
+          resumeOffsetMs: 360,
 
-          minSegmentMs: 45,
+          minSegmentMs: 15,
 
-          cooldownMs: 8,
+          cooldownMs: 0,
 
-          maxAutoSeekMs: 140000
+          maxAutoSeekMs: 240000
 
         });
 
@@ -9032,6 +9026,48 @@
 
     }
 
+    async function setSkipMapSet(next){
+
+      const normalized = (next === "v1") ? "v1" : "v2";
+
+      if (skipSettings.mapSet === normalized){
+
+        syncSkipUi();
+
+        return;
+
+      }
+
+      skipSettings.mapSet = normalized;
+
+      saveSkipSettings();
+
+      stopSkipLoop();
+
+      skipState.currentMap = null;
+
+      skipState.currentMapItemId = null;
+
+      skipState.currentMapSet = normalized;
+
+      skipState.estimatedGainMs = 0;
+
+      updateSkipGainUi();
+
+      setSkipStatus(`${mapSetLabel(normalized)} seçildi. Silence map aranıyor…`);
+
+      syncSkipUi();
+
+      const it = items.find((x) => x.id === activeId) || null;
+
+      if (it){
+
+        await primeSilenceMapForItem(it);
+
+      }
+
+    }
+
     skipDrawerBtn.addEventListener("click", (e) => {
 
       e.stopPropagation();
@@ -9039,6 +9075,10 @@
       toggleSkipDrawer();
 
     });
+
+    skipMap1Btn.addEventListener("click", () => setSkipMapSet("v1"));
+
+    skipMap2Btn.addEventListener("click", () => setSkipMapSet("v2"));
 
     skipEnableBtn.addEventListener("click", async () => {
 
@@ -9052,7 +9092,7 @@
 
         stopSkipLoop();
 
-        skipState.manualSuppressUntil = performance.now() + 1200;
+        skipState.manualSuppressUntil = performance.now() + 900;
 
         return;
 
@@ -9060,7 +9100,7 @@
 
       const it = items.find((x) => x.id === activeId) || null;
 
-      if (it && (!skipState.currentMap || skipState.currentMapItemId !== it.id)){
+      if (it && (!skipState.currentMap || skipState.currentMapItemId !== it.id || skipState.currentMapSet !== getCurrentMapSet())){
 
         await primeSilenceMapForItem(it);
 
@@ -9120,7 +9160,7 @@
 
       skipState.skipInFlight = false;
 
-      skipState.manualSuppressUntil = performance.now() + 1200;
+      skipState.manualSuppressUntil = performance.now() + 900;
 
     });
 
