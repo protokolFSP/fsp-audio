@@ -2112,17 +2112,17 @@
 
     .pdfActionBtn:hover{ background: var(--hover); }
 
-    #pdfFrame{
+    #pdfViewerHost{
 
       width:100%;
 
       height:100%;
 
-      border:0;
+      flex:1 1 auto;
 
       background:#fff;
 
-      flex:1 1 auto;
+      overflow:auto;
 
     }
 
@@ -2962,15 +2962,13 @@
 
           <button id="pdfDownloadBtn" class="pdfActionBtn" type="button">İndir</button>
 
-          <button id="pdfCopyBtn" class="pdfActionBtn" type="button">Hepsini kopyala</button>
-
           <button id="pdfCloseBtn" class="pdfActionBtn" type="button">Kapat</button>
 
         </div>
 
       </div>
 
-      <iframe id="pdfFrame" title="PDF görüntüleyici"></iframe>
+      <div id="pdfViewerHost"></div>
 
     </div>
 
@@ -3204,13 +3202,11 @@
 
     const pdfOverlay = document.getElementById("pdfOverlay");
 
-    const pdfFrame = document.getElementById("pdfFrame");
+    const pdfViewerHost = document.getElementById("pdfViewerHost");
 
     const pdfTitleEl = document.getElementById("pdfTitle");
 
     const pdfDownloadBtn = document.getElementById("pdfDownloadBtn");
-
-    const pdfCopyBtn = document.getElementById("pdfCopyBtn");
 
     const pdfCloseBtn = document.getElementById("pdfCloseBtn");
 
@@ -5908,11 +5904,49 @@
 
     }
 
+    function buildPdfObjectHtml(pdfUrl, title){
+
+      const safeUrl = escHtml(pdfUrl);
+
+      const safeTitle = escHtml(title || "PDF");
+
+      return `
+
+        <object
+
+          data="${safeUrl}"
+
+          type="application/pdf"
+
+          width="100%"
+
+          height="100%"
+
+          style="display:block;width:100%;height:100%;border:0;background:#fff;"
+
+          aria-label="${safeTitle}">
+
+          <div style="padding:16px;line-height:1.45;font-size:15px;">
+
+            <div style="font-weight:700;margin-bottom:8px;">PDF bu tarayıcıda gömülü açılamadı.</div>
+
+            <a href="${safeUrl}" target="_blank" rel="noopener noreferrer">Yeni sekmede aç</a>
+
+          </div>
+
+        </object>
+
+      `;
+
+    }
+
     function openPdfViewer(it, pdfMeta){
 
       if (!pdfMeta) return;
 
       const pdfUrl = buildPdfAbsoluteUrl(pdfMeta.pdfPath);
+
+      const title = pdfMeta.pdfName || it.title || "PDF";
 
       pdfState.current = {
 
@@ -5924,9 +5958,9 @@
 
       };
 
-      pdfTitleEl.textContent = pdfMeta.pdfName || it.title || "PDF";
+      pdfTitleEl.textContent = title;
 
-      pdfFrame.src = pdfUrl;
+      pdfViewerHost.innerHTML = buildPdfObjectHtml(pdfUrl, title);
 
       pdfOverlay.classList.add("open");
 
@@ -5942,7 +5976,7 @@
 
       pdfOverlay.setAttribute("aria-hidden", "true");
 
-      pdfFrame.src = "about:blank";
+      pdfViewerHost.innerHTML = "";
 
       pdfState.current = null;
 
@@ -5965,20 +5999,6 @@
       const filename = pdfState.current?.meta?.pdfName || "document.pdf";
 
       clickDownload(pdfState.current.url, filename);
-
-    });
-
-    pdfCopyBtn.addEventListener("click", async () => {
-
-      if (!pdfState.current?.url) return;
-
-      const text = `${pdfState.current.meta.pdfName || ""}\n${pdfState.current.url}`;
-
-      try{
-
-        await navigator.clipboard.writeText(text);
-
-      }catch{}
 
     });
 
