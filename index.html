@@ -2218,7 +2218,9 @@
 
       grid-template-columns: repeat(3, minmax(0, 1fr));
 
-      gap: 8px;
+      gap:10px;
+
+      align-items:stretch;
 
       margin-top: 10px;
 
@@ -2226,13 +2228,17 @@
 
     .skipStat{
 
+      min-width:0;
+
       border: 1px solid #e2e2e2;
 
-      border-radius: 12px;
+      border-radius: 14px;
 
-      padding: 8px 10px;
+      padding: 10px 12px;
 
       background: #fafafa;
+
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
 
     }
 
@@ -2242,17 +2248,31 @@
 
       color: var(--muted);
 
-      margin-bottom: 4px;
+      line-height: 1.1;
+
+      margin-bottom: 6px;
+
+      white-space: nowrap;
+
+      overflow: hidden;
+
+      text-overflow: ellipsis;
 
     }
 
     .skipStatValue{
 
-      font-size: .95rem;
+      font-size: .98rem;
 
-      font-weight: 750;
+      font-weight: 800;
 
       color: #111;
+
+      line-height: 1.1;
+
+      font-variant-numeric: tabular-nums;
+
+      white-space: nowrap;
 
     }
 
@@ -2366,7 +2386,9 @@
 
       .skipStats{
 
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+
+        gap:8px;
 
       }
 
@@ -4490,7 +4512,7 @@
 
     }
 
-        playerEl.addEventListener("timeupdate", maybeStopAtSegmentEnd);
+    playerEl.addEventListener("timeupdate", maybeStopAtSegmentEnd);
 
     function playSegment(start, end){
 
@@ -5890,7 +5912,7 @@
 
       const fileName = pdfMeta.pdfName || fileNameOnly(pdfMeta.pdfPath) || "PDF";
 
-      return `./viewer.html?pdf=${encodeURIComponent(pdfUrl)}&name=${encodeURIComponent(fileName)}`;
+      return `./viewer.html?pdf=${encodeURIComponent(pdfUrl)}&name=${encodeURIComponent(fileName)}&v=${Date.now()}`;
 
     }
 
@@ -5916,7 +5938,13 @@
 
       pdfTitleEl.textContent = pdfMeta.pdfName || it.title || "PDF";
 
-      pdfFrame.src = viewerUrl;
+      pdfFrame.src = "about:blank";
+
+      requestAnimationFrame(() => {
+
+        pdfFrame.src = viewerUrl;
+
+      });
 
       pdfOverlay.classList.add("open");
 
@@ -8062,17 +8090,17 @@
 
       mode: "max",
 
-      fadeMs: 0,
+      fadeMs: 14,
 
-      tailKeepMs: 0,
+      tailKeepMs: 180,
 
-      resumeOffsetMs: 420,
+      resumeOffsetMs: 20,
 
-      minSegmentMs: 15,
+      minSegmentMs: 1700,
 
-      cooldownMs: 0,
+      cooldownMs: 360,
 
-      maxAutoSeekMs: 240000
+      maxAutoSeekMs: 7000
 
     };
 
@@ -8806,17 +8834,17 @@
 
           mode: "light",
 
-          fadeMs: 35,
+          fadeMs: 40,
 
-          tailKeepMs: 0,
+          tailKeepMs: 120,
 
-          resumeOffsetMs: 80,
+          resumeOffsetMs: 40,
 
-          minSegmentMs: 350,
+          minSegmentMs: 700,
 
-          cooldownMs: 90,
+          cooldownMs: 180,
 
-          maxAutoSeekMs: 30000
+          maxAutoSeekMs: 12000
 
         });
 
@@ -8826,17 +8854,17 @@
 
           mode: "balanced",
 
-          fadeMs: 8,
+          fadeMs: 30,
 
-          tailKeepMs: 0,
+          tailKeepMs: 140,
 
-          resumeOffsetMs: 140,
+          resumeOffsetMs: 35,
 
-          minSegmentMs: 140,
+          minSegmentMs: 950,
 
-          cooldownMs: 30,
+          cooldownMs: 240,
 
-          maxAutoSeekMs: 60000
+          maxAutoSeekMs: 10000
 
         });
 
@@ -8846,17 +8874,17 @@
 
           mode: "aggressive",
 
-          fadeMs: 0,
+          fadeMs: 22,
 
-          tailKeepMs: 0,
+          tailKeepMs: 150,
 
-          resumeOffsetMs: 240,
+          resumeOffsetMs: 30,
 
-          minSegmentMs: 60,
+          minSegmentMs: 1200,
 
-          cooldownMs: 8,
+          cooldownMs: 280,
 
-          maxAutoSeekMs: 120000
+          maxAutoSeekMs: 9000
 
         });
 
@@ -8866,17 +8894,17 @@
 
           mode: "ultra",
 
-          fadeMs: 0,
+          fadeMs: 18,
 
-          tailKeepMs: 0,
+          tailKeepMs: 160,
 
-          resumeOffsetMs: 320,
+          resumeOffsetMs: 24,
 
-          minSegmentMs: 30,
+          minSegmentMs: 1450,
 
-          cooldownMs: 3,
+          cooldownMs: 320,
 
-          maxAutoSeekMs: 180000
+          maxAutoSeekMs: 8000
 
         });
 
@@ -8886,17 +8914,17 @@
 
           mode: "max",
 
-          fadeMs: 0,
+          fadeMs: 14,
 
-          tailKeepMs: 0,
+          tailKeepMs: 180,
 
-          resumeOffsetMs: 420,
+          resumeOffsetMs: 20,
 
-          minSegmentMs: 15,
+          minSegmentMs: 1700,
 
-          cooldownMs: 0,
+          cooldownMs: 360,
 
-          maxAutoSeekMs: 240000
+          maxAutoSeekMs: 7000
 
         });
 
