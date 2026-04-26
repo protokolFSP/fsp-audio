@@ -2398,7 +2398,7 @@
 
           <span>FSP Audio — Güncel</span>
 
-          <div id="buildMeta" class="buildMeta">v1.88 · Güncelleme: 26.04.2026 · 00:00</div>
+          <div id="buildMeta" class="buildMeta">v1.89 · Güncelleme: 26.04.2026 · 00:00</div>
 
         </div>
 
@@ -2962,7 +2962,7 @@
 
           <button id="pdfDownloadBtn" class="pdfActionBtn" type="button">İndir</button>
 
-          <button id="pdfCopyBtn" class="pdfActionBtn" type="button">Hepsini kopyala</button>
+          <button id="pdfOpenNewBtn" class="pdfActionBtn" type="button">Yeni sekmede aç</button>
 
           <button id="pdfCloseBtn" class="pdfActionBtn" type="button">Kapat</button>
 
@@ -2980,7 +2980,7 @@
 
   <script>
 
-    const BUILD_VERSION = "v1.88";
+    const BUILD_VERSION = "v1.89";
 
     const BUILD_UPDATED = "26.04.2026 · 00:00";
 
@@ -3210,7 +3210,7 @@
 
     const pdfDownloadBtn = document.getElementById("pdfDownloadBtn");
 
-    const pdfCopyBtn = document.getElementById("pdfCopyBtn");
+    const pdfOpenNewBtn = document.getElementById("pdfOpenNewBtn");
 
     const pdfCloseBtn = document.getElementById("pdfCloseBtn");
 
@@ -5978,21 +5978,15 @@
 
       const filename = pdfState.current?.meta?.pdfName || "document.pdf";
 
-      clickDownload(pdfState.current.url, filename);
+      forceDownload(pdfState.current.url, filename);
 
     });
 
-    pdfCopyBtn.addEventListener("click", async () => {
+    pdfOpenNewBtn.addEventListener("click", () => {
 
-      if (!pdfState.current?.url) return;
+      if (!pdfState.current?.viewerUrl) return;
 
-      const text = `${pdfState.current.meta.pdfName || ""}\n${pdfState.current.url}`;
-
-      try{
-
-        await navigator.clipboard.writeText(text);
-
-      }catch{}
+      window.open(pdfState.current.viewerUrl, "_blank", "noopener");
 
     });
 
