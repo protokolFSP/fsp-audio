@@ -1,6 +1,6 @@
 {
-  "generatedAt": "26.04.2026 03:15",
-  "count": 10,
+  "generatedAt": "26.04.2026 12:00",
+  "count": 12,
   "items": [
     {
       "audioId": "S2|Sinusitis Dr Ömer mit Dr Hatip 03.04.2026.m4a",
@@ -64,6 +64,24 @@
       "pdfName": "Dekompensierte Herzinsuffizienz Dr Heiko mit Dr Zehra Betül 12.03.2026 .pdf",
       "pdfPath": "./docs/Dekompensierte Herzinsuffizienz Dr Heiko mit Dr Zehra Betül 12.03.2026 .pdf",
       "score": 218
+    },
+    {
+      "audioId": "S2|ACS Fr Gerhild mit Dr MustafaT 23.04.2026.m4a",
+      "audioName": "ACS Fr Gerhild mit Dr MustafaT 23.04.2026.m4a",
+      "audioTitle": "ACS Fr Gerhild mit Dr MustafaT 23.04.2026.m4a",
+      "audioDate": "23.04.2020",
+      "pdfName": "Pneumonie und pyelonephritis Dr.Heiko mit Dr Mustafa A 23.04.2026.pdf",
+      "pdfPath": "./docs/Pneumonie und pyelonephritis Dr.Heiko mit Dr Mustafa A 23.04.2026.pdf",
+      "score": 127
+    },
+    {
+      "audioId": "S2|Pneumonie und pyelonephritis Dr.Heiko mit Dr Mustafa A 23.04.2026.m4a",
+      "audioName": "Pneumonie und pyelonephritis Dr.Heiko mit Dr Mustafa A 23.04.2026.m4a",
+      "audioTitle": "Pneumonie und pyelonephritis Dr.Heiko mit Dr Mustafa A 23.04.2026.m4a",
+      "audioDate": "23.04.2020",
+      "pdfName": "Pneumonie und pyelonephritis Dr.Heiko mit Dr Mustafa A 23.04.2026.pdf",
+      "pdfPath": "./docs/Pneumonie und pyelonephritis Dr.Heiko mit Dr Mustafa A 23.04.2026.pdf",
+      "score": 350
     },
     {
       "audioId": "S2|TVT mit Lungenembolie Dr Ömer mit Dr Hülya 24.04.2026.m4a",
