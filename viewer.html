@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>PDF</title>
+
   <style>
     :root{
       --bg:#f3f4f6;
@@ -11,8 +12,9 @@
       --border:#d8d8d8;
       --text:#111827;
       --muted:#6b7280;
-      --blue:#2563eb;
       --hover:#f9fafb;
+      --ok:#166534;
+      --err:#991b1b;
     }
 
     html, body{
@@ -74,6 +76,7 @@
     }
 
     .btn:hover{ background:var(--hover); }
+    .btn:disabled{ opacity:.5; cursor:default; }
 
     #status{
       padding:8px 12px;
@@ -86,64 +89,15 @@
       text-overflow:ellipsis;
     }
 
-    #viewerWrap{
+    #frame{
+      width:100%;
+      height:100%;
+      border:0;
+      background:#fff;
       flex:1 1 auto;
-      overflow:auto;
-      padding:16px;
-      -webkit-overflow-scrolling:touch;
-    }
-
-    #viewer{
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:16px;
-      min-height:100%;
-    }
-
-    .pageCard{
-      background:#fff;
-      border:1px solid #e5e7eb;
-      box-shadow:0 10px 28px rgba(0,0,0,.08);
-      border-radius:8px;
-      overflow:hidden;
-      max-width:100%;
-    }
-
-    .pageCanvas{
-      display:block;
-      max-width:100%;
-      height:auto;
-      background:#fff;
-    }
-
-    .pageMeta{
-      padding:8px 10px;
-      font-size:.88rem;
-      color:var(--muted);
-      border-top:1px solid #eee;
-      background:#fff;
-      text-align:center;
-    }
-
-    .error{
-      width:min(720px, 100%);
-      background:#fff;
-      border:1px solid #fecaca;
-      color:#991b1b;
-      border-radius:12px;
-      padding:14px;
-      box-shadow:0 8px 20px rgba(0,0,0,.06);
-    }
-
-    .loading{
-      color:var(--muted);
-      font-size:1rem;
-      padding:24px 0;
     }
 
     @media (max-width: 720px){
-      #viewerWrap{ padding:10px; }
       #topbar{ align-items:flex-start; flex-wrap:wrap; }
       #title{
         flex:1 1 100%;
@@ -155,24 +109,23 @@
 <body>
   <div id="topbar">
     <div id="title">PDF</div>
+
     <div id="actions">
       <button id="reloadBtn" class="btn" type="button">Yenile</button>
+      <button id="downloadBtn" class="btn" type="button">İndir</button>
+      <button id="copyBtn" class="btn" type="button">Hepsini kopyala</button>
       <button id="openBtn" class="btn" type="button">Yeni sekmede aç</button>
     </div>
   </div>
 
   <div id="status">Hazırlanıyor…</div>
+  <iframe id="frame" title="PDF.js görüntüleyici" referrerpolicy="no-referrer"></iframe>
 
-  <div id="viewerWrap">
-    <div id="viewer">
-      <div class="loading" id="loadingText">PDF yükleniyor…</div>
-    </div>
-  </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.js"></script>
-  <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.js";
+  <script type="module">
+    const PDFJS_VERSION = "4.4.168";
+    const PDFJS_VIEWER_URL = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/web/viewer.html`;
+    const PDFJS_LIB_URL = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/legacy/build/pdf.mjs`;
+    const PDFJS_WORKER_URL = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/legacy/build/pdf.worker.mjs`;
 
     const params = new URLSearchParams(location.search);
     const rawPdfUrl = params.get("pdf") || "";
@@ -180,15 +133,19 @@
 
     const titleEl = document.getElementById("title");
     const statusEl = document.getElementById("status");
-    const viewerEl = document.getElementById("viewer");
-    const viewerWrapEl = document.getElementById("viewerWrap");
+    const frameEl = document.getElementById("frame");
+
     const reloadBtn = document.getElementById("reloadBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const copyBtn = document.getElementById("copyBtn");
     const openBtn = document.getElementById("openBtn");
 
-    let activeRenderToken = 0;
-    let lastWrapWidth = 0;
-    let lastRenderWidthBucket = 0;
-    let currentLoadingTask = null;
+    let pdfjsLibPromise = null;
+    let currentFreshPdfUrl = "";
+    let currentBlobUrl = "";
+    let currentFileName = "";
+    let loadToken = 0;
+    let copyToken = 0;
 
     function decodeSafe(value){
       try{
@@ -208,10 +165,19 @@
       }
     }
 
-    function getDisplayName(){
-      const n = decodeSafe(rawName || "").trim();
-      if (n) return n;
-      return fileNameFromUrl(rawPdfUrl);
+    function sanitizeFileName(name){
+      const clean = String(name || "").trim().replace(/[\\/:*?"<>|]+/g, "_");
+      return clean || "document.pdf";
+    }
+
+    function ensurePdfExtension(name){
+      return /\.pdf$/i.test(name) ? name : `${name}.pdf`;
+    }
+
+    function getDisplayFileName(){
+      const fromParam = decodeSafe(rawName || "").trim();
+      const base = fromParam || fileNameFromUrl(rawPdfUrl) || "PDF";
+      return ensurePdfExtension(sanitizeFileName(base));
     }
 
     function buildFreshUrl(url){
@@ -224,155 +190,201 @@
       statusEl.textContent = text || "";
     }
 
-    function clearViewer(){
-      viewerEl.innerHTML = "";
+    function revokeCurrentBlobUrl(){
+      if (!currentBlobUrl) return;
+      try{ URL.revokeObjectURL(currentBlobUrl); }catch{}
+      currentBlobUrl = "";
     }
 
-    function showError(message){
-      clearViewer();
-      const box = document.createElement("div");
-      box.className = "error";
-      box.textContent = message || "PDF yüklenemedi.";
-      viewerEl.appendChild(box);
-      setStatus("Hata");
+    async function ensurePdfJsLib(){
+      if (!pdfjsLibPromise){
+        pdfjsLibPromise = import(PDFJS_LIB_URL).then((mod) => {
+          mod.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+          return mod;
+        });
+      }
+      return pdfjsLibPromise;
     }
 
-    function createPageCard(pageNo, totalPages, canvas){
-      const card = document.createElement("div");
-      card.className = "pageCard";
-
-      const meta = document.createElement("div");
-      meta.className = "pageMeta";
-      meta.textContent = `Sayfa ${pageNo} / ${totalPages}`;
-
-      canvas.className = "pageCanvas";
-      card.appendChild(canvas);
-      card.appendChild(meta);
-
-      return card;
+    async function fetchPdfBlob(url){
+      const res = await fetch(url, {
+        mode: "cors",
+        cache: "no-store",
+        credentials: "omit"
+      });
+      if (!res.ok) throw new Error(`PDF indirilemedi (${res.status})`);
+      return await res.blob();
     }
 
-    function getRenderWidth(){
-      const wrapWidth = Math.max(320, viewerEl.clientWidth || viewerWrapEl.clientWidth || window.innerWidth - 40);
-      return Math.floor(wrapWidth);
+    async function ensureBlobUrl(url){
+      const blob = await fetchPdfBlob(url);
+      revokeCurrentBlobUrl();
+      currentBlobUrl = URL.createObjectURL(blob);
+      return currentBlobUrl;
     }
 
-    function getWidthBucket(width){
-      return Math.round(width / 40);
+    function setTitle(name){
+      currentFileName = ensurePdfExtension(sanitizeFileName(name || "PDF"));
+      titleEl.textContent = currentFileName;
+      document.title = currentFileName;
     }
 
-    async function renderPdf(url, { forceFresh = true } = {}){
-      const renderToken = ++activeRenderToken;
+    function buildViewerUrl(pdfUrl){
+      const u = new URL(PDFJS_VIEWER_URL);
+      u.searchParams.set("file", pdfUrl);
+      u.searchParams.set("zoom", "page-width");
+      u.searchParams.set("pagemode", "none");
+      return u.toString();
+    }
 
-      if (!url){
-        showError("PDF yolu bulunamadı.");
+    async function renderPdf(){
+      const myToken = ++loadToken;
+
+      if (!rawPdfUrl){
+        setTitle("PDF");
+        setStatus("PDF yolu bulunamadı.");
+        frameEl.src = "about:blank";
+        downloadBtn.disabled = true;
+        copyBtn.disabled = true;
+        openBtn.disabled = true;
         return;
       }
 
-      const displayName = getDisplayName();
-      titleEl.textContent = displayName;
-      document.title = displayName;
+      downloadBtn.disabled = false;
+      copyBtn.disabled = false;
+      openBtn.disabled = false;
 
-      clearViewer();
-
-      const loading = document.createElement("div");
-      loading.id = "loadingText";
-      loading.className = "loading";
-      loading.textContent = "PDF yükleniyor…";
-      viewerEl.appendChild(loading);
+      const fileName = getDisplayFileName();
+      setTitle(fileName);
+      setStatus("PDF.js görüntüleyici hazırlanıyor…");
 
       try{
-        if (currentLoadingTask && typeof currentLoadingTask.destroy === "function"){
-          try{ await currentLoadingTask.destroy(); }catch{}
-        }
+        const fresh = buildFreshUrl(rawPdfUrl);
+        currentFreshPdfUrl = fresh;
 
-        const sourceUrl = forceFresh ? buildFreshUrl(url) : url;
-        const renderWidth = getRenderWidth();
-        lastWrapWidth = renderWidth;
-        lastRenderWidthBucket = getWidthBucket(renderWidth);
+        if (myToken !== loadToken) return;
 
-        setStatus("PDF indiriliyor…");
-
-        const loadingTask = pdfjsLib.getDocument({
-          url: sourceUrl,
-          withCredentials: false,
-          useWorkerFetch: true,
-          isEvalSupported: false,
-          disableAutoFetch: false,
-          disableStream: false,
-          disableRange: false
-        });
-
-        currentLoadingTask = loadingTask;
-        const pdf = await loadingTask.promise;
-
-        if (renderToken !== activeRenderToken) return;
-
-        clearViewer();
-        setStatus(`Toplam ${pdf.numPages} sayfa`);
-
-        for (let pageNo = 1; pageNo <= pdf.numPages; pageNo++){
-          if (renderToken !== activeRenderToken) return;
-
-          setStatus(`Sayfa ${pageNo} / ${pdf.numPages} hazırlanıyor…`);
-
-          const page = await pdf.getPage(pageNo);
-          const baseViewport = page.getViewport({ scale: 1 });
-
-          const targetWidth = Math.min(baseViewport.width, renderWidth);
-          const scale = targetWidth / baseViewport.width;
-          const viewport = page.getViewport({ scale });
-
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d", { alpha: false });
-          const outputScale = window.devicePixelRatio || 1;
-
-          canvas.width = Math.floor(viewport.width * outputScale);
-          canvas.height = Math.floor(viewport.height * outputScale);
-          canvas.style.width = `${Math.floor(viewport.width)}px`;
-          canvas.style.height = `${Math.floor(viewport.height)}px`;
-
-          const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
-
-          await page.render({
-            canvasContext: ctx,
-            viewport,
-            transform
-          }).promise;
-
-          if (renderToken !== activeRenderToken) return;
-          viewerEl.appendChild(createPageCard(pageNo, pdf.numPages, canvas));
-        }
-
-        if (renderToken !== activeRenderToken) return;
-        setStatus(`Yüklendi · ${pdf.numPages} sayfa`);
+        const viewerUrl = buildViewerUrl(fresh);
+        frameEl.src = viewerUrl;
+        setStatus("PDF yükleniyor…");
       }catch(err){
-        if (renderToken !== activeRenderToken) return;
         console.error(err);
-        showError(`PDF yüklenemedi: ${err?.message || "bilinmeyen hata"}`);
+        frameEl.src = "about:blank";
+        setStatus(`PDF yüklenemedi: ${err?.message || "bilinmeyen hata"}`);
       }
     }
 
+    frameEl.addEventListener("load", () => {
+      if (!rawPdfUrl) return;
+      setStatus("Yüklendi");
+    });
+
+    async function downloadPdf(){
+      if (!rawPdfUrl) return;
+
+      const btnText = downloadBtn.textContent;
+      downloadBtn.disabled = true;
+      downloadBtn.textContent = "İndiriliyor…";
+
+      try{
+        const blobUrl = await ensureBlobUrl(buildFreshUrl(rawPdfUrl));
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = currentFileName || getDisplayFileName();
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setStatus("İndirme başlatıldı");
+      }catch(err){
+        console.error(err);
+        setStatus(`İndirme başarısız: ${err?.message || "bilinmeyen hata"}`);
+      }finally{
+        downloadBtn.disabled = false;
+        downloadBtn.textContent = btnText;
+      }
+    }
+
+    async function extractAllTextFromPdf(url){
+      const pdfjsLib = await ensurePdfJsLib();
+      const blob = await fetchPdfBlob(url);
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+
+      const loadingTask = pdfjsLib.getDocument({
+        data: bytes,
+        useWorkerFetch: false,
+        isEvalSupported: false
+      });
+
+      const pdf = await loadingTask.promise;
+      const pages = [];
+
+      for (let pageNo = 1; pageNo <= pdf.numPages; pageNo++){
+        setStatus(`Metin çıkarılıyor: ${pageNo}/${pdf.numPages}`);
+        const page = await pdf.getPage(pageNo);
+        const content = await page.getTextContent();
+        const pageText = (content.items || [])
+          .map((item) => String(item?.str || "").trim())
+          .filter(Boolean)
+          .join(" ");
+        pages.push(pageText);
+      }
+
+      try{ await loadingTask.destroy(); }catch{}
+      return pages.join("\n\n");
+    }
+
+    async function copyAllText(){
+      if (!rawPdfUrl) return;
+
+      const myToken = ++copyToken;
+      const btnText = copyBtn.textContent;
+      copyBtn.disabled = true;
+      copyBtn.textContent = "Kopyalanıyor…";
+
+      try{
+        const text = await extractAllTextFromPdf(buildFreshUrl(rawPdfUrl));
+        if (myToken !== copyToken) return;
+
+        if (!text.trim()) throw new Error("PDF içinde kopyalanabilir metin bulunamadı");
+
+        await navigator.clipboard.writeText(text);
+        setStatus("Tüm metin panoya kopyalandı");
+      }catch(err){
+        console.error(err);
+        setStatus(`Kopyalama başarısız: ${err?.message || "bilinmeyen hata"}`);
+      }finally{
+        copyBtn.disabled = false;
+        copyBtn.textContent = btnText;
+      }
+    }
+
+    function openInNewTab(){
+      if (!rawPdfUrl) return;
+      window.open(buildViewerUrl(buildFreshUrl(rawPdfUrl)), "_blank", "noopener");
+    }
+
     reloadBtn.addEventListener("click", () => {
-      renderPdf(rawPdfUrl, { forceFresh: true });
+      renderPdf();
+    });
+
+    downloadBtn.addEventListener("click", () => {
+      downloadPdf();
+    });
+
+    copyBtn.addEventListener("click", () => {
+      copyAllText();
     });
 
     openBtn.addEventListener("click", () => {
-      if (!rawPdfUrl) return;
-      window.open(buildFreshUrl(rawPdfUrl), "_blank", "noopener");
+      openInNewTab();
     });
 
-    window.addEventListener("resize", () => {
-      clearTimeout(window.__pdfResizeTimer);
-      window.__pdfResizeTimer = setTimeout(() => {
-        const nextWidth = getRenderWidth();
-        const nextBucket = getWidthBucket(nextWidth);
-        if (nextBucket === lastRenderWidthBucket) return;
-        renderPdf(rawPdfUrl, { forceFresh: false });
-      }, 180);
+    window.addEventListener("beforeunload", () => {
+      revokeCurrentBlobUrl();
     });
 
-    renderPdf(rawPdfUrl, { forceFresh: true });
+    renderPdf();
   </script>
 </body>
 </html>
